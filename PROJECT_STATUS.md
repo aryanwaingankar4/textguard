@@ -91,7 +91,7 @@ Related Work in P8, and re-run the arXiv search then.
 | Module | Phase | Status |
 |---|---|---|
 | `src/data/loader.py` | P1 | ✅ (12 tests) |
-| `src/data/splits.py` | P1 | ⚪ |
+| `src/data/splits.py` | P1 | ✅ (14 tests) |
 | `src/data/inspect_domains.py` | P1 | ✅ (3 tests) |
 | `src/models/base.py` | P2 | ⚪ |
 | `src/models/dlinear.py` | P2 | ⚪ |
@@ -151,6 +151,33 @@ Per-domain DSS will be noisy. **Plan:**
 - **Headline:** DSS pooled across all four domains
 - **Breakdown:** per-domain DSS, reported with its CI, not as a headline
 - **P4:** bootstrap confidence intervals on every reported metric (already in P4 scope)
+
+**Actual splits** (70/10/20 over the text window, `python -m src.data.splits`):
+
+| Domain | Train | Val | Test | Test span |
+|---|---|---|---|---|
+| Economy | 244 | 36 | 70 | 2018-06 → 2024-03 |
+| SocialGood | 237 | 35 | 68 | 2016-10 → 2022-05 |
+| Traffic | 186 | 27 | 53 | 2019-11 → 2024-03 |
+| Health_US | 470 (287 with text) | 68 | 134 | 2017-06 → 2020-01 |
+
+- **Validation sets are also small (27–68 periods).** Tuning thresholds on them risks
+  overfitting to validation — prefer few tunable knobs and coarse grids in P6.3
+- **Test sets for Economy, SocialGood and Traffic include COVID-19 (2020),** a large regime shift.
+  Expect high MSE. See the COVID reframe below — this is an opportunity, not only a nuisance
+
+**⚠️ Health_US confound (flag when interpreting P5):** 183 of 470 Health_US *training* periods
+lack text, while its *test* set is 97% covered. A text-consuming model trained there saw text
+only ~61% of the time, so a low Text Usage Gap on Health_US may reflect **training sparsity**,
+not the architecture ignoring text. Don't attribute a low Health_US gap to fusion type without
+comparing against the other three domains (≥98% train coverage).
+
+**COVID reframe → dedicated P6 analysis:** 2020 sits in three test sets (Economy, SocialGood,
+Traffic). It is a natural stress test for TextGuard's **False Block Rate**: genuine reports
+("unemployment surged", "traffic collapsed") that contradict the pre-COVID numerical trend.
+That is exactly the case where TextGuard's gate wrongly distrusts *true* text. Plan a dedicated
+**"TextGuard under genuine regime change"** analysis in P6 — gate values, False Block Rate and
+forecast error on 2020 periods specifically — not just an ablation that excludes 2020.
 
 **Directional-claim check:** ____% of 50 sampled reports make a clear up/down claim
 → verdict: ______ (≥30% = the flipped attack is viable)
@@ -256,12 +283,22 @@ by row position, so its Economy train/test split is **not chronological**.
 | 6 | MM-TSFlib uses `search` text, we default to `report` — first suspect if P2 baselines don't match | P2 | ⬜ Open |
 | 7 | MM-TSFlib Economy CSV unsorted + positional split ⇒ non-chronological split in their baseline | P2 | ⬜ Open |
 | 8 | Small test sets (~30–60 sequences/domain) → pool DSS across domains as headline, bootstrap CIs in P4 | P4/P5 | ⬜ Open |
+| 9 | Health_US: 183/470 train periods lack text vs 97% test coverage — low Usage Gap may be training sparsity, not architecture | P5 | ⬜ Open |
+| 10 | COVID-2020 in 3 test sets → dedicated "TextGuard under genuine regime change" False Block Rate analysis | P6 | ⬜ Open |
 
 ---
 
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-09-28 — P1.3–1.4: domains selected, splits built
+- `inspect_domains.py`: window = first → last text; selected Economy, SocialGood, Traffic, Health_US (report)
+- `loader.text_window()` shared by inspection and splits
+- `splits.py`: 70/10/20 chronological split over the text window (matches MM-TSFlib ratios);
+  rejects unsorted/duplicate input; leakage test passes on all 4 real domains
+- **Broke:** nothing
+- **Next:** P1.5 `check_directional.py` and `check_timing.py`
 
 ### 2026-09-28 — P1.1–1.2: data cloned, loader built
 - Cloned Time-MMD → `data/Time-MMD`, MM-TSFlib → `external/MM-TSFlib` (both gitignored)

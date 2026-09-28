@@ -167,6 +167,23 @@ def align_text(numerical: pd.DataFrame, text: pd.DataFrame, lag: int = 1) -> pd.
     return out
 
 
+def text_window(df: pd.DataFrame) -> pd.DataFrame:
+    """Rows from the first to the last period that has text, inclusive.
+
+    Text experiments can only run where text exists. Time-MMD's numbers usually start
+    years before the reports, and some reports stop early (Health_US: 2020, numbers run to
+    2024). Splitting the whole series would put Health_US's entire test set in years with
+    no text at all, so splits (P1.4) are taken over this window instead.
+    Gaps *inside* the window stay, with ``has_text=False`` — they are real missing reports.
+    """
+    has = df["has_text"].to_numpy()
+    if not has.any():
+        return df.iloc[0:0].reset_index(drop=True)
+    first = int(has.argmax())
+    last = len(has) - 1 - int(has[::-1].argmax())
+    return df.iloc[first:last + 1].reset_index(drop=True)
+
+
 def load_domain(domain: str, source: str = "report", lag: int = 1,
                 root: Path | str = DEFAULT_ROOT) -> pd.DataFrame:
     """Load one domain's numerical series with aligned text. The main entry point.

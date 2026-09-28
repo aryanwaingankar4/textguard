@@ -30,26 +30,24 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.data.loader import DEFAULT_ROOT, TEXT_SOURCES, list_domains, load_domain
+from src.data.loader import DEFAULT_ROOT, TEXT_SOURCES, list_domains, load_domain, text_window
 
 
 def domain_stats(df: pd.DataFrame) -> dict:
     """Coverage statistics for one loaded domain (output of ``load_domain``)."""
-    has = df["has_text"].to_numpy()
     periods = len(df)
-    if not has.any():
+    win = text_window(df)
+    if win.empty:
         return dict(periods=periods, first_text=None, last_text=None, window=0, usable=0,
                     coverage_window=0.0, coverage_all=0.0, len_median=0.0, len_mean=0.0)
 
-    first = int(has.argmax())                        # index of the first True
-    last = periods - 1 - int(has[::-1].argmax())     # index of the last True
-    window = last - first + 1
-    usable = int(has.sum())
-    lengths = df.loc[df["has_text"], "text"].str.len()
+    window = len(win)
+    usable = int(win["has_text"].sum())
+    lengths = win.loc[win["has_text"], "text"].str.len()
     return dict(
         periods=periods,
-        first_text=df["start_date"].iloc[first].date(),
-        last_text=df["start_date"].iloc[last].date(),
+        first_text=win["start_date"].iloc[0].date(),
+        last_text=win["start_date"].iloc[-1].date(),
         window=window,
         usable=usable,
         coverage_window=usable / window,
