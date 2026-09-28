@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data — too large for git, and licence-restricted (FNSPID is CC BY-NC-4.0)
+data/
+texts/
+*.csv
+*.zip
+*.parquet
+# but keep small result summaries:
+!results/summary_*.csv
+
+# Model weights
+*.pt
+*.pth
+*.bin
+*.safetensors
+
+# Experiment tracking
+mlruns/
+mlartifacts/
+.dvc/cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Secrets
+.env
+*.key
