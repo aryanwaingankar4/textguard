@@ -4,7 +4,7 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** P0 — Setup
+**Current phase:** P1 — Data Pipeline
 **Last updated:** 2026-09-28
 
 > 👤 **Solo project.** All work by Aryan.
@@ -16,7 +16,7 @@
 
 | Phase | Builds | Required? | Status |
 |---|---|---|---|
-| P0 | Environment, repo, folder skeleton | ✅ | 🔵 In progress |
+| P0 | Environment, repo, folder skeleton | ✅ | ✅ Done |
 | P1 | Data pipeline — loader, splits, domain selection | ✅ | ⚪ Pending |
 | P2 | Model wrappers — 5 models, one interface | ✅ | ⚪ Pending |
 | P3 | Attack module — 6 text conditions | ✅ | ⚪ Pending |
@@ -70,16 +70,16 @@ Related Work in P8, and re-run the arXiv search then.
 
 ---
 
-## 4. Current phase checklist — P0
+## 4. Phase checklist — P0 (complete)
 
-- [ ] Folder `C:\Users\Aryan\textguard` created, opened in VS Code
-- [ ] `git init` + `.gitignore`
-- [ ] Remote set to `https://github.com/aryanwaingankar4/textguard.git`, first push done
-- [ ] Python venv created and activated
-- [ ] Dependencies installed, `requirements.txt` pinned
-- [ ] Colab extension installed; T4 notebook can clone the repo and `import torch`
-- [ ] `src/` folder skeleton created
-- [ ] `mlflow ui` runs locally
+- [x] Folder `C:\Users\Aryan\textguard` created, opened in VS Code
+- [x] `git init` + `.gitignore`
+- [x] Remote set to `https://github.com/aryanwaingankar4/textguard.git`, first push done
+- [x] Python venv created and activated
+- [x] Dependencies installed, `requirements.txt` pinned (torch 2.14.0+cpu, mlflow 3.16.1)
+- [~] Colab extension installed but unreliable — superseded: use colab.research.google.com directly for GPU work (see open issue #5)
+- [x] `src/` folder skeleton created (docstring-only stubs; no experiment code)
+- [x] `mlflow ui` runs locally
 
 ---
 
@@ -190,12 +190,21 @@ Related Work in P8, and re-run the arXiv search then.
 | 2 | Is text guaranteed available *before* its forecast window? | P1 | ⬜ Open |
 | 3 | How does MM-TSFlib actually fuse text? (we assume late) | P2 | ⬜ Open |
 | 4 | Can CFA (`seunghan96/cfa`) run as a defense baseline? | P6 | ⬜ Open |
+| 5 | Colab VS Code extension unreliable — use colab.research.google.com directly for GPU work (Qwen) in P2; `git clone` the repo inside the notebook | P2 | ⬜ Open |
 
 ---
 
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-09-28 — P0 complete
+- Created `src/` skeleton: `data/`, `models/`, `attacks/`, `textguard/` packages, plus
+  `metrics.py` and `run_experiments.py` placeholders; `notebooks/`, `results/`, `tests/`,
+  `paper/`, `app/` folders
+- venv + pinned deps in place (torch 2.14.0+cpu, mlflow 3.16.1)
+- **Broke:** Colab VS Code extension unreliable → use colab.research.google.com directly (issue #5)
+- **Next:** P1 — clone Time-MMD + MM-TSFlib, write `loader.py`
 
 ### 2026-09-28 — Plan restructured for solo build
 - Rewrote PHASES.md as a pure build plan: P0–P8, every phase produces code
