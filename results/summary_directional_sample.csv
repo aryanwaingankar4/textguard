@@ -1,0 +1,151 @@
+domain,start_date,end_date,fact,heuristic,manual
+Economy,2012-08-01,2012-08-31,"Objective facts about the Monthly international trade balance of U.S. situation:
+The U.S. international trade in goods and services deficit was $44.2 billion in August 2012, up from $42.5 billion in July, revised. Exports of goods decreased $2.1 billion to $128.5 billion, and imports of goods decreased $0.7 billion to $187.8 billion. The goods deficit increased $1.5 billion from July to $59.3 billion, and the services surplus decreased $0.3 billion from July to $15.1 billion.",mixed,up
+Economy,2011-02-01,2011-02-28,"The U.S. international trade deficit decreased to $45.8 billion in February 2011, down from $47.0 billion in January, revised.",down,down
+Economy,1996-01-01,1996-01-31,"Objective facts about the Monthly international trade balance of U.S. situation:
+The U.S. had a goods and services deficit of $10.3 billion in January 1996, $3.3 billion more than the $7.0 billion of December, revised. Exports of goods decreased to $48.9 billion, and imports of goods increased to $64.3 billion.",mixed,up
+Economy,2013-09-01,2013-09-30,"The U.S. international trade deficit increased to $41.8 billion in September 2013 from $38.7 billion in August, revised. Exports of goods and services decreased $0.4 billion to $188.9 billion, while imports increased $2.7 billion to $230.7 billion.",mixed,up
+Economy,2015-03-01,2015-03-31,"Objective facts about the Monthly international trade balance of U.S. situation**
+
+* The goods and services deficit was $51.4 billion in March, up $15.5 billion from February. 
+* Exports were $187.8 billion, $1.6 billion more than February exports. 
+* Imports were $239.2 billion, $17.1 billion more than February imports. 
+* The average goods and services deficit increased $1.9 billion to $43.3 billion for the three months ending in March. 
+
+**",up,up
+Economy,2006-10-01,2006-10-31,"The U.S. international trade deficit for October 2006 was $58.9 billion, $5.4 billion less than the $64.3 billion in September.",none,down
+Economy,2014-06-01,2014-06-30,"Objective facts about the Monthly international trade balance of U.S. situation:
+The U.S. international trade deficit decreased by $3.2 billion from May to June 2014, reaching $41.5 billion. Exports of goods and services increased by $0.3 billion to $195.9 billion, while imports decreased by $2.9 billion to $237.4 billion.",mixed,down
+Economy,2012-07-01,2012-07-31,"The U.S. international trade deficit in goods and services increased to $42.0 billion in July, up from $41.9 billion in June.",up,up
+Economy,1999-08-01,1999-08-31,"Objective facts about the Monthly international trade balance of U.S. situation:
+The total August exports of $82.0 billion and imports of $106.4 billion resulted in a goods and services deficit of $24.1 billion, $0.8 billion less than the deficit of $24.9 billion in July.",none,down
+Economy,2004-06-01,2004-06-30,"The U.S. international trade deficit in goods and services was $55.8 billion in June 2004, an increase of $8.9 billion from May. Exports of goods and services decreased $4.2 billion to $92.8 billion, while imports increased $4.7 billion to $148.6 billion.",mixed,up
+Economy,2015-06-01,2015-06-30,"The U.S. international trade deficit increased by $2.9 billion to $43.8 billion in June 2015, with exports decreasing by $0.1 billion to $188.6 billion and imports increasing by $2.8 billion to $232.4 billion.",mixed,up
+Economy,1996-04-01,1996-04-30,"Objective facts about the Monthly international trade balance of U.S. situation**
+
+The total exports of goods and services in April 1996 were $69.9 billion, and total imports were $78.6 billion, resulting in a goods and services deficit of $8.6 billion. 
+
+**",none,none
+Economy,2010-10-01,2010-10-31,"The U.S. goods and services deficit decreased from $44.6 billion in September to $38.7 billion in October. Exports of goods increased $4.5 billion to $112.3 billion, and imports of goods decreased $1.2 billion to $163.7 billion.",mixed,down
+SocialGood,2012-04-01,2012-04-30,The unemployment rate was little changed at 8.1 percent in April. The number of unemployed persons (12.5 million) and the unemployment rate showed little or no change in April.,none,none
+SocialGood,2015-08-01,2015-08-31,"Objective Facts**
+
+* The unemployment rate edged down to 5.1% in August 2015, and the number of unemployed persons edged down to 8.0 million. (Source)
+* The unemployment rate for whites declined to 4.4% in August. The rates for adult men (4.7%), adult women (4.7%), teenagers (16.9%), blacks (9.5%), Asians (3.5%), and Hispanics (6.6%) showed little change in August. (Source)
+* The number of persons unemployed for less than 5 weeks decreased by 393,000 to 2.1 million in August. (Source)
+* The number of long-term unemployed (those jobless for 27 weeks or more) held at 2.2 million in August and accounted for 27.7% of the unemployed. (Source)
+* The civilian labor force participation rate was 62.6% for the third consecutive month. (Source)
+* The employment-population ratio, at 59.4%, was about unchanged in August and has shown little movement thus far this year. (Source)
+
+**",down,down
+SocialGood,2012-11-01,2012-11-30,"Objective facts about the influenza situation**
+There is no mention of the influenza situation in this report. 
+
+**",none,none
+SocialGood,2003-06-01,2003-06-30,"Objective Facts**
+
+* Unemployment rate rose to 6.4% in June 2003, up from 6.1% in May 2003. 
+* The number of unemployed persons increased by 360,000 in June to 9.4 million. 
+* The unemployment rate for blacks increased to 11.8% in June, up from 10.8% in May. 
+* The labor force participation rate rose by 0.2 percentage point to 66.6% in June. 
+* Nonfarm payroll employment was essentially unchanged in June, with a loss of 30,000 jobs. 
+
+**",up,up
+SocialGood,2008-12-01,2008-12-31,"Objective facts about the influenza situation**
+NA (no relevant information found)
+
+**",none,none
+SocialGood,2007-08-01,2007-08-31,"Objective Facts**
+
+* The unemployment rate remained at 4.6% in August 2007. 
+* The number of unemployed persons was 7.1 million, unchanged from July. 
+* Employment in manufacturing, construction, and local government education declined, while job growth continued in health care and food services. 
+* The number of persons employed part-time for economic reasons was 4.5 million, 359,000 higher than a year earlier. 
+* The labor force participation rate decreased to 65.8%. 
+
+**",mixed,none
+SocialGood,2001-08-01,2001-08-31,"Objective facts about the influenza situation**
+There is no mention of the influenza situation in the report. 
+
+**",none,none
+SocialGood,2012-06-01,2012-06-30,"Objective facts about the unemployment situation**
+
+* The unemployment rate was unchanged at 8.2% in June 2012. 
+* The number of unemployed persons (12.7 million) was essentially unchanged in June. 
+* The unemployment rate for blacks (14.4%) edged up over the month, while the rates for adult men (7.8%), adult women (7.4%), teenagers (23.7%), whites (7.4%), and Hispanics (11.0%) showed little or no change. 
+
+**",up,none
+SocialGood,1998-10-01,1998-10-31,Objective facts about the influenza situation: NA (no information about influenza situation),none,none
+SocialGood,2010-08-01,2010-08-31,"Objective Facts**
+
+* The unemployment rate was about unchanged at 9.6 percent in August 2020. 
+* The number of unemployed persons (14.9 million) was little changed in August. 
+* The jobless rate for adult men (9.8 percent), adult women (8.0 percent), teenagers (26.3 percent), whites (8.7 percent), blacks (16.3 percent), and Hispanics (12.0 percent) showed little change in August. 
+* The number of long-term unemployed (those jobless for 27 weeks and over) declined by 323,000 over the month to 6.2 million. 
+
+**",down,none
+SocialGood,2016-02-01,2016-02-29,"The unemployment rate was unchanged at 4.9 percent, and the number of unemployed persons, at 7.8 million, was unchanged. Over the year, the unemployment rate and the number of unemployed persons were down by 0.6 percentage point and 831,000, respectively.",down,down
+SocialGood,2016-04-01,2016-04-30,"Objective facts about the unemployment situation**
+
+* The unemployment rate held at 5.0 percent in April, and the number of unemployed persons was little changed at 7.9 million. (Source)
+* The labor force participation rate decreased to 62.8 percent, and the employment-population ratio edged down to 59.7 percent. (Source)
+* The number of long-term unemployed (those jobless for 27 weeks or more) declined by 150,000 to 2.1 million in April. (Source)
+* The number of persons employed part time for economic reasons (also referred to as involuntary part-time workers) was about unchanged in April at 6.0 million. (Source)
+* The number of marginally attached to the labor force was 1.7 million in April, down by 400,000 from a year earlier. (Source)
+
+**",down,none
+SocialGood,2011-08-01,2011-08-31,Objective facts about the influenza situation: NA (there is no mention of influenza in the report),none,none
+Traffic,2018-06-01,2018-06-30,"Objective facts about the Monthly United States nationwide vehicle miles traveled (VMT) situation:
+Travel on all roads and streets changed by 0.3% (0.9 billion vehicle miles) for June 2018 as compared with June 2017, with an estimated 281.4 billion vehicle miles traveled.",none,up
+Traffic,2005-02-01,2005-02-28,"The total vehicle miles traveled (VMT) in February 2005 was 213.3 billion, a 1.7% increase compared to February 2004. The cumulative VMT for 2005 was 430.8 billion, a 0.5% increase.",up,up
+Traffic,2009-06-01,2009-06-30,"Monthly United States nationwide vehicle miles traveled (VMT) in June 2009 is 256.7 billion vehicle miles, a 2.0% decrease (4.9 billion vehicle miles) compared to June 2008. Cumulative Travel for 2009 changed by -0.4% (-6.1 billion vehicle miles).",down,down
+Traffic,2016-09-01,2016-09-30,"Travel on all roads and streets changed by 2.9% (7.5 billion vehicle miles) for September 2016 as compared with September 2015. The estimated travel for the month is 265.5 billion vehicle miles. The cumulative estimate for the year is 2,415.2 billion vehicle miles of travel.",none,up
+Traffic,2016-03-01,2016-03-31,"Travel on all roads and streets changed by 5.0% (13.0 billion vehicle miles) for March 2016 as compared with March 2015, with an estimated 273.4 billion vehicle miles traveled. The seasonally adjusted vehicle miles traveled for March 2016 is 268.2 billion miles, a 4.0% (10.3 billion vehicle miles) increase over March 2015.",up,up
+Traffic,2008-04-01,2008-04-30,"The total vehicle miles traveled (VMT) in April 2008 decreased by 1.8% compared to April 2007, with an estimated 245.9 billion vehicle miles traveled. The cumulative travel for 2008 changed by -2.1%, with an estimated 934.8 billion vehicle miles of travel.",down,down
+Traffic,2010-01-01,2010-01-31,"Total travel on all roads and streets in January 2010 changed by -1.6% (-3.7 billion vehicle miles) compared to January 2009, with an estimated 222.8 billion vehicle miles of travel.",none,down
+Traffic,2013-06-01,2013-06-30,"The total vehicle miles traveled (VMT) in June 2013 changed by -0.4% (-0.9 billion vehicle miles) compared to June 2012, with an estimated 258.1 billion vehicle miles traveled. The cumulative VMT for 2013 changed by -0.1% (-1.4 billion vehicle miles) with an estimated 1,461.7 billion vehicle miles traveled.",none,down
+Traffic,2002-06-01,2002-06-30,"Travel on all roads and streets in the US changed by +1.6 percent in June 2002 compared to June 2001, resulting in an estimated 246.3 billion vehicle-miles traveled. The total includes 100.2 billion vehicle-miles on rural roads and 146.0 billion vehicle-miles on urban roads and streets.",none,up
+Traffic,2008-12-01,2008-12-31,"Travel on all roads and streets in the US changed by -1.6% (-3.8 billion vehicle miles) in December 2008 compared to December 2007, with an estimated 237.2 billion vehicle miles traveled. Cumulative travel for 2008 changed by -3.6% (-107.9 billion vehicle miles), with an estimated 2,921.9 billion vehicle miles of travel.",none,down
+Traffic,2006-08-01,2006-08-31,"Travel on all roads and streets changed by -0.6 percent for August 2006 as compared with August 2005, with an estimated 261.7 billion vehicle miles traveled. Cumulative travel for 2006 changed by 0.0 percent, with an estimated 1,990.5 billion vehicle miles of travel.",none,down
+Traffic,2014-02-01,2014-02-28,"Travel on all roads and streets in the US changed by -0.9% (-1.9 billion vehicle miles) in February 2014 compared to February 2013, with an estimated 212.6 billion vehicle miles traveled. Cumulative travel for 2014 changed by -1.1% (-4.8 billion vehicle miles), with an estimated 436.3 billion vehicle miles traveled.",none,down
+Health_US,2007-10-29,2007-11-03,"The proportion of flu patients to the total number of patients in the United States each week was 2.5% during week 44 (October 28-November 3, 2007).",none,none
+Health_US,2015-07-06,2015-07-11,"During week 27, 0.9% of patient visits reported through the U.S. Outpatient Influenza-like Illness Surveillance Network (ILINet) were due to influenza-like illness (ILI). This percentage is below the national baseline of 2.0%.",none,none
+Health_US,2010-10-18,2010-10-23,"Objective facts: 
+During week 42 (October 17-23, 2010), influenza activity remained low in the United States. 
+Only 3.0% of specimens tested by U.S. World Health Organization (WHO) and National Respiratory and Enteric Virus Surveillance System (NREVSS) collaborating laboratories were positive for influenza. 
+The proportion of outpatient visits for influenza-like illness (ILI) was below the national baseline. 
+All 10 regions reported ILI below region-specific baseline levels, and all 50 states experienced minimal ILI activity.",none,none
+Health_US,2014-04-28,2014-05-03,"Objective facts about the proportion of flu patients to the total number of patients in the United States each week:**
+
+* During week 18 (April 27-May 3, 2014), influenza activity continued to decrease in the United States. 
+* The proportion of outpatient visits for influenza-like illness (ILI) was 1.2%, which is below the national baseline of 2.0%. 
+* 460 (12.5%) of 3,692 specimens tested and reported during week 18 were positive for influenza. 
+
+**",down,down
+Health_US,2010-02-08,2010-02-13,"Objective facts about the situation:
+The proportion of outpatient visits for influenza-like illness (ILI) was 2.1% which is below the national baseline of 2.3%. Three of 10 regions reported ILI above region-specific baseline levels.",none,none
+Health_US,2011-02-28,2011-03-05,"The proportion of outpatient visits for influenza-like illness (ILI) was 3.1%, which is above the national baseline of 2.5%. Eight of the 10 regions reported ILI at or above region-specific baseline levels. Ten states experienced high ILI activity; 12 states experienced moderate ILI activity; nine states experienced low ILI activity; 19 states and New York City experienced minimal ILI activity, and the District of Columbia had insufficient data.",none,none
+Health_US,2014-12-22,2014-12-27,"Objective facts about the proportion of flu patients to the total number of patients in the United States each week:
+* During week 52, 5.9% of outpatient visits reported through the U.S. Outpatient Influenza-like Illness Surveillance Network (ILINet) were due to influenza-like illness (ILI). 
+* The proportion of outpatient visits for influenza-like illness (ILI) was above the national baseline of 2.0%. 
+* Of 24,001 specimens tested and reported by U.S. World Health Organization (WHO) and National Respiratory and Enteric Virus Surveillance System (NREVSS) collaborating laboratories during week 52, 7,289 (30.4%) were positive for influenza.",none,none
+Health_US,2009-05-04,2009-05-09,"Objective facts about the situation:
+* During week 18 (May 3-9, 2009), influenza activity remained at approximately the same level as last week in the United States. 
+* 11.9% of specimens tested by U.S. World Health Organization (WHO) and National Respiratory and Enteric Virus Surveillance System (NREVSS) collaborating laboratories and reported to CDC/Influenza Division were positive for influenza. 
+* The proportion of deaths attributed to pneumonia and influenza (P&I) was below the epidemic threshold. 
+* The proportion of outpatient visits for influenza-like illness (ILI) was above the national baseline. 
+* Three of the ten surveillance regions reported ILI above their region-specific baselines.",none,none
+Health_US,2008-11-03,2008-11-08,"The proportion of outpatient visits for influenza-like illness (ILI) was 1.1% during week 45, which is below the national baseline of 2.4%. Only 1.7% of specimens tested by WHO and NREVSS laboratories were positive for influenza.",none,none
+Health_US,2011-03-28,2011-04-02,"Objective facts about the proportion of flu patients to the total number of patients in the United States each week**
+
+* During week 13 (March 27-April 2, 2011), influenza activity in the United States continued to decrease. 
+* The proportion of deaths attributed to pneumonia and influenza (P&I) has been at or above the epidemic threshold for 10 consecutive weeks. 
+* The proportion of outpatient visits for influenza-like illness (ILI) was 1.6%, which is below the national baseline of 2.5%. 
+
+**",down,down
+Health_US,2008-03-31,2008-04-05,"Objective facts about the proportion of flu patients to the total number of patients in the United States each week:
+* The proportion of deaths attributed to pneumonia and influenza has been above the epidemic threshold for 13 consecutive weeks.
+* The proportion of outpatient visits for influenza-like illness (ILI) and the proportion of outpatient visits for acute respiratory illness (ARI) were below national baseline levels.
+* 1.7% of outpatient visits reported through the U.S. Influenza Sentinel Provider Surveillance Network were due to influenza-like illness (ILI), which was below the national baseline of 2.2%.
+* 2.2% of patient visits to Department of Veteran’s Affairs (VA) and Department of Defense (DoD) outpatient treatment facilities were for acute respiratory illness (ARI), which was below the national baseline of 3.2%.",none,none
+Health_US,2016-01-18,2016-01-23,"The proportion of outpatient visits for influenza-like illness (ILI) was 2.2%, which is above the national baseline of 2.1%. Six of 10 regions reported ILI at or above region-specific baseline levels.",none,none

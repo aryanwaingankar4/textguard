@@ -1,0 +1,168 @@
+domain,start_date,end_date,fact,heuristic,manual
+SocialGood,2015-07-01,2015-07-31,"The unemployment rate was unchanged at 5.3 percent in July, with 8.3 million unemployed persons.",none,none
+SocialGood,2002-09-01,2002-09-30,"The unemployment rate was essentially unchanged in September at 5.6 percent, and the number of unemployed persons was 8.1 million. The jobless rates for the major worker groups showed no statistically significant change in September.",none,none
+SocialGood,2012-07-01,2012-07-31,"The unemployment rate for July 2012 was 8.3%, essentially unchanged from June 2012. The number of unemployed persons was 12.8 million, also essentially unchanged. The unemployment rates for adult men, adult women, teenagers, whites, and blacks showed little or no change. The jobless rate for Asians was 6.2%, little changed from a year earlier.",none,none
+SocialGood,2003-03-01,2003-03-31,"The unemployment rate remained at 5.8% in March, with 8.4 million people unemployed. The labor force participation rate decreased by 0.9 percentage points since March 2001.",down,none
+SocialGood,2008-07-01,2008-07-31,"Objective facts about the unemployment situation**
+
+* The unemployment rate rose to 5.7% in July 2008, with 8.8 million unemployed persons.
+* The number of unemployed persons has increased by 1.6 million over the past 12 months.
+* The unemployment rates for adult men, whites, and blacks have increased, while the rates for adult women, teenagers, and Asians have remained relatively unchanged.
+* The number of persons who worked part-time for economic reasons has risen by 308,000 to 5.7 million over the past 12 months.
+* Nonfarm payroll employment continued to trend down, with a loss of 51,000 jobs in July 2008. 
+
+**",mixed,up
+SocialGood,2002-04-01,2002-04-30,"The unemployment rate rose to 6.0 percent in April, and payroll employment was little changed (+43,000). The number of unemployed persons rose by 483,000 to 8.6 million. The unemployment rate for adult women rose by 0.4 percentage point over the month, and the rate for adult men edged up. The jobless rate for whites increased by 0.3 percentage point to 5.3 percent. The jobless rates of the other major worker groups--teenagers (16.8 percent), blacks (11.2 percent), and Hispanics (7.9 percent)--showed little change in April.",up,up
+SocialGood,1994-12-01,1994-12-31,"Objective facts about the unemployment situation**
+
+* The unemployment rate continued its downward trend, reaching 5.4% in December 1994, a decline of 1.3 percentage points since January 1994. 
+* The number of unemployed persons decreased by 1.6 million between January and December 1994. 
+* Unemployment rates for adult women, men, whites, blacks, and Hispanics all declined since January 1994. 
+
+**",down,down
+SocialGood,1994-09-01,1994-09-30,"Objective Facts**
+
+* The unemployment rate declined from 6.1% to 5.9% in September 1994. 
+* The number of unemployed persons dropped by 308,000 to 7.7 million in September 1994. 
+* The unemployment rates for whites (5.1%), blacks (10.7%), and Hispanics (10.2%) were down marginally in September 1994. 
+
+**",down,down
+SocialGood,2007-02-01,2007-02-28,"Objective Facts**
+
+* The unemployment rate remained unchanged at 4.5% in February 2007.
+* The number of unemployed persons was 6.9 million, with little change from January.
+* Employment grew in some service-providing industries, but declined sharply in construction.
+* Average hourly earnings rose by 6 cents, or 0.4%, over the month.
+
+**",mixed,none
+SocialGood,2014-01-01,2014-01-31,"The unemployment rate was little changed at 6.6 percent in January 2014. The number of unemployed persons, at 10.2 million, also changed little. The jobless rate has decreased by 0.6 percentage point since October.",down,down
+SocialGood,2002-07-01,2002-07-31,"Objective facts about the unemployment situation**
+
+* The unemployment rate, 5.9 percent, and total nonfarm payroll employment, 130.8 million, were unchanged in July. (Source)
+* The number of unemployed persons (8.3 million) and the unemployment rate (5.9 percent) were essentially unchanged for the third month in a row in July. (Source)
+* The jobless rates for adult men (5.2 percent), adult women (5.2 percent), teenagers (17.7 percent), whites (5.3 percent), blacks (9.9 percent), and Hispanics (7.6 percent) showed little change from the previous month. (Source)
+
+**",none,none
+SocialGood,2008-01-01,2008-12-31,"The overall labor market conditions deteriorated in 2008, with the unemployment rate being 10.1% for blacks, 7.6% for Hispanics, 5.2% for whites, and 4.0% for Asians.",none,up
+SocialGood,2016-01-01,2016-12-31,"The overall unemployment rate for the United States was 4.9 percent in 2016. Unemployment rates varied across race and ethnicity groups, with American Indians and Alaska Natives (8.9 percent), Blacks (8.4 percent), and people categorized as being of Two or More Races (7.5 percent) having higher rates than Asians (3.6 percent), Whites (4.3 percent), and Native Hawaiians and Other Pacific Islanders (4.4 percent). The jobless rate for people of Hispanic or Latino ethnicity was 5.8 percent, higher than the 4.7-percent rate for non-Hispanics.",up,none
+SocialGood,2008-10-01,2008-10-31,"** Objective facts about the employment situation:
+- The unemployment rate rose by 0.4 percentage point to 6.5% in October.
+- The number of unemployed persons increased by 603,000 to 10.1 million.
+- Nonfarm payroll employment fell by 240,000 in October.
+- The number of long-term unemployed (those jobless for 27 weeks or more) rose by 249,000 to 2.3 million.
+- The number of persons who worked part time for economic reasons (involuntary part-time workers) rose by 645,000 to 6.7 million.
+
+
+
+**",mixed,up
+SocialGood,2005-01-01,2005-01-31,"The unemployment rate decreased to 5.2 percent in January 2005, down from 5.7 percent a year earlier. 
+* The number of unemployed persons was 7.7 million, and the number of long-term unemployed (those unemployed 27 weeks and over) was about unchanged over the month. 
+* The employment-population ratio remained at 62.4 percent, and the labor force participation rate edged down over the month to 65.8 percent. 
+* The number of persons who work part time for economic reasons was 4.4 million in January, seasonally adjusted. 
+* The unemployment rates for adult men (4.7 percent), whites (4.4 percent), and Hispanics or Latinos (6.1 percent) edged down, while the rates for adult women (4.6 percent), teenagers (16.3 percent), and blacks or African Americans (10.6 percent) showed little change. 
+
+**",down,down
+SocialGood,2001-04-01,2001-04-30,"Objective facts about the unemployment situation**
+
+* The unemployment rate rose to 4.5% in April 2001, up from 4.3% in March. 
+* The number of unemployed persons increased by 300,000 to 6.4 million in April. 
+* Job losses continued in manufacturing and help supply services, and construction employment declined after seasonal adjustment. 
+* Average hourly earnings rose by 5 cents over the month. 
+
+**",mixed,up
+SocialGood,2005-02-01,2005-02-28,"The unemployment rate edged up to 5.4 percent in February 2005, returning to its December level after dipping in January. The jobless rate had been either 5.4 or 5.5 percent during each of the last 6 months of 2004.",up,up
+SocialGood,2008-04-01,2008-04-30,"The unemployment rate, at 5.0 percent, also was little changed in April. The number of unemployed persons (7.6 million) and the unemployment rate (5.0 percent) were little changed in April.",none,none
+SocialGood,2014-07-01,2014-07-31,"Objective Facts**
+
+* The unemployment rate was little changed at 6.2% in July 2014.
+* The number of unemployed persons was 9.7 million, unchanged from June 2014.
+* The number of long-term unemployed (those jobless for 27 weeks or more) was essentially unchanged at 3.2 million in July 2014.
+* The unemployment rate for adult women increased to 5.7% in July 2014, and the rate for blacks edged up to 11.4% in July 2014.
+* Total nonfarm payroll employment increased by 209,000 in July 2014, with job gains in professional and business services, manufacturing, retail trade, and construction.
+
+
+
+**",up,none
+SocialGood,2008-03-01,2008-03-31,"Objective facts about the unemployment situation**
+
+* The unemployment rate rose from 4.8% to 5.1% in March, and nonfarm payroll employment continued to trend down (-80,000).
+* The number of unemployed persons increased by 434,000 to 7.8 million in March.
+* Unemployment rates rose for adult men (to 4.6%), adult women (4.6%), and Hispanics (6.9%).
+* The jobless rates edged up for blacks (to 9.0%) and whites (4.5%), while the rate for teenagers (15.8%) was essentially unchanged.
+* The unemployment rate for Asians was 3.6%, not seasonally adjusted.
+
+**",mixed,up
+SocialGood,2009-11-01,2009-11-30,"Objective Facts**
+
+* The unemployment rate edged down to 10.0% in November 2009.
+* The number of unemployed persons was 15.4 million, and the jobless rate was 10.0% in November 2009.
+* Among the major worker groups, unemployment rates for adult men (10.5%), adult women (7.9%), teenagers (26.7%), whites (9.3%), blacks (15.6%), and Hispanics (12.7%) showed little change in November.
+* The number of long-term unemployed (those jobless for 27 weeks and over) rose by 293,000 to 5.9 million in November.
+* The average workweek for production and nonsupervisory workers on private nonfarm payrolls rose by 0.2 hour to 33.2 hours in November.
+
+
+
+**",mixed,down
+SocialGood,2009-08-01,2009-08-31,"Objective facts about the unemployment situation**
+
+* The unemployment rate rose to 9.7% in August 2009, with 14.9 million unemployed persons. 
+* The number of unemployed persons increased by 466,000 in August. 
+* The civilian labor force participation rate remained at 65.5% in August. 
+* The employment-population ratio edged down to 59.2% in August. 
+
+**",mixed,up
+SocialGood,2015-06-01,2015-06-30,"Objective Facts:**
+
+* The unemployment rate declined by 0.2 percentage points to 5.3% in June 2015.
+* The number of unemployed persons declined by 375,000 to 8.3 million in June 2015.
+* The labor force participation rate declined by 0.3 percentage points to 62.6% in June 2015.
+* The number of long-term unemployed (those jobless for 27 weeks or more) declined by 381,000 to 2.1 million in June 2015.
+* Total nonfarm payroll employment increased by 223,000 in June 2015.
+
+
+
+**",mixed,down
+SocialGood,2016-12-01,2016-12-31,"Objective facts about the unemployment situation**
+
+* The unemployment rate was little changed at 4.7 percent in December 2016.
+* The number of unemployed persons was 7.5 million in December 2016.
+* The labor force participation rate was 62.7 percent in December 2016.
+* The employment-population ratio was 59.7 percent in December 2016.
+* The number of long-term unemployed (those jobless for 27 weeks or more) was essentially unchanged at 1.8 million in December 2016.
+* The number of persons employed part time for economic reasons was essentially unchanged at 5.6 million in December 2016.
+
+
+
+**",none,none
+SocialGood,2002-08-01,2002-08-31,"Objective Facts:**
+- The unemployment rate was little changed at 5.7% in August 2002. 
+- The number of unemployed persons was 8.1 million in August 2002. 
+- The jobless rates for major worker groups showed little or no change: adult men (5.2%), adult women (4.9%), teenagers (17.2%), whites (5.1%), blacks (9.6%), and Hispanics (7.5%). 
+- The number of persons unemployed 15 weeks or more was 2.8 million in August, down from the recent high of 3.1 million in June. 
+
+**",down,none
+Energy,2014-10-27,2014-10-31,"The national average retail regular gasoline price decreased for the fifth week in a row to $2.993 per gallon on November 3, 2014, $0.063 per gallon less than last week and $0.272 under a year ago.",down,down
+Energy,2012-10-15,2012-10-19,"The national average retail regular gasoline price decreased to $3.687 per gallon on October 22, 2012, $0.132 per gallon less than last week but $0.225 above a year ago.",down,down
+Energy,2014-04-14,2014-04-18,"The national average retail regular gasoline price increased for the eleventh week in a row to $3.653 per gallon on April 21, 2014, $0.032 per gallon more than last week and $0.147 over a year ago.",up,up
+Energy,2020-04-06,2020-04-10,"The national average retail regular gasoline price was $1.853 per gallon on April 13, 2020, $0.071 lower than last week’s price and $0.975 under a year ago.",down,down
+Energy,2020-03-30,2020-04-03,"The national average retail regular gasoline price was $1.924 per gallon on April 6, 2020, $0.081 lower than last week’s price and $0.821 under a year ago.",down,down
+Energy,2018-09-03,2018-09-07,"The national average retail regular gasoline price was $2.833 per gallon on September 10, 2018, $0.009 higher than last week’s price and $0.148 over a year ago.",up,up
+Energy,2018-06-25,2018-06-29,"The national average retail regular gasoline price was $2.844 per gallon on July 2, 2018, $0.011 higher than last week’s price and $0.584 higher than a year ago.",up,up
+Energy,2020-11-30,2020-12-04,"The national average retail regular gasoline price was $2.156 per gallon on December 7, 2020, $0.036 per gallon more than last week’s price but $0.405 under a year ago.",none,up
+Energy,2011-11-07,2011-11-11,"The national average retail regular gasoline price increased to $3.436 per gallon on November 14, 2011, $0.012 per gallon more than last week and $0.544 above a year ago.",up,up
+Energy,2011-12-26,2011-12-30,"The national average retail regular gasoline price increased to $3.299 per gallon on January 2, 2012, $0.041 per gallon more than last week and $0.229 above a year ago.",up,up
+Energy,2014-02-10,2014-02-14,"The national average retail regular gasoline price increased to $3.380 per gallon on February 17, 2014, $0.071 per gallon more than last week but $0.367 under a year ago.",up,up
+Energy,2020-08-24,2020-08-28,"The national average retail regular gasoline price was $2.222 per gallon on August 31, 2020, $0.040 per gallon higher than last week’s price but $0.341 under a year ago.",up,up
+Energy,2011-10-17,2011-10-21,"The national average retail regular gasoline price decreased to $3.462 per gallon on October 24, 2011, $0.014 per gallon less than last week but $0.645 above a year ago.",down,down
+Energy,2018-10-22,2018-10-26,"The national average retail regular gasoline price was $2.811 per gallon on October 29, 2018, $0.030 lower than last week’s price but $0.323 higher than a year ago.",mixed,down
+Energy,2012-09-10,2012-09-14,"The national average retail regular gasoline price increased for the eleventh week in a row to $3.878 per gallon on September 17, 2012, $0.031 per gallon more than last week and $0.277 above a year ago.",up,up
+Energy,2016-08-01,2016-08-03,"The national average retail regular gasoline price decreased for the eighth week in a row to $2.150 per gallon on August 8, 2016, $0.009 below last week’s price and $0.479 under a year ago.",down,down
+Energy,2020-08-31,2020-09-04,"The national average retail regular gasoline price was $2.211 per gallon on September 7, 2020, $0.011 per gallon lower than last week’s price and $0.339 under a year ago.",down,down
+Energy,2016-02-15,2016-02-19,"The national average retail regular gasoline price increased to $1.730 per gallon on February 22, 2016, $0.006 over last week’s price but $0.602 under a year ago.",up,up
+Energy,2012-06-04,2012-06-08,"The national average retail regular gasoline price decreased for the tenth week in a row to $3.572 per gallon on June 11, 2012, $0.040 per gallon less than last week and $0.141 under a year ago.",down,down
+Energy,2016-03-07,2016-03-11,"The national average retail regular gasoline price increased for the fourth week in a row to $1.961 per gallon on March 14, 2016, $0.120 over last week’s price but $0.492 under a year ago.",up,up
+Energy,2016-07-04,2016-07-08,"The national average retail regular gasoline price decreased for the fourth week in a row to $2.253 per gallon on July 11, 2016, $0.038 below last week’s price and $0.581 under a year ago.",down,down
+Energy,2019-12-23,2019-12-27,"The national average retail regular gasoline price was $2.571 per gallon on December 30, 2019, $0.039 higher than last week’s price and $0.305 over a year ago.",up,up
+Energy,2020-11-16,2020-11-20,"The national average retail regular gasoline price was $2.102 per gallon on November 23, 2020, $0.009 per gallon less than last week’s price and $0.477 under a year ago.",none,down
+Energy,2018-09-17,2018-09-21,"The national average retail regular gasoline price was $2.844 per gallon on September 24, 2018, $0.003 higher than last week’s price and $0.261 over a year ago.",up,up
+Energy,2016-05-09,2016-05-13,"The national average retail regular gasoline price increased to $2.242 per gallon on May 16, 2016, $0.022 above last week’s price but $0.502 below a year ago.",up,up

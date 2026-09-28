@@ -117,3 +117,44 @@ def test_real_economy_smoke(source):
     assert df["start_date"].is_unique
     assert df["has_text"].any()
     assert df.loc[0, "text"] is None  # first period can never have lagged text
+
+
+def test_anchor_end_places_annual_report_after_its_year(tmp_path):
+    # An annual report (Jan 1 -> Dec 31) must not feed a forecast inside the year it describes.
+    start = pd.date_range("2015-01-01", periods=14, freq="MS")
+    num = pd.DataFrame({"start_date": start, "end_date": start + pd.offsets.MonthEnd(0), "OT": range(14)})
+    report = pd.DataFrame({"start_date": ["2015-01-01"], "end_date": ["2015-12-31"],
+                           "fact": ["unemployment in 2015 was 5.3 percent"], "preds": ["x"]})
+    _write_domain(tmp_path, "Annual", num, report)
+
+    by_end = load_domain("Annual", root=tmp_path)  # default anchor="end"
+    assert by_end.loc[by_end["has_text"], "start_date"].tolist() == [pd.Timestamp("2016-01-01")]
+
+    by_start = load_domain("Annual", anchor="start", root=tmp_path)
+    assert by_start.loc[by_start["has_text"], "start_date"].tolist() == [pd.Timestamp("2015-02-01")]
+
+
+def test_socialgood_influenza_texts_filtered(tmp_path):
+    start = pd.date_range("2020-01-01", periods=4, freq="MS")
+    num = pd.DataFrame({"start_date": start, "end_date": start + pd.offsets.MonthEnd(0), "OT": range(4)})
+    report = pd.DataFrame({
+        "start_date": start[:3].strftime("%Y-%m-%d"),
+        "end_date": start[:3].strftime("%Y-%m-%d"),
+        "fact": ["Objective facts about the influenza situation: NA (no information)",
+                 "Objective facts about the influenza situation** The unemployment rate declined to 11.1 percent.",
+                 "The unemployment rate rose to 4.4 percent."],
+        "preds": ["x"] * 3,
+    })
+    _write_domain(tmp_path, "SocialGood", num, report)
+    text = load_text("SocialGood", root=tmp_path)
+    assert text["fact"].tolist() == ["The unemployment rate declined to 11.1 percent.",
+                                     "The unemployment rate rose to 4.4 percent."]
+    assert text.attrs["n_off_topic_dropped"] == 1
+    assert text.attrs["n_wrong_header_stripped"] == 1
+
+
+@pytest.mark.skipif(not (DEFAULT_ROOT / "numerical").exists(), reason="Time-MMD not downloaded")
+def test_real_known_leakers_dropped():
+    assert load_text("Health_US").attrs["n_known_leakers_dropped"] == 3
+    assert load_text("Traffic").attrs["n_known_leakers_dropped"] == 2
+    assert not load_text("SocialGood")["fact"].str.contains("influenza", case=False).any()

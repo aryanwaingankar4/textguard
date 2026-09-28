@@ -17,10 +17,16 @@ Why each design choice (details and evidence in PROJECT_STATUS.md §6):
 * **``fact`` only, never ``preds``.** ``preds`` is forecasts written by the Time-MMD authors'
   LLM, not real-world text. Our threat model is an adversary tampering with real reports.
 
-* **Lag of 1 period.** Text timestamps mark the start of the period a text covers, not when
-  it was published (an Energy report dated 12-12..12-16 quotes a price "on December 19").
-  So row t receives the texts dated within period t-1: by the time period t begins, those
-  texts have certainly been published. This is what keeps text from leaking the future.
+* **Anchor on the end date, then lag 1 period.** A text cannot exist before the end of the
+  span it describes, so each text is placed in the period containing its end date
+  (``anchor="end"``), and row t receives the texts placed in period t-1. Anchoring on the
+  start date instead let annual reports (Jan 1 -> Dec 31) feed February's forecast —
+  ``check_timing.py`` (P1.5) found 37 such violations; ``anchor="end"`` has 0.
+
+* **Known report defects are fixed here, once.** Five texts whose stored dates are wrong
+  (``KNOWN_LEAKERS``) are dropped, and SocialGood's off-topic influenza texts are removed —
+  see ``_clean_reports``. Time-MMD year typos ("July 2020" in a July 2010 report) are kept:
+  the content is right for its period, only the written year is wrong.
 
 * **Missing text is explicit.** Periods with no text get ``text=None`` and ``has_text=False``
   instead of an empty string or being dropped, so the ``empty`` attack condition (P3) and
@@ -34,6 +40,7 @@ Why each design choice (details and evidence in PROJECT_STATUS.md §6):
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -120,20 +127,106 @@ def load_text(domain: str, source: str = "report", root: Path | str = DEFAULT_RO
         "fact": fact[keep].astype(str),
     }).sort_values("start_date", kind="stable").reset_index(drop=True)
 
+    cleaning = {}
+    if source == "report":
+        df, cleaning = _clean_reports(domain, df)
+
     if df.empty:
         logger.warning("%s/%s: no usable text (all %d rows empty)", domain, source, len(raw))
-    df.attrs.update(domain=domain, source=source, n_empty_text_dropped=n_dropped)
+    df.attrs.update(domain=domain, source=source, n_empty_text_dropped=n_dropped, **cleaning)
     return df
 
 
-def align_text(numerical: pd.DataFrame, text: pd.DataFrame, lag: int = 1) -> pd.DataFrame:
+# --- Known Time-MMD report defects (found in P1.5; evidence in PROJECT_STATUS.md §6) ---------
+
+# Texts whose content describes the period being forecast even under anchor="end", because
+# their stored dates are wrong. Listed individually (not caught by a rule) so each exclusion
+# is auditable. Keyed by (start_date, end_date) exactly as stored in Time-MMD.
+KNOWN_LEAKERS: dict[str, list[tuple[str, str, str]]] = {
+    "Health_US": [
+        ("2009-01-01", "2010-01-01", "2009-10 season summary; describes H1N1 through Oct 2010"),
+        ("2010-01-01", "2011-01-01", "2010-11 season summary; describes Feb-Apr 2011"),
+        ("2011-01-01", "2012-01-01", "2011-12 season summary; describes Feb-Jun 2012"),
+    ],
+    "Traffic": [
+        ("2020-12-28", "2020-01-03", "week 53 to Jan 3 2021; end_date stored a year early"),
+        ("2021-12-27", "2021-01-02", "week 52 to Jan 2 2022; end_date stored a year early"),
+    ],
+}
+
+# SocialGood: Time-MMD's summariser used the influenza prompt on 41% of unemployment reports.
+# Most are empty ("NA", "no mention of influenza"), but some hold real unemployment figures
+# under the wrong header — including 2020-22 COVID-era reports — so the rule is: drop
+# influenza-headed texts unless they state an unemployment figure; strip the header from
+# the ones kept, so no model or direction classifier ever sees the word "influenza" there.
+_WRONG_HEADER = re.compile(r"^\W*objective facts about the influenza situation\W*", re.I)
+_HAS_UNEMPLOYMENT_FIGURE = re.compile(r"unemploy.*?\d+(?:\.\d+)?\s*(?:%|percent)", re.I | re.S)
+
+
+def _clean_reports(domain: str, df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
+    stats = {"n_known_leakers_dropped": 0, "n_off_topic_dropped": 0, "n_wrong_header_stripped": 0}
+
+    leakers = KNOWN_LEAKERS.get(domain, [])
+    if leakers:
+        bad = pd.MultiIndex.from_tuples([(pd.Timestamp(s), pd.Timestamp(e)) for s, e, _ in leakers])
+        is_leaker = pd.MultiIndex.from_frame(df[["start_date", "end_date"]]).isin(bad)
+        if is_leaker.sum() != len(leakers):  # the list must match the data exactly, or it is stale
+            raise RuntimeError(f"{domain}: expected {len(leakers)} known leakers, found {is_leaker.sum()}")
+        df = df[~is_leaker]
+        stats["n_known_leakers_dropped"] = int(is_leaker.sum())
+
+    if domain == "SocialGood":
+        headed = df["fact"].str.contains(_WRONG_HEADER)
+        real = df["fact"].str.contains(_HAS_UNEMPLOYMENT_FIGURE)
+        stats["n_off_topic_dropped"] = int((headed & ~real).sum())
+        stats["n_wrong_header_stripped"] = int((headed & real).sum())
+        df = df[~headed | real].copy()
+        df["fact"] = df["fact"].str.replace(_WRONG_HEADER, "", regex=True).str.strip()
+
+    return df.reset_index(drop=True), stats
+
+
+ANCHORS = ("start", "end")
+
+
+def assign_periods(numerical: pd.DataFrame, text: pd.DataFrame,
+                   anchor: str = "end") -> tuple[pd.DataFrame, int]:
+    """Assign each text to the numerical period containing its anchor date.
+
+    ``anchor="start"``: the text's ``start_date``.
+    ``anchor="end"``: the later of ``start_date`` and ``end_date`` — the earliest moment the
+    whole text could exist. ``max`` rather than ``end_date`` alone because some rows have
+    an end before their start (a Traffic report ends 360 days before it starts).
+    Why this matters: an annual report dated Jan 1 → Dec 31 is placed in January under
+    ``"start"`` and would then feed February's forecast with the full year's numbers —
+    ``check_timing.py`` (P1.5) found exactly this in SocialGood and Health_US.
+
+    A text belongs to the last period whose start_date <= the anchor date, provided the
+    period's end_date >= it. Texts outside every period are dropped and counted.
+
+    Returns the kept texts with added columns ``period`` (row index into ``numerical``),
+    ``p_start`` and ``p_end``, plus the number dropped. Exposed separately so the timing
+    check (P1.5) audits exactly the assignment the loader uses.
+    """
+    if anchor not in ANCHORS:
+        raise ValueError(f"anchor must be one of {ANCHORS}, got {anchor!r}")
+    periods = numerical[["start_date", "end_date"]].reset_index().rename(
+        columns={"index": "period", "start_date": "p_start", "end_date": "p_end"})
+    t = text.copy()
+    t["anchor_date"] = t["start_date"] if anchor == "start" else t[["start_date", "end_date"]].max(axis=1)
+    t = t.sort_values(["anchor_date", "start_date"], kind="stable")
+    t = pd.merge_asof(t, periods, left_on="anchor_date", right_on="p_start", direction="backward")
+    inside = t["period"].notna() & (t["anchor_date"] <= t["p_end"])
+    t = t[inside].copy()
+    t["period"] = t["period"].astype(int)
+    return t, int((~inside).sum())
+
+
+def align_text(numerical: pd.DataFrame, text: pd.DataFrame, lag: int = 1,
+               anchor: str = "end") -> pd.DataFrame:
     """Attach text to numerical periods, shifted forward by ``lag`` periods.
 
-    Step 1 — assign each text to the numerical period containing its ``start_date``
-    (the last period whose start_date <= the text's start_date, and whose end_date >= it).
-    Texts outside every period, e.g. before the series begins, are dropped.
-    ``start_date`` is used rather than ``end_date`` because some rows have unreliable end
-    dates (a Traffic report ends 360 days before it starts).
+    Step 1 — ``assign_periods``: each text goes to the period containing its anchor date.
 
     Step 2 — concatenate each period's texts in time order, then shift by ``lag`` so that
     row t carries period t-lag's text. ``lag=0`` is allowed for experiments that measure
@@ -142,13 +235,7 @@ def align_text(numerical: pd.DataFrame, text: pd.DataFrame, lag: int = 1) -> pd.
     if lag < 0:
         raise ValueError("lag must be >= 0; a negative lag would feed text from the future")
 
-    periods = numerical[["start_date", "end_date"]].reset_index().rename(columns={"index": "period"})
-    t = text.sort_values("start_date", kind="stable")
-    t = pd.merge_asof(t, periods.rename(columns={"start_date": "p_start", "end_date": "p_end"}),
-                      left_on="start_date", right_on="p_start", direction="backward")
-    inside = t["period"].notna() & (t["start_date"] <= t["p_end"])
-    n_unaligned = int((~inside).sum())
-    t = t[inside]
+    t, n_unaligned = assign_periods(numerical, text, anchor=anchor)
 
     per_period = t.groupby("period")["fact"].agg([TEXT_SEPARATOR.join, "size"])
     per_period.columns = ["text", "n_texts"]
@@ -163,7 +250,7 @@ def align_text(numerical: pd.DataFrame, text: pd.DataFrame, lag: int = 1) -> pd.
 
     out.attrs.update(numerical.attrs)
     out.attrs.update(text.attrs)
-    out.attrs.update(lag=lag, n_text_unaligned=n_unaligned)
+    out.attrs.update(lag=lag, anchor=anchor, n_text_unaligned=n_unaligned)
     return out
 
 
@@ -184,7 +271,7 @@ def text_window(df: pd.DataFrame) -> pd.DataFrame:
     return df.iloc[first:last + 1].reset_index(drop=True)
 
 
-def load_domain(domain: str, source: str = "report", lag: int = 1,
+def load_domain(domain: str, source: str = "report", lag: int = 1, anchor: str = "end",
                 root: Path | str = DEFAULT_ROOT) -> pd.DataFrame:
     """Load one domain's numerical series with aligned text. The main entry point.
 
@@ -197,4 +284,5 @@ def load_domain(domain: str, source: str = "report", lag: int = 1,
     available = list_domains(root)
     if domain not in available:
         raise ValueError(f"unknown domain {domain!r}; available: {available}")
-    return align_text(load_numerical(domain, root), load_text(domain, source, root), lag=lag)
+    return align_text(load_numerical(domain, root), load_text(domain, source, root),
+                      lag=lag, anchor=anchor)
