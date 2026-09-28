@@ -10,8 +10,10 @@ env/
 .ipynb_checkpoints/
 
 # Data — too large for git, and licence-restricted (FNSPID is CC BY-NC-4.0)
-data/
-texts/
+/data/
+/texts/
+# cloned third-party code (MM-TSFlib)
+/external/
 *.csv
 *.zip
 *.parquet
@@ -27,6 +29,7 @@ texts/
 # Experiment tracking
 mlruns/
 mlartifacts/
+mlflow.db
 .dvc/cache/
 
 # OS / editor
