@@ -1,282 +1,360 @@
 # PHASES.md — TextGuard
 
-**Phase-gated, not date-gated.** There are no deadlines here. Finish a phase, tick its exit
-criterion, commit, push, move on. Work at whatever pace fits around college.
+**Phase-gated build plan.** No deadlines. Every phase produces working code.
+Finish a phase → tick its exit criterion → update `PROJECT_STATUS.md` → commit → push.
 
-**Solo project.** Aryan does all of it.
-
-**Rule: at the end of every phase — update `PROJECT_STATUS.md`, commit, push.** No exceptions.
+**Solo project.** All work by Aryan.
 
 ---
 
-## Phase order and dependencies
+## Build order
 
 ```
-P0 Setup ──► P1 Foundation ──► P2 Screening ──► P3 Attack ──► P4 Defense ──► P6 Paper
-                                                                   │
-                                                                   └──► P5 Extras (optional)
+P0 Setup ─► P1 Data ─► P2 Models ─► P3 Attacks ─► P4 Metrics
+                                                      │
+                                                      ▼
+                                               P5 Experiments
+                                                      │
+                                                      ▼
+                                               P6 TextGuard
+                                                      │
+                                    ┌─────────────────┴─────────────┐
+                                    ▼                               ▼
+                             P7 Auditor + Demo                 P8 Paper
+                                (optional)                     (required)
 ```
 
-Phase 5 is optional. Phase 6 can start once Phase 4 is done.
-
-| Phase | Name | Required? |
+| Phase | Builds | Required? |
 |---|---|---|
-| P0 | Setup & repo | ✅ Required |
-| P1 | Foundation: data, baselines, competing literature | ✅ Required |
-| P2 | Screening: which models use text (RQ0) | ✅ Required |
-| P3 | Attack: misleading text + DSS (RQ1, RQ2) | ✅ **Core contribution** |
-| P4 | Defense: TextGuard (RQ3) | ✅ **Core contribution** |
-| P5 | Extras: Model 6, FNSPID, drift monitor, MLOps, demo | ⬜ Optional |
-| P6 | Paper & release | ✅ Required |
+| P0 | Environment, repo, folder skeleton | ✅ |
+| P1 | Data pipeline — loader, splits, domain selection | ✅ |
+| P2 | Model wrappers — 5 models behind one interface | ✅ |
+| P3 | Attack module — 6 text conditions incl. fake text | ✅ |
+| P4 | Metrics module — MSE, Text Usage Gap, DSS, Flip Rate | ✅ |
+| P5 | Experiment runner — run everything, save raw predictions | ✅ |
+| P6 | TextGuard — trend detector, gate, defense wrapper | ✅ **Core** |
+| P7 | Auditor, audit report, Streamlit demo, drift monitor | ⬜ Optional |
+| P8 | Paper and release | ✅ |
 
-**If you only ever finish P0–P4 and P6, you still have a complete paper.**
-Everything in P5 is upside.
+**P0–P6 + P8 = complete paper.** P7 is upside.
 
 ---
 
-# Phase 0 — Setup & Repo
+# Phase 0 — Setup
 
-### 0.1 Admin
-- [ ] Guide approval: topic counts as multimodal ✓, Cybersecurity category ✓, paper expected?
-- [ ] Clarify Devansh's role on the registration (co-author or not) — decide deliberately
+**Builds:** a working environment and an empty but complete repo skeleton.
 
-### 0.2 Local folder & repo
-- [ ] Create project folder (see README of this repo / setup notes)
-- [ ] `git init`, add `.gitignore`, create GitHub repo, push
-- [ ] Add `CLAUDE.md`, `PHASES.md`, `PROJECT_STATUS.md` to the repo root
+- [ ] Create `C:\Users\Aryan\textguard`, open in VS Code
+- [ ] `git init`, add `.gitignore`, connect to GitHub, first push
+- [ ] Python venv + install: torch, transformers, pandas, numpy, scikit-learn,
+      matplotlib, mlflow, pytest
+- [ ] `pip freeze > requirements.txt`
+- [ ] Install the official **Google Colab** extension for VS Code (verified badge)
+- [ ] Verify a Colab T4 notebook can `git clone` the repo and `import torch`
+- [ ] Create the folder skeleton:
 
-### 0.3 Environment
-- [ ] Python 3.10+ venv
-- [ ] Install: torch, transformers, pandas, numpy, scikit-learn, matplotlib, mlflow, pytest
-- [ ] Install the official **Google Colab** extension for VS Code (verified badge — not third-party)
-- [ ] Verify: a Colab T4 notebook can `git clone` your repo and `import torch`
+```
+src/
+  data/          # loaders, splits
+  models/        # model wrappers
+  attacks/       # text condition generators
+  textguard/     # defense
+  metrics.py
+  run_experiments.py
+notebooks/       # Colab GPU runs
+results/         # raw predictions + summaries
+tests/
+paper/
+app/
+```
 
-**✅ Exit:** repo is live on GitHub, env works, Colab reachable.
+- [ ] `mlflow ui` runs locally
+
+**✅ Exit:** env works, Colab reachable, skeleton pushed.
 **➡️ Commit & push.**
 
 ---
 
-# Phase 1 — Foundation
+# Phase 1 — Data Pipeline
 
-## 1A — Competing literature (do this BEFORE writing experiment code)
+**Builds:** `src/data/` — everything that turns raw Time-MMD into clean train/val/test splits.
 
-These four decide whether the project survives as designed. Read them in full.
+### 1.1 Get the data
+- [ ] Clone `AdityaLab/Time-MMD` and MM-TSFlib into the workspace
+- [ ] Download the Time-MMD data
 
-- [ ] **Sridhar et al. (2026)** *Semantics or Structure? Auditing Text Sensitivity in
-      Multimodal TSF* — scooped our original RQ1. Extract: exact conditions, models covered,
-      scope of their released toolkit. **Decide: replicate, or build on theirs?**
-- [ ] **Lee et al. (2026)** *CFA / Constrained Fusion* — code `seunghan96/cfa`.
-      **Decide: can we run it as a defense baseline?**
-- [ ] **The Corroboration Illusion** (arXiv 2609.22246) — confirm it covers RAG *event*
-      forecasting, NOT numerical multimodal TSF
-- [ ] **Plug-In Adversarial Detection for Time-Series LLMs** (arXiv 2512.12154) —
-      ⚠️ **confirm their attack is numeric, not textual.** If textual, stop and reposition
-- [ ] Liu & Jiang (2024) arXiv 2412.08099 — confirm it attacks numbers, not text
-- [ ] Zhu et al. (2025) PA-RNet — quote the *zero-mean perturbation* assumption exactly
+### 1.2 Loader
+- [ ] `loader.py` — load a domain's numerical series + aligned text into a DataFrame
+- [ ] Handle missing text (some periods have no report) explicitly
 
-**Then:**
-- [ ] Re-run arXiv search: "adversarial text multimodal time series forecasting",
-      "misleading text forecasting attack", "semantic perturbation time series text"
-- [ ] Write the novelty claim as **one defensible paragraph** in PROJECT_STATUS
-- [ ] Tier 1 papers (parallel, lighter): Time-MMD, text collapse, TimesX, Context is Key,
-      PatchTST, DLinear
-- [ ] Shared notes file, 3 lines per paper: *what they did / what they found / what they did NOT do*
-- [ ] Draft Related Work
+### 1.3 Domain selection
+- [ ] `inspect_domains.py` — script that reports per domain: number of samples,
+      % of rows with text, average text length
+- [ ] Pick **4–5 text-rich domains**, record the choice in PROJECT_STATUS
 
-## 1B — Data
+### 1.4 Splits
+- [ ] `splits.py` — **chronological** train/val/test. Never random
+- [ ] Test asserting no test timestamp precedes any train timestamp
 
-- [ ] Clone `AdityaLab/Time-MMD` and MM-TSFlib
-- [ ] Count text volume per domain; pick **4–5 text-rich domains**
-- [ ] Implement chronological train/val/test splits
-- [ ] ⚠️ **CHECK A — directional claims.** Read ~50 random reports. Count how many make a
-      clear up/down claim. Record the % in PROJECT_STATUS.
-      **If <30% → stop and replan** (switch domains, or retarget the attack)
-- [ ] ⚠️ **CHECK B — timing.** Verify each report was available *before* its forecast period.
-      Document how Time-MMD aligns dates
+### 1.5 Two data checks (these decide whether the attack is even possible)
+- [ ] `check_directional.py` — sample 50 random reports, print them, and record what % make
+      a clear up/down claim. **If <30%, the flipped-text attack has nothing to grab onto** —
+      switch domains or retarget the attack to whatever the text does assert
+- [ ] `check_timing.py` — verify each report's timestamp precedes its forecast window.
+      Catches the leakage case where a report describes what already happened
 
-## 1C — Baselines
-
-- [ ] Get Models 1–4 running via MM-TSFlib
-- [ ] Reproduce published baseline numbers (numbers-only vs +text)
-- [ ] **Read the MM-TSFlib fusion code.** We *assume* late fusion — confirm it
-- [ ] Set up MLflow logging
-
-**✅ Exit:** all 4 Tier-0 papers read, novelty claim restated in one paragraph, directional-claim
-% recorded, timing verified, fusion mechanism documented, baselines reproduce.
+**✅ Exit:** any domain loads into clean chronological splits; directional-claim % recorded;
+timing verified.
 **➡️ Commit & push.**
-
-> 🛑 **Hard gate:** if a Tier-0 paper already does semantic directional text attacks on
-> numerical multimodal forecasters, stop and replan with your guide before Phase 2.
 
 ---
 
-# Phase 2 — Screening (RQ0)
+# Phase 2 — Model Wrappers
 
-> **This is replication, not a contribution.** It reproduces Sridhar et al. (2026).
-> Purpose: find which models actually consume text, since only those can be attacked
-> *through* text. Cite them. Keep this phase lean — it's a gate, not the paper.
+**Builds:** `src/models/` — all models behind one uniform interface.
 
-### 2.1 Condition generators
-- [ ] Implement `empty`, `shuffled`, `time_shifted`
-- [ ] (`cross_domain` optional — Sridhar covers it; cite instead if short on effort)
-- [ ] Unit tests: shuffled text genuinely from other dates; time_shifted offset correct
-- [ ] Save generated text to `texts/`
+### 2.1 The interface
+- [ ] `base.py` — every model exposes `predict(numbers, text) -> prediction`.
+      Passing `text=None` must give a valid numbers-only prediction.
+      **This interface is what makes TextGuard model-agnostic.** Get it right here
 
-### 2.2 Qwen forecaster (Model 5)
-- [ ] Prompt template: numbers + text → forecast
-- [ ] Output parser — LLMs return messy text; handle parse failures explicitly
-- [ ] Run on Colab T4, save raw predictions to CSV
+### 2.2 Numbers-only baselines
+- [ ] `dlinear.py` — wrap DLinear (Model 1)
+- [ ] `patchtst.py` — wrap PatchTST (Model 2)
+- [ ] Train on selected domains, sanity-check the MSE is reasonable
 
-### 2.3 Run the screen
-- [ ] Models 1–5 × conditions × domains × 3 seeds
-- [ ] **Save every raw prediction** to `results/`
+### 2.3 Late-fusion models
+- [ ] `dlinear_bert.py` — DLinear + BERT (Model 3)
+- [ ] `patchtst_bert.py` — PatchTST + BERT (Model 4)
+- [ ] **Read the MM-TSFlib fusion code and document how text is actually combined.**
+      We assume late fusion — confirm it and write the finding into PROJECT_STATUS
+
+### 2.4 LLM forecaster (early fusion)
+- [ ] `qwen_forecaster.py` — Qwen2.5-1.5B-Instruct (Model 5)
+- [ ] Prompt template: numbers + text → next value
+- [ ] **Robust output parser.** LLMs return messy text; handle parse failures explicitly
+      rather than silently dropping samples
+- [ ] Runs on Colab T4
+
+### 2.5 Dummy model (for testing TextGuard later)
+- [ ] `dummy.py` — a trivial model with known behaviour, used to prove TextGuard works
+      on something outside our five
+
+**✅ Exit:** all 5 models respond to `predict(numbers, text)` and `predict(numbers, None)`.
+**➡️ Commit & push.**
+
+---
+
+# Phase 3 — Attack Module
+
+**Builds:** `src/attacks/` — generators for all six text conditions.
+
+### 3.1 Simple conditions
+- [ ] `empty.py` — remove text
+- [ ] `shuffled.py` — text from other dates, same domain
+- [ ] `cross_domain.py` — text from a different domain
+- [ ] `time_shifted.py` — text from the wrong period
+- [ ] Unit tests: shuffled text genuinely comes from other dates; the time-shift offset is correct
+
+### 3.2 Fake text (the core attack)
+- [ ] `flipped.py` — Qwen rewrites each report inverting directional polarity
+      ("rose" → "fell"), keeping everything else identical
+- [ ] `exaggerated.py` — text agrees with the trend but overstates the magnitude.
+      This is TextGuard's known weak spot; we test it honestly
+
+### 3.3 Validate the fake text
+- [ ] `validate_attacks.py` — automatic checks: length similarity, direction actually flipped
+- [ ] Manually review ~100 flipped samples. Record the pass rate in PROJECT_STATUS
+- [ ] Save all generated text to `texts/`, one file per condition
+
+**✅ Exit:** all six conditions generate from any domain; flipped text validated.
+**➡️ Commit & push.**
+
+---
+
+# Phase 4 — Metrics Module
+
+**Builds:** `src/metrics.py` — every number the paper reports.
+
+- [ ] `mse`, `mae`
+- [ ] `text_usage_gap` = MSE(empty) − MSE(real). Near zero ⇒ the model ignores text
+- [ ] `dss` = `d × (ŷ_fake − ŷ_real) / σ`, where `d` is the direction the fake text claims
+      and σ is the series standard deviation. Positive ⇒ pulled toward the lie
+- [ ] `flip_rate` = % of forecasts whose up/down direction reverses under fake text
+- [ ] `false_block_rate` = % of **genuine** texts that TextGuard gates below 0.5
+- [ ] Unit tests using the worked example below — every metric must reproduce those numbers
+- [ ] Bootstrap confidence intervals + paired Wilcoxon signed-rank test
+
+**✅ Exit:** all metrics implemented and unit-tested against the worked example.
+**➡️ Commit & push.**
+
+---
+
+# Phase 5 — Experiments
+
+**Builds:** `src/run_experiments.py` and the results in `results/`.
+
+### 5.1 Runner
+- [ ] Loop over model × domain × condition × seed (3 seeds)
+- [ ] **Save every raw prediction** — one CSV row per
+      (model, domain, condition, seed, sample_id, y_true, y_pred).
+      New metrics and plots must be derivable without re-running anything
+- [ ] Log each run to MLflow
+- [ ] Checkpoint/resume, so a crashed run doesn't restart from zero
+
+### 5.2 Screening — which models actually use text
+- [ ] Run models 1–5 on `real`, `empty`, `shuffled`, `cross_domain`, `time_shifted`
 - [ ] Compute Text Usage Gap per model
-- [ ] Record in PROJECT_STATUS: **which models passed the screen** → these are Phase 3's targets
+- [ ] Record in PROJECT_STATUS: **which models genuinely consume text**.
+      Only those can be attacked *through* text — they are the attack targets
 
-**✅ Exit:** a named list of attack targets, backed by numbers.
+### 5.3 Attack
+- [ ] Run the attack targets on `flipped` and `exaggerated`
+- [ ] Compute DSS and Flip Rate per model, per fusion type, per domain
+- [ ] Significance tests
+
+**✅ Exit:** we can state which models use text and which fusion type is most vulnerable,
+with numbers and statistics.
 **➡️ Commit & push.**
 
-> **Expected per Sridhar:** fusion models may move <0.5% across conditions, i.e. they ignore
-> text. If so, Model 5 (LLM) becomes the primary attack target and the thesis shifts to the
-> **use-vs-vulnerability trade-off**. That's a sharper story, not a setback. See CLAUDE.md §4a.
+> **Expected outcome:** the late-fusion models may barely move across conditions, i.e. they
+> ignore text. If so, Model 5 (LLM, early fusion) becomes the primary attack target and the
+> thesis sharpens to the **use-vs-vulnerability trade-off**: vulnerability is the price of
+> actually reading text. That is a better story, not a setback. Do not treat DSS ≈ 0 on the
+> fusion models as a failed experiment.
 
 ---
 
-# Phase 3 — Attack (RQ1, RQ2) · **core contribution**
+# Phase 6 — TextGuard · **core contribution**
 
-- [ ] **Re-run the competing-work arXiv search before starting.** This field publishes weekly
+**Builds:** `src/textguard/` — the defense.
 
-### 3.1 Generate misleading text
-- [ ] Qwen prompt: invert directional polarity, keep everything else identical
-- [ ] Generate `flipped` for all test samples
-- [ ] Generate `exaggerated` (agrees with trend, overstates magnitude)
+### 6.1 Components
+- [ ] `trend_detector.py` — fit a slope over the recent window →
+      direction ∈ {−1, 0, +1} and strength = `min(|slope|/σ, 1)`
+- [ ] `text_direction.py` — Qwen classifies the text's claimed direction ∈ {−1, 0, +1}
+      with a confidence in [0, 1]
+- [ ] `gate.py` —
+      agree, or either side neutral → `g = 1`;
+      disagree → `g = 1 − (confidence × strength)`
+- [ ] `textguard.py` — wrapper taking **any** object with `predict(numbers, text)`:
 
-### 3.2 Validate (do NOT skip — reviewers will ask)
-- [ ] Manually check ~100 rewrites: only the direction changed?
-- [ ] Automatic length-similarity check
-- [ ] Automatic direction-classifier check
-- [ ] Record agreement rates in PROJECT_STATUS
+```python
+A = model.predict(numbers, None)
+B = model.predict(numbers, text)
+final = A + g * (B - A)
+warn  = g < 0.5
+```
 
-### 3.3 Attack experiments
-- [ ] Run attack targets on `flipped` + `exaggerated`
-- [ ] Implement `metrics.py`: DSS, Flip Rate (+ MSE/MAE)
-- [ ] Results: DSS + Flip Rate per model, per fusion type, per domain
-- [ ] Wilcoxon tests
+### 6.2 Prove it's model-agnostic
+- [ ] Run TextGuard on `dummy.py` from P2 — it must work on a model it has never seen
 
-### 3.4 Writing
-- [ ] Draft Method section (attack + metrics)
-
-**✅ Exit:** we can state which fusion type is most vulnerable, with statistics.
-**➡️ Commit & push.**
-
----
-
-# Phase 4 — Defense (RQ3) · **core contribution**
-
-### 4.1 Build TextGuard
-- [ ] `trend_detector.py` — slope fit, direction, normalized strength
-- [ ] `text_direction.py` — Qwen classifier → direction + confidence
-- [ ] `gate.py` — consistency check → g
-- [ ] `textguard.py` — wrapper taking any object with `predict(numbers, text)`
-- [ ] `auditor.py` — runs all conditions on any model, returns metrics
-
-**Model-agnostic from day one.** Test on a dummy model to prove it works outside our 5.
-
-### 4.2 Tune (validation split ONLY)
+### 6.3 Tune on the **validation split only**
 - [ ] Trend window length
 - [ ] Gate warning threshold (default 0.5)
 
-### 4.3 Evaluate
+### 6.4 Baseline defenses to compare against
+- [ ] `never_trust` — g = 0 always
+- [ ] `always_trust` — g = 1 always
+- [ ] `clip` — cap `|B − A|` at a fixed multiple of σ
+- [ ] **CFA** (Lee et al. 2026, code `seunghan96/cfa`) — trained constrained fusion.
+      Strongest baseline. If it won't run, say so explicitly in the paper
+
+### 6.5 Evaluate
 - [ ] All attack targets, with and without TextGuard
-- [ ] vs `never_trust` (g=0), `always_trust` (g=1), `clip`
-- [ ] vs **CFA** (`seunghan96/cfa`) — strongest baseline, the one reviewers ask about.
-      If it won't run, discuss in Related Work and justify the omission explicitly
-- [ ] False Block Rate on genuine text
-- [ ] Wilcoxon signed-rank tests
-- [ ] **State positioning precisely:** training-free, inference-time, black-box.
-      NOT "first plug-in fusion control" — CFA exists
+- [ ] DSS, Flip Rate, MSE on real text, False Block Rate
+- [ ] Significance tests vs each baseline defense
 
-### 4.4 Writing
-- [ ] Draft TextGuard section + first results tables
-
-**✅ Exit:** TextGuard beats the baseline defenses on the manipulation-vs-false-block
-trade-off, with significance tests.
+**✅ Exit:** TextGuard beats the baselines on the manipulation-vs-false-block trade-off,
+and works on a model outside our five.
 **➡️ Commit & push.**
 
-> 🎉 **At this point you have a complete paper.** Everything below is upside.
+> 🎉 **You now have a complete paper.** Everything in P7 is upside.
 
 ---
 
-# Phase 5 — Extras (optional, pick in this order)
+# Phase 7 — Auditor, Demo & Extras (optional)
 
-Each item is independent. Do as many as you have appetite for. Commit & push after each.
+Independent items. Do as many as you want, in this order. Commit & push after each.
 
-### 5.1 Streamlit demo *(highest value — this is what your panel sees)*
-- [ ] Domain selector, real/fake/custom text input
+### 7.1 Auditor + audit report *(answers "what does a model provider get?")*
+- [ ] `auditor.py` — plug in any model, run all conditions, return metrics
+- [ ] Report generator producing:
+      1. Health check — traffic-light table
+      2. Fault breakdown by domain, horizon, attack type
+      3. Worst 10 failure cases — real vs fake text, prediction before/after, true value
+      4. Diagnosis → recommended fix per fault
+      5. With-TextGuard before/after comparison
+      6. Drift monitor setup
+- [ ] Output as HTML/PDF + CSV (raw predictions) + JSON (for CI gating)
+
+### 7.2 Streamlit demo *(what your panel sees)*
+- [ ] Domain selector; real / fake / custom text input
 - [ ] Side-by-side: undefended forecast vs TextGuard forecast
 - [ ] Gate value + warning display
 - [ ] Results tab with DSS / Flip Rate charts
-- [ ] Qwen results **precomputed** (free tier ≈2.7 GB RAM, no GPU)
+- [ ] Qwen results **precomputed** — the free tier has ~2.7 GB RAM and no GPU
 - [ ] Deploy to Streamlit Community Cloud
-- Note: free apps sleep after ~12 h idle and wake on click (~1 min). Open it before demos.
+- Free apps sleep after ~12 h idle and wake on click (~1 min). Open it before any demo
 
-### 5.2 Audit Report generator *(answers your teacher's question directly)*
-- [ ] HTML/PDF report with the 6 sections from CLAUDE.md §11
-- [ ] CSV export (raw predictions) + JSON summary
+### 7.3 Model 6 — cross-attention *(completes the 3-fusion-type claim)*
+- [ ] Look for public TTCA-style code first
+- [ ] Otherwise build it: PatchTST numbers + BERT text + a cross-attention layer
+- [ ] Re-run P5 and P6 for this model only
 
-### 5.3 Model 6 — cross-attention *(completes the 3-fusion-type claim)*
-- [ ] Search for public TTCA-style code first
-- [ ] If none: PatchTST numbers + BERT text + a cross-attention layer, built yourself
-- [ ] Re-run Phases 2–4 for this model only
-
-### 5.4 Drift monitor (RQ4)
-- [ ] BERT embeddings → reference centroid from normal history
+### 7.4 Drift monitor
+- [ ] BERT-embed incoming text → reference centroid from normal history
 - [ ] Per-batch cosine distance + threshold from historical variation
-- [ ] Test: does it fire on a stream seeded with fake reports?
+- [ ] Test it fires on a stream seeded with fake reports
 
-### 5.5 MLOps hardening
-- [ ] GitHub Actions: pytest + mini-attack check that fails the build if DSS regresses
-- [ ] DVC for data versioning
+### 7.5 CI hardening
+- [ ] GitHub Actions: pytest + a mini-attack check that fails the build if DSS regresses
 
-### 5.6 FNSPID validation *(lowest priority)*
-- [ ] Download a **subset only** (5–10 stocks), not the full 29.7M rows
-- [ ] ⚠️ First check AutoRedTrader (2605.09185) + the financial-headline attack paper —
-      they may pre-empt novelty here
+### 7.6 FNSPID second dataset *(lowest priority)*
+- [ ] Download a **subset only** — 5–10 stocks, not all 29.7M rows
 - [ ] Align news with prices chronologically
 - [ ] Top 2 models × core conditions ± TextGuard
 - [ ] **Frame it right:** absolute stock accuracy will be poor. The finding is that the
-      *vulnerability pattern and TextGuard's protection* transfer to a different text style
-- [ ] Add CC BY-NC-4.0 attribution to README
+      *vulnerability pattern and TextGuard's protection transfer* to a different text style
+- [ ] CC BY-NC-4.0 attribution in the README
 
 ---
 
-# Phase 6 — Paper & Release
+# Phase 8 — Paper & Release
 
-### 6.1 Paper
-- [ ] Assemble: Abstract, Intro, Related Work, Method, Experiments, Results, Discussion,
+**Builds:** the paper and the public repo.
+
+### 8.1 Related Work
+- [ ] Write it now, from CLAUDE.md §4a (competing work) plus the Time-MMD, PA-RNet,
+      text-collapse and TimesX papers
+- [ ] One explicit **"how we differ"** sentence per competing paper
+- [ ] Re-run the arXiv search before finalizing — this field publishes fast
+
+### 8.2 Paper
+- [ ] Abstract, Intro, Related Work, Method, Experiments, Results, Discussion,
       Limitations, Conclusion
 - [ ] Figures: architecture diagram, DSS/Flip Rate charts, fusion comparison, gate distribution
-- [ ] Error analysis: 6–8 concrete failure cases
-- [ ] Limitations — be explicit about the exaggeration-attack weakness and False Block Rate
-- [ ] **Re-run the competing-work search one final time**
+- [ ] Error analysis — 6–8 concrete failure cases with real text shown
+- [ ] Limitations — be explicit about the exaggeration attack and False Block Rate
 
-### 6.2 Release
-- [ ] README: install, 5-minute example, how to plug in your own model, results table, license
-- [ ] MIT license for our code
-- [ ] Tag a release; publish the counterfactual/fake-text benchmark
-- [ ] Post to arXiv — **do this as soon as results are solid.** It timestamps the work
-- [ ] Submit to target venue (IEEE India conference, or a subscription journal)
+### 8.3 Release
+- [ ] README: install, 5-minute example, how to plug in your own model, results, license
+- [ ] MIT license for the code
+- [ ] Publish the counterfactual/fake-text benchmark, clearly labelled as research-only
+- [ ] Tag a release
+- [ ] Post to arXiv — **as soon as results are solid.** It timestamps the work
+- [ ] Submit to the target venue
 
-### 6.3 Course deliverables
-- [ ] Final PPT updated with real numbers
+### 8.4 Course deliverables
+- [ ] PPT updated with real numbers
 - [ ] Project report
-- [ ] Viva prep — be able to walk through the worked example cold
+- [ ] Viva prep — walk through the worked example cold
 
 **➡️ Final commit & push.**
 
 ---
 
-## Worked example (memorize for the viva)
+## Worked example — the metrics unit tests must reproduce this
 
 Past demand: `100, 104, 108, 112` (rising). σ = 10. True next value = **117**.
 Fake text: *"Demand will fall sharply."*
@@ -290,27 +368,29 @@ Fake text: *"Demand will fall sharply."*
 | Gate `g = 1 − 0.9×1.0` | **0.1** |
 | Final `= 116 + 0.1×(106−116)` | **115** ⚠ warning |
 
-Error without TextGuard: 11. With TextGuard: 2.
+Error without TextGuard: 11 → with TextGuard: 2.
 DSS: `−1 × (106−120)/10 = +1.4` → `−1 × (115−120)/10 = +0.5`.
 
-With **real** text ("demand rising"), directions agree → g = 1 → text fully used.
-Good text is not blocked.
+With **real** text ("demand rising"), directions agree → `g = 1` → text fully used.
+Good text is never blocked.
 
 ---
 
 ## Commit convention
 
+Prefix every commit with its phase:
+
 ```
 P0: setup repo and environment
-P1: reproduce Time-MMD baselines
-P1: add directional-claim check results
-P2: implement text condition generators
-P2: screening results for models 1-5
-P3: DSS metric + flipped text attack
-P4: TextGuard gate implementation
-P5: streamlit demo
-P6: paper draft
+P1: chronological splits + directional claim check
+P2: model wrappers behind uniform predict interface
+P3: flipped text generator
+P4: DSS and flip rate metrics
+P5: screening results for models 1-5
+P6: textguard gate implementation
+P7: streamlit demo
+P8: paper draft
 ```
 
-Prefix every commit with its phase. Commit as you go, not just at phase boundaries —
-but **always** at a phase boundary, with PROJECT_STATUS updated in the same commit.
+Commit as you go. **Always** commit at a phase boundary, with `PROJECT_STATUS.md`
+updated in the same commit.

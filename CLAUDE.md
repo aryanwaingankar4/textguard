@@ -43,14 +43,16 @@ and a deployable defense.
 
 ## 3. Research questions
 
-- **RQ0 (screening, NOT a contribution)** — Which of our models actually consume text?
-  Replicates Sridhar et al. (2026). Cite them; do not claim novelty. Purpose: a model that
-  ignores text cannot be attacked *through* text, so RQ0 selects the attack surface.
-- **RQ1** — Can semantically misleading text manipulate forecasts of models that DO use text?
-- **RQ2** — Does fusion type (early / intermediate / late) determine vulnerability?
-- **RQ3** — Can TextGuard reduce manipulation without losing the benefit of genuine text,
-  and does it beat trained alternatives (CFA) and architectural ones (PA-RNet)?
-- **RQ4** (stretch) — Can embedding-drift monitoring detect a sustained fake-text campaign?
+- **RQ0 (screening, P5.2 — replication, not a contribution)** — Which models actually
+  consume text? A model that ignores text cannot be attacked *through* text, so this
+  selects the attack surface. Reproduces Sridhar et al. (2026); cite them.
+- **RQ1 (P5.3)** — Can semantically misleading text manipulate forecasts of models that
+  DO use text?
+- **RQ2 (P5.3)** — Does fusion type (early / late) determine vulnerability?
+- **RQ3 (P6)** — Can TextGuard reduce manipulation without losing the benefit of genuine
+  text, and does it beat trained alternatives (CFA) and architectural ones (PA-RNet)?
+- **RQ4 (P7.4, optional)** — Can embedding-drift monitoring detect a sustained fake-text
+  campaign?
 
 ---
 
@@ -72,28 +74,32 @@ and a deployable defense.
 
 ---
 
-## 4a. Competing work — READ THESE FIRST (Phase 1 blocker)
+## 4a. Competing work — REFERENCE, not a phase task
 
-These four determine whether the project survives as designed. Read in full before writing
-any experiment code.
+> This section exists so the novelty claim stays accurate. It is **reference material for
+> writing Related Work in P8**, not a task blocking any build phase. Build first.
 
 | Paper | Overlap | How we differ |
 |---|---|---|
-| **Sridhar et al. (2026)** *Semantics or Structure? Auditing Text Sensitivity in Multimodal TSF* | **Scoops our original RQ1.** Same conditions (empty, constant, shuffled, cross-domain), same dataset (Time-MMD), same lib (MM-TSFlib), and they released a diagnostic toolkit. Found <0.5% MSE change across three architectures | We **cite and replicate** them as screening. Our contribution starts where theirs ends: adversarial text + defense |
-| **Lee et al. (2026)** *Constrained Fusion / CFA* | Plug-in fusion control without modifying the backbone | CFA is **trained** (low-rank adapters) and targets *irrelevant* text. TextGuard is **training-free**, inference-time, and targets *adversarial* text. **Use CFA as a defense baseline** |
-| **Corroboration Illusion** (arXiv 2609.22246, Sep 2026) | Adversary publishes news to move forecasts in a chosen direction, opposite the clean forecast | They attack **RAG event forecasters** (ForecastBench probabilities). We attack **numerical multimodal TSF**. Very recent — read carefully |
-| **Plug-In Adversarial Detection for Time-Series LLMs in Energy Forecasting** (arXiv 2512.12154) | Plug-in adversarial detection, our exact positioning | **Verify whether their attack is numeric or textual.** If textual, we must reposition again |
+| **Sridhar et al. (2026)** *Semantics or Structure? Auditing Text Sensitivity in Multimodal TSF* | Ran empty/constant/shuffled/cross-domain perturbations on Time-MMD across three architectures; found <0.5% MSE movement; released a diagnostic toolkit | Our screening phase (P5.2) reproduces this — **cite them, don't claim it**. Our contribution starts after: adversarial text + defense |
+| **Lee et al. (2026)** *Constrained Fusion / CFA* — code `seunghan96/cfa` | Plug-in fusion control without modifying the backbone | CFA is **trained** (low-rank adapters) and targets *irrelevant* text. TextGuard is **training-free**, inference-time, and targets *adversarial* text. Use as the primary defense baseline |
+| **Corroboration Illusion** (arXiv 2609.22246) | Adversary publishes news to move forecasts in a chosen direction | They attack **RAG event forecasters** (ForecastBench probabilities). We attack **numerical multimodal TSF** |
+| **Plug-In Adversarial Detection for Time-Series LLMs** (arXiv 2512.12154) | Plug-in adversarial detection in our space | Check whether their attack is numeric or textual when writing P8. If textual, reposition TextGuard as *gated fusion* vs their *detection* |
+| **Liu & Jiang (2024)** arXiv 2412.08099 | Adversarial attacks on LLM time-series forecasters | Attacks the **numerical** channel (2% of dataset mean), not text. Supports our motivation that adversarial > random noise |
+| **Zhu et al. (2025)** *PA-RNet* | Robustness to textual perturbation | Proves error reduction under **zero-mean** perturbations only. Meaning-inverted text is a different threat model — **this is our core gap** |
 
-**⚠️ THE BIG RISK:** if Sridhar's finding holds on our setup, models 3/4/6 barely read text,
-so fake text will produce near-zero DSS — not because they are robust, but because they are
-deaf. Then the attack only lands on Model 5 (LLM, early fusion).
+Also relevant to the optional FNSPID phase: *AutoRedTrader* (arXiv 2605.09185) and
+*Adversarial manipulation of LLM-based trading agents via financial news headlines* —
+check these before claiming novelty on financial data.
 
-**If that happens, the finding is still publishable** and becomes the paper's thesis:
-*"Vulnerability to text attacks is the price of actually using text. Models that resist
-attack do so only by ignoring the modality entirely — and the one architecture that genuinely
-reads text is the one that can be weaponized. TextGuard lets you have both."*
-That is a sharper story than the original. Do not panic if DSS ≈ 0 for the fusion models;
-report it as the trade-off finding and pivot the narrative to Model 5 + TextGuard.
+**⚠️ Expected result:** if Sridhar's finding replicates, models 3/4 barely read text, so
+fake text will produce near-zero DSS — not because they are robust, but because they are
+deaf. **That is still publishable**, and it sharpens the thesis:
+
+> *Vulnerability to text attacks is the price of actually using text. The architecture that
+> genuinely reads text is the one that can be weaponized. TextGuard lets you have both.*
+
+Do not treat DSS ≈ 0 on the fusion models as a failed experiment.
 
 ---
 
@@ -132,24 +138,22 @@ lives in Phase 5. Do not block the core paper on it.
 
 ---
 
-## 7. The 7 text conditions
+## 7. The 6 text conditions
 
-| Condition | What it is | What failure means |
-|---|---|---|
-| `real` | Original text | Reference |
-| `empty` | Text removed | Text contributes nothing |
-| `shuffled` | Text from other dates, same domain | Model ignores text *content* |
-| `cross_domain` | Text from a different domain | Can't tell relevant from irrelevant |
-| `time_shifted` | Text from the wrong period | Data leakage / timing bug |
-| `flipped` | Direction reversed ("rose" → "fell") | Vulnerable to fake news |
-| `exaggerated` | Agrees with trend but overstates it | Over-trusts extreme claims — TextGuard's known weak spot |
+| Condition | What it is | What failure means | Phase |
+|---|---|---|---|
+| `real` | Original text | Reference | P3 |
+| `empty` | Text removed | Text contributes nothing | P3 |
+| `shuffled` | Text from other dates, same domain | Model ignores text *content* | P3 |
+| `cross_domain` | Text from a different domain | Can't tell relevant from irrelevant | P3 |
+| `time_shifted` | Text from the wrong period | Data leakage / timing bug | P3 |
+| `flipped` | Direction reversed ("rose" → "fell") | **Vulnerable to fake news — the core attack** | P3 |
+| `exaggerated` | Agrees with trend but overstates it | Over-trusts extreme claims — TextGuard's known weak spot | P3 |
 
-**Minimum viable set if time-constrained:** `real`, `empty`, `shuffled`, `flipped`.
-Drop `cross_domain` first. The others are cheap (same code, different text).
-
-**Why all of them:** `flipped` alone is uninterpretable. If fake text changes nothing, that
-could mean the model resists lies (good) OR ignores all text (bad). `empty` and `shuffled`
-are the controls that distinguish these.
+**Why not just test `flipped`:** it is uninterpretable alone. If fake text changes nothing,
+that could mean the model resists lies (good) OR ignores all text (bad). `empty` and
+`shuffled` are the controls that distinguish these. That is why P5 runs screening before
+the attack.
 
 ---
 
@@ -261,27 +265,32 @@ the notebook instead.
 
 ```
 textguard/
-├── CLAUDE.md               # this file
-├── PROJECT_STATUS.md       # living progress log — UPDATE AFTER EVERY SESSION
-├── PHASES.md               # detailed 6-week plan
-├── data/                   # Time-MMD + FNSPID (DVC-tracked, not in git)
-├── texts/                  # generated counterfactual & fake text versions
+├── CLAUDE.md               # this file — project context
+├── PHASES.md               # build plan, P0–P8
+├── PROJECT_STATUS.md       # living progress log — UPDATE AT EVERY PHASE BOUNDARY
+├── README.md
+├── requirements.txt
+├── data/                   # Time-MMD (+ FNSPID if P7.6) — gitignored
+├── texts/                  # generated text conditions — gitignored
 ├── src/
-│   ├── data/               # loaders, chronological splits, domain selection
-│   ├── models/             # baselines, MM-TSFlib wrappers, Qwen forecaster, cross-attn
-│   ├── attacks/            # the 7 text condition generators
-│   ├── textguard/          # trend detector, text direction, gate, baseline defenses
+│   ├── data/               # loader.py, splits.py, inspect_domains.py, check_*.py
+│   ├── models/             # base.py, dlinear.py, patchtst.py, *_bert.py,
+│   │                       # qwen_forecaster.py, dummy.py
+│   ├── attacks/            # empty, shuffled, cross_domain, time_shifted,
+│   │                       # flipped, exaggerated, validate_attacks.py
+│   ├── textguard/          # trend_detector.py, text_direction.py, gate.py, textguard.py
 │   ├── metrics.py          # MSE, MAE, Text Usage Gap, DSS, Flip Rate, False Block Rate
-│   ├── report/             # audit report generator
-│   ├── drift/              # embedding drift monitor
-│   └── run_audit.py        # main experiment runner
+│   ├── auditor.py          # P7
+│   └── run_experiments.py
 ├── notebooks/              # Colab GPU runs (Qwen)
 ├── results/                # raw predictions (CSV) + aggregated metrics
-├── app/                    # Streamlit demo
+├── app/                    # Streamlit demo (P7)
 ├── tests/                  # pytest
-├── paper/                  # LaTeX draft, figures
-└── README.md
+└── paper/                  # LaTeX draft, figures
 ```
+
+**Local:** `C:\Users\Aryan\textguard`
+**Remote:** `https://github.com/aryanwaingankar4/textguard`
 
 ---
 
@@ -313,65 +322,59 @@ textguard/
 
 | Risk | Fallback |
 |---|---|
-| MM-TSFlib code broken | Max 3–4 days fixing; then write a simple PatchTST + BERT-concat model ourselves |
-| Time-MMD text lacks directional claims | **CHECK IN PHASE 1.** Read ~50 reports, count directional claims. If <30%, switch domains or retarget the attack to what the text does assert |
-| **Fusion models ignore text ⇒ DSS ≈ 0** (Sridhar's finding replicates) | **Expected, not a failure.** Pivot the narrative: vulnerability is the price of actually using text. Focus attack results on Model 5 (LLM); report the fusion models' immunity as deafness, not robustness. See §4a |
-| arXiv 2512.12154 turns out to attack text, not numbers | Reposition TextGuard as the *gated-fusion* defense vs their *detection* approach, and cite them as the closest baseline |
+| MM-TSFlib code broken | Spend a bounded effort fixing it; then write a simple PatchTST + BERT-concat model yourself. Don't let it block P3–P6 |
+| Time-MMD text lacks directional claims (<30%) | Found in P1 by `check_directional.py`. Switch domains, or retarget the attack to whatever the text does assert |
+| Late-fusion models ignore text ⇒ DSS ≈ 0 | **Expected, not a failure.** See §4a. Pivot the narrative to Model 5 and the use-vs-vulnerability trade-off |
 | Colab GPU throttled | Move Qwen runs to Kaggle |
-| Similar paper published mid-project | Post to arXiv as soon as results exist — it timestamps the work |
-| Qwen rewrites low quality | Stricter prompt + manual filter, or rule-based word flip for simple reports |
-| Behind on effort / losing momentum | Nothing is time-bound. Phase 5 is entirely optional. **P0–P4 + P6 is a complete paper.** Drop Phase 5 items in this order: FNSPID → MLOps → drift monitor → Model 6 → audit report → demo |
+| Qwen rewrites low quality | Stricter prompt + manual filter, or a rule-based word flip for simple reports |
+| Qwen output unparseable | Handle parse failures explicitly in P2.4 — never silently drop samples |
+| Losing momentum | Nothing is time-bound. **P0–P6 + P8 is a complete paper.** Drop P7 items in this order: FNSPID → CI → drift monitor → Model 6 → audit report → demo |
 
 ---
 
-## 16. Key literature
+## 16. Key literature — for writing Related Work in P8
 
-**Tier 0 — competing work, read in full FIRST (see §4a):**
-1. Sridhar et al. (2026) *Semantics or Structure? Auditing Text Sensitivity in Multimodal TSF*
-2. Lee et al. (2026) *Rethinking Multimodal Fusion: Auxiliary Modalities Need Constrained Fusion (CFA)* — code: `seunghan96/cfa`
-3. *The Corroboration Illusion* — arXiv 2609.22246
-4. *Plug-In Adversarial Detection for Time-Series LLMs in Energy Forecasting* — arXiv 2512.12154
+**Directly competing** (see §4a for the "how we differ" table):
+Sridhar et al. (2026) *Semantics or Structure?* · Lee et al. (2026) *CFA* ·
+*Corroboration Illusion* (arXiv 2609.22246) ·
+*Plug-In Adversarial Detection for Time-Series LLMs* (arXiv 2512.12154) ·
+Liu & Jiang (2024) arXiv 2412.08099 · Zhu et al. (2025) *PA-RNet*
 
-**Tier 1 — must-read in full:**
-5. Liu et al. (2024) *Time-MMD* — NeurIPS 37. Our dataset + baselines to reproduce.
-6. Zhu et al. (2025) *PA-RNet* — proves error reduction under **zero-mean** perturbations.
-   Our core gap. Quote the zero-mean assumption precisely in Related Work.
-7. Liu & Jiang (2024) *Adversarial Vulnerabilities in LLMs for Time Series Forecasting* —
-   arXiv 2412.08099. Attacks the **numerical** channel, not text. Establishes that
-   adversarial > random noise, which supports our motivation.
-8. Nguyen et al. (2026) *Does Text Actually Help? / text collapse*
-9. Liu et al. (2026) *TimesX* — current evaluation is too weak.
+**Foundational:**
+Liu et al. (2024) *Time-MMD* — NeurIPS 37, our dataset ·
+Nie et al. (2023) *PatchTST* — ICLR · Zeng et al. (2023) *DLinear* — AAAI ·
+Yang et al. (2024) *Qwen2.5 Technical Report* — arXiv:2412.15115
 
-**Tier 2 — method reference:** Williams et al. (2024) *Context is Key*; Anh et al. (2026)
-*TTCA* (Model 6); Nie et al. (2023) *PatchTST*; Zeng et al. (2023) *DLinear*;
-Su et al. (2025) *TeR* (text reinforcement — the inverse of our attack).
+**Supporting the motivation:**
+Nguyen et al. (2026) *Does Text Actually Help? / text collapse* ·
+Zhang et al. (2025) *When Does Multimodality Lead to Better Forecasting?* ·
+Liu et al. (2026) *TimesX* · Williams et al. (2024) *Context is Key* ·
+Kim et al. (2024) *Hybrid-MMF* (negative result)
 
-**Tier 3 — adjacent threat models (Related Work, abstracts enough):**
-*AutoRedTrader* (arXiv 2605.09185, misinformation injection into trading agents);
-*Adversarial manipulation of LLM-based trading agents via financial news headlines*.
-**Both are directly relevant to the FNSPID phase — check them before claiming novelty there.**
+**Field-is-accuracy-focused evidence** (abstracts enough):
+TEA-Mamba · SpecTF · Dual-Forecaster · TriAlignNet · TTCA · TeR
 
-**Drift monitor:** Sekar et al. (2026) *ZEDD*; Greco et al. (2024) *DriftLens*.
+**Drift monitor (only if P7.4):**
+Sekar et al. (2026) *ZEDD* · Greco et al. (2024) *DriftLens*
 
-**Context papers (abstracts only):** TEA-Mamba, SpecTF, Dual-Forecaster, TriAlignNet —
-all chase accuracy, none test adversarial robustness. Cite as evidence the field is
-accuracy-focused.
+**Financial attacks (only if P7.6):**
+*AutoRedTrader* (arXiv 2605.09185) · *Adversarial manipulation of LLM-based trading agents
+via financial news headlines*
 
-> Gap claims verified 2026-09-28 via academic + arXiv search. **Re-run the search at the
-> start of Phase 3 and Phase 6** — this field publishes fast, and Corroboration Illusion
-> appeared three weeks before our check.
+> Gap claims verified 2026-09-28. **Re-run the arXiv search in P8 before submitting** —
+> this field publishes weekly.
 
 ---
 
 ## 17. Things Claude should NOT assume
 
 - Do not assume MM-TSFlib runs out of the box. Research code often breaks.
-- Do not assume Time-MMD text makes directional claims until Phase 1 verifies it.
-- Do not assume the cross-attention paper has public code.
-- Do not propose new forecasting architectures — that is out of scope.
+- Do not assume Time-MMD text makes directional claims until `check_directional.py` (P1) says so.
+- Do not propose new forecasting architectures — out of scope.
 - Do not write results into the paper before the experiments have actually run.
-- **Do not claim the text-usage audit as a novel contribution.** Sridhar et al. (2026) did
-  it. We replicate and cite. Novelty = adversarial text + DSS + training-free defense.
+- **Do not claim the text-usage screening as a novel contribution.** Sridhar et al. (2026)
+  did it. We replicate and cite. Novelty = adversarial text + DSS + training-free defense.
 - **Do not describe TextGuard as "the first plug-in fusion control."** CFA exists. The
   precise claim is "training-free, inference-time, black-box."
-- Do not treat DSS ≈ 0 on fusion models as a failed experiment — see §4a.
+- Do not treat DSS ≈ 0 on late-fusion models as a failed experiment — see §4a.
+- Do not block a build phase on reading papers. Literature work lives in P8.

@@ -4,33 +4,31 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** P0 — Setup & Repo
-**Last updated:** 2026-09-28 (kickoff + literature verification — no code written yet)
-
-> ⚠️ **Project repositioned.** Literature verification found our original RQ1 (auditing
-> whether models use text) was published by Sridhar et al. (2026). This is now an
-> **attack + defense** paper; the audit became a screening step we cite and replicate.
-> See CLAUDE.md §4a for the competing-work table and contingency plan.
+**Current phase:** P0 — Setup
+**Last updated:** 2026-09-28
 
 > 👤 **Solo project.** All work by Aryan.
+> 📌 **Phase-gated, no deadlines.** See `PHASES.md`.
 
 ---
 
 ## 1. Phase board
 
-| Phase | Name | Required? | Status |
+| Phase | Builds | Required? | Status |
 |---|---|---|---|
-| P0 | Setup & repo | ✅ | 🔵 In progress |
-| P1 | Foundation: data, baselines, competing literature | ✅ | ⚪ Pending |
-| P2 | Screening: which models use text (RQ0) | ✅ | ⚪ Pending |
-| P3 | Attack: misleading text + DSS (RQ1, RQ2) | ✅ Core | ⚪ Pending |
-| P4 | Defense: TextGuard (RQ3) | ✅ Core | ⚪ Pending |
-| P5 | Extras: demo, report gen, Model 6, drift, MLOps, FNSPID | ⬜ Optional | ⚪ Pending |
-| P6 | Paper & release | ✅ | ⚪ Pending |
+| P0 | Environment, repo, folder skeleton | ✅ | 🔵 In progress |
+| P1 | Data pipeline — loader, splits, domain selection | ✅ | ⚪ Pending |
+| P2 | Model wrappers — 5 models, one interface | ✅ | ⚪ Pending |
+| P3 | Attack module — 6 text conditions | ✅ | ⚪ Pending |
+| P4 | Metrics module — DSS, Flip Rate, etc. | ✅ | ⚪ Pending |
+| P5 | Experiment runner — screening + attack | ✅ | ⚪ Pending |
+| P6 | TextGuard defense | ✅ Core | ⚪ Pending |
+| P7 | Auditor, demo, extras | ⬜ Optional | ⚪ Pending |
+| P8 | Paper & release | ✅ | ⚪ Pending |
 
 Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 
-**P0–P4 + P6 = a complete paper. P5 is upside.**
+**P0–P6 + P8 = complete paper. P7 is upside.**
 
 ---
 
@@ -38,42 +36,24 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 
 | Decision | Value |
 |---|---|
-| Project topic | TextGuard (replaces QRShield) |
+| Project | TextGuard (replaces QRShield) |
 | Category | Cybersecurity, SDG 16 |
-| Team | **Solo — Aryan only.** Devansh on registration; role to be clarified |
+| Team | **Solo — Aryan only** |
 | Pacing | **Phase-gated, no deadlines** |
-| Framing | **Attack + defense paper** (was: audit + defense) |
-| RQ1 (text-usage audit) | Demoted to RQ0 screening; cite Sridhar et al. 2026 |
+| Framing | **Attack + defense paper** |
 | Novelty claim | Semantic directional text attack + DSS + training-free defense |
 | Primary dataset | Time-MMD |
-| Secondary dataset | FNSPID (public, CC BY-NC-4.0) — **Phase 5, optional** |
-| Models | 1–5 required (early + late fusion); Model 6 optional in P5 |
-| Text encoder | BERT only — keeps the grid small |
+| Secondary dataset | FNSPID — optional, P7 |
+| Models | 1–5 required (early + late fusion); Model 6 optional in P7 |
+| Text encoder | BERT only — keeps the experiment grid small |
 | CFA (Lee et al. 2026) | Primary defense baseline |
-| Distribution | GitHub toolkit + Streamlit demo (demo = P5) |
+| Distribution | GitHub toolkit + Streamlit demo (demo = P7) |
 | Streamlit CSV upload | ❌ Cut from scope |
-| Audit Report generator | ✅ In scope — P5 (from teacher feedback) |
+| Audit report generator | ✅ In scope — P7 |
 
 ---
 
-## 3. Open questions / blockers
-
-| # | Question | Status |
-|---|---|---|
-| 1 | Guide approval: multimodal ✓, Cybersecurity ✓, paper expected? | ⬜ Open — **P0** |
-| 2 | Devansh's role — co-author or registration only? | ⬜ Open — **P0** |
-| 3 | Does Time-MMD text make directional claims? (target ≥30%) | ⬜ Open — **P1 blocker** |
-| 4 | Is text guaranteed available *before* the forecast period? | ⬜ Open — **P1 blocker** |
-| 5 | How does MM-TSFlib actually fuse text? (we assume late — unverified) | ⬜ Open — **P1** |
-| 6 | Does arXiv 2512.12154 attack **text** or **numbers**? If text → reposition | ⬜ Open — **P1 blocker** |
-| 7 | Can we run CFA (`seunghan96/cfa`) as a defense baseline? | ⬜ Open — P1 |
-| 8 | Does Sridhar's released toolkit overlap enough that we build on it instead? | ⬜ Open — P1 |
-| 9 | Anyone published adversarial-text attacks on numerical multimodal forecasters? | 🟡 Searched 2026-09-28 — none found for our exact target. Re-check at P3 and P6 |
-| 10 | Do AutoRedTrader / financial-headline papers pre-empt the FNSPID phase? | ⬜ Open — before P5.6 |
-
----
-
-## 4. Novelty claim (rewrite after P1 literature)
+## 3. Novelty claim
 
 > We present the first study of **semantically misleading text attacks on numerical
 > multimodal time-series forecasters**, introduce **DSS** to measure directional
@@ -81,70 +61,111 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 > defense.
 
 Every word is load-bearing:
-- "semantically misleading" excludes PA-RNet (zero-mean noise)
+- "semantically misleading" excludes PA-RNet (zero-mean noise only)
 - "numerical multimodal TSF" excludes Corroboration Illusion (RAG events) and AutoRedTrader (trading agents)
-- "training-free, inference-time, black-box" excludes CFA (trained) and PA-RNet (architecture)
+- "training-free, inference-time, black-box" excludes CFA (trained) and PA-RNet (architecture change)
 
-**Status:** ⬜ Unverified — confirm against full texts in P1.
+Competing-work detail lives in **CLAUDE.md §4a**. Confirm the claim holds when writing
+Related Work in P8, and re-run the arXiv search then.
 
 ---
 
-## 5. Current phase checklist — P0
+## 4. Current phase checklist — P0
 
-- [ ] Guide approval obtained
-- [ ] Devansh's role clarified
-- [ ] Project folder created
+- [ ] Folder `C:\Users\Aryan\textguard` created, opened in VS Code
 - [ ] `git init` + `.gitignore`
-- [ ] GitHub repo created and pushed
-- [ ] CLAUDE.md / PHASES.md / PROJECT_STATUS.md in repo root
-- [ ] Python env + dependencies installed
-- [ ] Colab extension working (T4 reachable, repo clones inside notebook)
+- [ ] Remote set to `https://github.com/aryanwaingankar4/textguard.git`, first push done
+- [ ] Python venv created and activated
+- [ ] Dependencies installed, `requirements.txt` pinned
+- [ ] Colab extension installed; T4 notebook can clone the repo and `import torch`
+- [ ] `src/` folder skeleton created
+- [ ] `mlflow ui` runs locally
 
 ---
 
-## 6. Verification results (fill in during P1)
+## 5. Build status
 
-**Directional-claim check:** ____% of ~50 sampled reports make a clear up/down claim
-→ verdict: ______ (≥30% = proceed)
+| Module | Phase | Status |
+|---|---|---|
+| `src/data/loader.py` | P1 | ⚪ |
+| `src/data/splits.py` | P1 | ⚪ |
+| `src/data/inspect_domains.py` | P1 | ⚪ |
+| `src/models/base.py` | P2 | ⚪ |
+| `src/models/dlinear.py` | P2 | ⚪ |
+| `src/models/patchtst.py` | P2 | ⚪ |
+| `src/models/dlinear_bert.py` | P2 | ⚪ |
+| `src/models/patchtst_bert.py` | P2 | ⚪ |
+| `src/models/qwen_forecaster.py` | P2 | ⚪ |
+| `src/models/dummy.py` | P2 | ⚪ |
+| `src/attacks/*.py` (6 conditions) | P3 | ⚪ |
+| `src/metrics.py` | P4 | ⚪ |
+| `src/run_experiments.py` | P5 | ⚪ |
+| `src/textguard/trend_detector.py` | P6 | ⚪ |
+| `src/textguard/text_direction.py` | P6 | ⚪ |
+| `src/textguard/gate.py` | P6 | ⚪ |
+| `src/textguard/textguard.py` | P6 | ⚪ |
+| `src/auditor.py` | P7 | ⚪ |
+| `app/` (Streamlit) | P7 | ⚪ |
 
-**Timing check:** ______
+---
 
-**MM-TSFlib fusion mechanism:** ______
-
-**arXiv 2512.12154 attack type:** ☐ numeric ☐ textual → implication: ______
+## 6. Data findings (fill in during P1)
 
 **Selected domains:** ______
 
+**Per-domain stats:**
+
+| Domain | Samples | % rows with text | Avg text length |
+|---|---|---|---|
+| _(pending)_ | | | |
+
+**Directional-claim check:** ____% of 50 sampled reports make a clear up/down claim
+→ verdict: ______ (≥30% = the flipped attack is viable)
+
+**Timing check:** ______
+
+**MM-TSFlib fusion mechanism (from reading the code):** ______
+
 ---
 
-## 7. Reproduction results (P1)
+## 7. Baseline reproduction (P2)
 
-| Domain | Model | Our MSE | Paper MSE | Match? |
+| Domain | Model | Our MSE | Published MSE | Close? |
 |---|---|---|---|---|
 | _(pending)_ | | | | |
 
 ---
 
-## 8. Key experimental results
+## 8. Fake text validation (P3)
 
-### P2 — Screening: Text Usage Gap
-| Model | Fusion | MSE(real) | MSE(empty) | MSE(shuffled) | Gap | Uses text? |
+- Samples manually checked: ___ / 100
+- Direction correctly flipped: ___%
+- Length similarity passed: ___%
+- Automatic classifier agreement: ___%
+- Failure modes seen: _(pending)_
+
+---
+
+## 9. Results
+
+### P5 — Screening: which models use text
+| Model | Fusion | MSE(real) | MSE(empty) | MSE(shuffled) | Usage Gap | Uses text? |
 |---|---|---|---|---|---|---|
 | _(pending)_ | | | | | | |
 
 **Attack targets identified:** _(pending)_
 
-### P3 — Attack
+### P5 — Attack
 | Model | Fusion | DSS (flipped) | Flip Rate | DSS (exaggerated) |
 |---|---|---|---|---|
 | _(pending)_ | | | | |
 
-### P4 — Defense
+### P6 — TextGuard
 | Model | DSS before | DSS after | Flip before | Flip after | MSE(real) before | MSE(real) after | False Block Rate |
 |---|---|---|---|---|---|---|---|
 | _(pending)_ | | | | | | | |
 
-### P4 — Defense comparison
+### P6 — Defense comparison
 | Defense | DSS | Flip Rate | MSE(real) | False Block Rate |
 |---|---|---|---|---|
 | None | | | | — |
@@ -154,63 +175,47 @@ Every word is load-bearing:
 | CFA (trained) | | | | |
 | **TextGuard** | | | | |
 
-### P5.6 — FNSPID validation (optional)
+### P7.6 — FNSPID (optional)
 | Model | DSS before | DSS after | Flip before | Flip after |
 |---|---|---|---|---|
 | _(pending)_ | | | | |
 
 ---
 
-## 9. Fake text validation log (P3)
+## 10. Open issues
 
-- Samples manually checked: ___ / target 100
-- Correct direction flips: ___%
-- Length similarity passed: ___%
-- Automatic classifier agreement: ___%
-- Failure modes observed: _(pending)_
-
----
-
-## 10. Session log
-
-> One entry per session. Newest at top.
-> Format: what was done / what broke / next step.
-
-### 2026-09-28 (3) — Solo restructure
-- Confirmed project is solo; removed all two-person assumptions
-- Switched from date-gated to **phase-gated** planning (P0–P6)
-- Model 6 and FNSPID moved to optional Phase 5
-- Added commit-and-push-at-every-phase rule to all three files
-- **Broke:** nothing (no code yet)
-- **Next:** P0 — guide approval, repo creation, environment
-
-### 2026-09-28 (2) — Literature verification & repositioning
-- Verification search on the gap claims. **Result: partial scoop.**
-- **Sridhar et al. (2026)** does our original RQ1: same conditions, dataset, lib;
-  three architectures; <0.5% MSE movement; released a toolkit
-- **Lee et al. (2026) CFA** occupies "plug-in fusion control" — but trained, not training-free
-- **Corroboration Illusion** (2609.22246) — directional news attacks on RAG *event* forecasters
-- **arXiv 2412.08099** attacks the numerical channel, not text → our text-attack gap holds
-- **Surviving novelty:** semantic directional text attack on numerical multimodal
-  forecasters, DSS, training-free inference-time defense, fusion-type comparison
-- **Action:** repositioned to attack+defense. Added §4a competing-work table and the
-  DSS≈0 contingency to CLAUDE.md
-- **Next:** read the 4 Tier-0 papers in full
-
-### 2026-09-28 (1) — Kickoff
-- Scope finalized after ~1 week of topic selection and literature scoping
-- FNSPID confirmed public (HF `Zihan1004/FNSPID`, CC BY-NC-4.0)
-- CLAUDE.md, PHASES.md, PROJECT_STATUS.md created
+| # | Issue | Phase | Status |
+|---|---|---|---|
+| 1 | Does Time-MMD text make directional claims? (≥30% needed) | P1 | ⬜ Open |
+| 2 | Is text guaranteed available *before* its forecast window? | P1 | ⬜ Open |
+| 3 | How does MM-TSFlib actually fuse text? (we assume late) | P2 | ⬜ Open |
+| 4 | Can CFA (`seunghan96/cfa`) run as a defense baseline? | P6 | ⬜ Open |
 
 ---
 
-## 11. Standing reminders
+## 11. Session log
+
+> Newest at top. Format: what was done / what broke / next step.
+
+### 2026-09-28 — Plan restructured for solo build
+- Rewrote PHASES.md as a pure build plan: P0–P8, every phase produces code
+- Literature work moved into P8 (Related Work), where it's actually needed;
+  competing-work reference kept in CLAUDE.md §4a
+- Model 6 and FNSPID confirmed optional (P7)
+- Repo: `https://github.com/aryanwaingankar4/textguard`
+  Local: `C:\Users\Aryan\textguard`
+- **Broke:** nothing — no code yet
+- **Next:** P0 — venv, dependencies, Colab check, folder skeleton, first push
+
+---
+
+## 12. Standing reminders
 
 - **Commit and push at every phase boundary**, with this file updated in the same commit
-- Never tune on the test split
+- Never tune on the test split — validation split only
 - Save every raw prediction to CSV, not just aggregate metrics
-- Write paper sections as you go — don't leave writing to P6
+- Keep `predict(numbers, text)` uniform across all models — it's what makes TextGuard model-agnostic
+- Write paper sections as you go; don't leave all writing to P8
 - Understand every module well enough to explain it in the viva, alone
-- Post to arXiv as soon as results are solid (timestamps the work)
-- Re-run the competing-work search at the start of P3 and again in P6
-- P5 is optional. Don't let it block P6.
+- Post to arXiv as soon as results are solid — it timestamps the work
+- DSS ≈ 0 on late-fusion models is an expected finding, not a failure (see PHASES.md P5)
