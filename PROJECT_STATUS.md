@@ -92,7 +92,7 @@ Related Work in P8, and re-run the arXiv search then.
 |---|---|---|
 | `src/data/loader.py` | P1 | ✅ (12 tests) |
 | `src/data/splits.py` | P1 | ⚪ |
-| `src/data/inspect_domains.py` | P1 | ⚪ |
+| `src/data/inspect_domains.py` | P1 | ✅ (3 tests) |
 | `src/models/base.py` | P2 | ⚪ |
 | `src/models/dlinear.py` | P2 | ⚪ |
 | `src/models/patchtst.py` | P2 | ⚪ |
@@ -114,13 +114,43 @@ Related Work in P8, and re-run the arXiv search then.
 
 ## 6. Data findings (fill in during P1)
 
-**Selected domains:** ______
+**Selected domains:** Economy, SocialGood, Traffic, Health_US — all `source="report"` (decided 2026-09-28)
 
-**Per-domain stats:**
+**Per-domain stats** (`python -m src.data.inspect_domains`, lag 1; window = first → last period with text):
 
-| Domain | Samples | % rows with text | Avg text length |
+| Domain | Freq | Text window | Window periods | Usable (with text) | Coverage in window | Median text chars |
+|---|---|---|---|---|---|---|
+| Health_US | weekly | 2007-02 → 2020-01 | 672 | 483 | 71.9% | 229 |
+| Economy | monthly | 1995-02 → 2024-03 | 350 | 344 | 98.3% | 398 |
+| SocialGood | monthly | 1994-02 → 2022-05 | 340 | 338 | 99.4% | 240 |
+| Traffic | monthly | 2002-02 → 2024-03 | 266 | 266 | 100.0% | 307 |
+
+Coverage is measured **inside the text window**, not over the whole series: the numbers
+start years before the reports, so whole-series coverage (Traffic 41%, SocialGood 37%)
+understates what is usable. The window ends at the last text, not the series end, because
+some reports stop early (Health_US: 2020, while its numbers run to 2024).
+
+**Why the other six were dropped:**
+
+| Domain | Window coverage | Usable | Reason dropped |
 |---|---|---|---|
-| _(pending)_ | | | |
+| Energy | 53.2% | 354 | Weekly reports cover only half the weeks — half the windows would be text-free |
+| Climate | 23.1% | 291 | Monthly reports on a weekly series: coverage can never exceed ~25% |
+| Health_AFR | 44.7% | 156 | Low coverage and few usable periods; 49% of report `fact` fields are null |
+| Environment | 9.5% | 80 | Daily series with reports only 2021–2023; almost no aligned text |
+| Agriculture | 81.5% | 53 | Only 65 periods of text (from 2018); median 2614 chars — above BERT's 512-token limit |
+| Security | 0% | 0 | `report` text is 100% null |
+
+**Health_US caveat:** 28% of periods in its window have no text. Those periods are real
+missing reports, not attacks — P3/P5 must keep `has_text=False` samples out of attack metrics
+(or report them separately), otherwise `empty` and "no report existed" get conflated.
+
+**⚠️ Risk — small test sets.** These domains have 266–483 usable periods. After a chronological
+70/10/20 split and lookback windows, each domain's test set is small (~30–60 sequences).
+Per-domain DSS will be noisy. **Plan:**
+- **Headline:** DSS pooled across all four domains
+- **Breakdown:** per-domain DSS, reported with its CI, not as a headline
+- **P4:** bootstrap confidence intervals on every reported metric (already in P4 scope)
 
 **Directional-claim check:** ____% of 50 sampled reports make a clear up/down claim
 → verdict: ______ (≥30% = the flipped attack is viable)
@@ -225,6 +255,7 @@ by row position, so its Economy train/test split is **not chronological**.
 | 5 | Colab VS Code extension unreliable — use colab.research.google.com directly for GPU work (Qwen) in P2; `git clone` the repo inside the notebook | P2 | ⬜ Open |
 | 6 | MM-TSFlib uses `search` text, we default to `report` — first suspect if P2 baselines don't match | P2 | ⬜ Open |
 | 7 | MM-TSFlib Economy CSV unsorted + positional split ⇒ non-chronological split in their baseline | P2 | ⬜ Open |
+| 8 | Small test sets (~30–60 sequences/domain) → pool DSS across domains as headline, bootstrap CIs in P4 | P4/P5 | ⬜ Open |
 
 ---
 
