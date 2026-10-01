@@ -5,7 +5,7 @@
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
 **Current phase:** P2 — Model Wrappers
-**Last updated:** 2026-09-28
+**Last updated:** 2026-10-02
 
 > 👤 **Solo project.** All work by Aryan.
 > 📌 **Phase-gated, no deadlines.** See `PHASES.md`.
@@ -18,7 +18,7 @@
 |---|---|---|---|
 | P0 | Environment, repo, folder skeleton | ✅ | ✅ Done |
 | P1 | Data pipeline — loader, splits, domain selection | ✅ | ✅ Done |
-| P2 | Model wrappers — 5 models, one interface | ✅ | ⚪ Pending |
+| P2 | Model wrappers — 5 models, one interface | ✅ | 🔵 In progress (2.1, 2.5 done) |
 | P3 | Attack module — 6 text conditions | ✅ | ⚪ Pending |
 | P4 | Metrics module — DSS, Flip Rate, etc. | ✅ | ⚪ Pending |
 | P5 | Experiment runner — screening + attack | ✅ | ⚪ Pending |
@@ -57,6 +57,11 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 | Attack variants | **change-flip** for change-language text (Economy, Traffic); **level-flip** for level-language text (Health_US, SocialGood) — see §6 |
 | TextGuard gate | Generalised: "text claim vs numerical evidence", with a **change branch** and a **level branch** (P6) |
 | Text direction classifier | **Qwen-based**, not rule-based — keyword heuristic agreed with humans only 72% |
+| Forecaster interface | `predict(numbers, text) -> ndarray (horizon,)`; `Forecaster` Protocol (duck-typed) + optional `BaseForecaster` ABC — see §6a |
+| Model input | **Univariate** 1-D window in raw units — avoids Sridhar et al.'s co-shipped-column confound; scalers fit on train only |
+| Blank text | `""` / whitespace → `None`: `empty` ≡ `has_text=False` ≡ TextGuard's A |
+| Prediction failures | **NaN**, never raise or drop; NaN-pairing rule for P4/P6 (§6a) |
+| Scoring horizon | **horizon = 1** for main experiments; DSS and Flip Rate scored at h=1 |
 
 ---
 
@@ -99,13 +104,13 @@ Related Work in P8, and re-run the arXiv search then.
 | `src/data/check_directional.py` | P1 | ✅ run, 58% |
 | `src/data/check_timing.py` | P1 | ✅ run — FAILS with current default |
 | `src/data/inspect_domains.py` | P1 | ✅ (3 tests) |
-| `src/models/base.py` | P2 | ⚪ |
+| `src/models/base.py` | P2 | ✅ (27 tests) |
 | `src/models/dlinear.py` | P2 | ⚪ |
 | `src/models/patchtst.py` | P2 | ⚪ |
 | `src/models/dlinear_bert.py` | P2 | ⚪ |
 | `src/models/patchtst_bert.py` | P2 | ⚪ |
 | `src/models/qwen_forecaster.py` | P2 | ⚪ |
-| `src/models/dummy.py` | P2 | ⚪ |
+| `src/models/dummy.py` | P2 | ✅ (26 tests) |
 | `src/attacks/*.py` (6 conditions) | P3 | ⚪ |
 | `src/metrics.py` | P4 | ⚪ |
 | `src/run_experiments.py` | P5 | ⚪ |
@@ -318,6 +323,39 @@ published MM-TSFlib numbers, check this first** — rerun with `source='search'`
 anything else. Also: MM-TSFlib's Economy CSV is unsorted (starts 2024, ends 1989) and it splits
 by row position, so its Economy train/test split is **not chronological**.
 
+### 6a. Forecaster interface (P2.1, decided 2026-10-02)
+
+`src/models/base.py`. TextGuard and the Auditor only see the `Forecaster` Protocol: any object
+with `horizon` and `predict(numbers, text)`, no inheritance required. Our wrappers subclass
+`BaseForecaster`, which validates inputs/outputs and calls `_predict`.
+
+- **`numbers`:** 1-D univariate lookback window, raw data units, finite. 2-D input is rejected,
+  not flattened. Univariate is deliberate: Sridhar et al. (2026) found "text gains" can come from
+  a co-shipped numeric column, not the text. Raw units keep DSS (÷σ) and `A + g(B−A)` meaningful.
+  **Wrappers fit any scaler on the train split only.**
+- **`text`:** `str | None`; blank → `None`. So `empty`, `has_text=False` and TextGuard's `A` are
+  one and the same prediction.
+- **Output:** always shape `(horizon,)`. NaN = failure (e.g. Qwen parse failure); inf raises (a bug).
+- **Horizon:** the shape stays general, but **main experiments use horizon = 1, and DSS and Flip
+  Rate are scored at horizon 1.**
+
+**NaN pairing rule — binding on P4 and P6:**
+- **P4 metrics:** in any paired comparison (ŷ_fake vs ŷ_real for DSS / Flip Rate; MSE(empty) vs
+  MSE(real) for the Usage Gap), if *either* side is NaN, drop that sample from *both* sides.
+  **Report the parse-failure rate per model × condition** alongside every metric. Otherwise a
+  model that fails more often on fake text looks artificially robust: its worst cases vanish.
+- **P6 TextGuard:** if `B` is NaN, `final = A` (fall back to numbers-only). If `A` is NaN there is
+  nothing to fall back to: the sample stays NaN and counts as a failure.
+
+**Dummy model (`src/models/dummy.py`)** — the hand-checkable fixture for P4/P6:
+- A = linear extrapolation; B = A + `sensitivity × direction × step × intensity`
+- Defaults reproduce the worked example: A = 116, B(fake "fall sharply") = 106, B(real
+  "demand rising") = 120 → DSS = +1.4
+- `sensitivity=0` → deaf (gap 0); `sensitivity=1` → fooled by flipped text
+- Change cues (rise/fall…) and **level cues ("above/below [the] [word] baseline" = ±1)**, so
+  P6's level branch has a fixture too. Flat `[2,2,2,2]`, step 0.5 → above 2.5 / below 1.5
+- Keyword lexicon is fine for a fixture; it ignores negation and is **not** a text classifier
+
 ---
 
 ## 7. Baseline reproduction (P2)
@@ -394,12 +432,24 @@ by row position, so its Economy train/test split is **not chronological**.
 | 14 | Swap SocialGood (56% directional, 61% coverage) for Energy (100% directional, but 351/354 reports contain the forecast target; needs lag 2)? | P1→P2 | ⬜ Open — needs decision |
 | 15 | Generalise TextGuard gate to "text claim vs numerical evidence" (change + level branches); update CLAUDE.md §8 | P6 | ⬜ Open |
 | 16 | Direction classifier must be Qwen-based (heuristic only 72% vs humans); validate on the 100 hand labels | P3 | ⬜ Open |
+| 17 | NaN pairing: drop a sample from both sides if either is NaN; report parse-failure rate per model × condition (§6a) | P4 | ⬜ Open |
+| 18 | TextGuard: if B is NaN, final = A (§6a) | P6 | ⬜ Open |
 
 ---
 
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-02 — P2.1 + P2.5: forecaster interface + dummy model
+- `src/models/base.py`: `Forecaster` Protocol + `BaseForecaster` ABC; univariate raw-unit input,
+  blank text → `None`, output `(horizon,)`, NaN on failure (§6a)
+- `src/models/dummy.py`: linear extrapolation + keyword text shift with configurable
+  sensitivity; reproduces the worked example (116 / 106 / 120); change and level cues
+- Recorded for later phases: NaN pairing rule (P4, P6), DSS/Flip Rate scored at horizon 1
+- 90 tests passing (53 new)
+- **Broke:** nothing
+- **Next:** P2.2 — DLinear and PatchTST wrappers on the selected domains
 
 ### 2026-09-28 — P1.5 checks done → **P1 complete**
 - `check_timing.py`: 37 leaks with start-anchored alignment → loader default now `anchor="end"`;
