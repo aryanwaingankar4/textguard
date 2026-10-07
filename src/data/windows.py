@@ -15,6 +15,11 @@ samples (recorded in PROJECT_STATUS §7).
 
 For horizon H > 1, a window's whole target block must sit inside one split, so the last
 H − 1 rows of each split are never a target *start*.
+
+**Text per window** (Models 3–5): the text of the window's *first target row*. The loader has
+already lagged text by one period (row t carries period t−1's reports, anchored on their end
+date), so that text existed before the forecast period starts. This is the same row MM-TSFlib
+reads (``text[s_end]`` in its ``Dataset_Custom.get_text``).
 """
 
 from __future__ import annotations
@@ -50,17 +55,20 @@ class Windows:
 
     ``target_start`` is the ``start_date`` of the first target period: the sample id used
     in raw-prediction CSVs, so every prediction can be traced to a date.
+    ``text`` (object array, ``str | None`` per window) is the text available for that
+    forecast, or ``None`` when the splits carry no text column.
     """
     X: np.ndarray
     Y: np.ndarray
     target_start: pd.DatetimeIndex
+    text: np.ndarray | None = None
 
     def __len__(self) -> int:
         return len(self.X)
 
 
 def make_windows(values: np.ndarray, dates: pd.Series, target_lo: int, target_hi: int,
-                 seq_len: int, horizon: int) -> Windows:
+                 seq_len: int, horizon: int, texts: pd.Series | None = None) -> Windows:
     """Windows whose target blocks start in ``[target_lo, target_hi - horizon]``.
 
     ``values`` is the full contiguous series; ``target_lo:target_hi`` is one split's row
@@ -70,7 +78,11 @@ def make_windows(values: np.ndarray, dates: pd.Series, target_lo: int, target_hi
     starts = range(max(target_lo, seq_len), target_hi - horizon + 1)
     X = np.array([values[t - seq_len:t] for t in starts], dtype=float).reshape(-1, seq_len)
     Y = np.array([values[t:t + horizon] for t in starts], dtype=float).reshape(-1, horizon)
-    return Windows(X, Y, pd.DatetimeIndex(dates.iloc[list(starts)]))
+    text = None
+    if texts is not None:
+        text = np.array([None if pd.isna(v) else v for v in texts.iloc[list(starts)]],
+                        dtype=object)
+    return Windows(X, Y, pd.DatetimeIndex(dates.iloc[list(starts)]), text)
 
 
 def split_windows(splits: Splits, seq_len: int, horizon: int,
@@ -80,5 +92,6 @@ def split_windows(splits: Splits, seq_len: int, horizon: int,
     values = full[value_col].to_numpy(dtype=float)
     n_tr, n_va = len(splits.train), len(splits.val)
     bounds = {"train": (0, n_tr), "val": (n_tr, n_tr + n_va), "test": (n_tr + n_va, len(full))}
-    return {name: make_windows(values, full["start_date"], lo, hi, seq_len, horizon)
+    texts = full["text"] if "text" in full.columns else None
+    return {name: make_windows(values, full["start_date"], lo, hi, seq_len, horizon, texts)
             for name, (lo, hi) in bounds.items()}

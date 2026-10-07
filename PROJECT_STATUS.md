@@ -18,7 +18,7 @@
 |---|---|---|---|
 | P0 | Environment, repo, folder skeleton | ✅ | ✅ Done |
 | P1 | Data pipeline — loader, splits, domain selection | ✅ | ✅ Done |
-| P2 | Model wrappers — 5 models, one interface | ✅ | 🔵 In progress (2.1, 2.2, 2.5 done) |
+| P2 | Model wrappers — 5 models, one interface | ✅ | 🔵 In progress (2.1, 2.2, 2.3, 2.5 done; 2.4 Qwen next) |
 | P3 | Attack module — 6 text conditions | ✅ | ⚪ Pending |
 | P4 | Metrics module — DSS, Flip Rate, etc. | ✅ | ⚪ Pending |
 | P5 | Experiment runner — screening + attack | ✅ | ⚪ Pending |
@@ -45,7 +45,9 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 | Primary dataset | Time-MMD |
 | Secondary dataset | FNSPID — optional, P7 |
 | Models | 1–5 required (early + late fusion); Model 6 optional in P7 |
-| Text encoder | BERT only — keeps the experiment grid small |
+| Text encoder | `bert-base-uncased`, **frozen, all 12 layers, mean-pooled over real tokens**; one 768-d vector per text, cached in `/cache/` (gitignored); never saved in checkpoints |
+| Late fusion (Models 3/4) | `ŷ = TS(x) + w·MLP(z(e_text))`, w = 0.1 — MM-TSFlib's fusion **minus `norm()` and `prior_y`**; **TS = Model 1/2 of the same seed, frozen**; only the text head trains, under the P2.2 protocol (§7a) |
+| `text=None` (Models 3/4) | Text branch absent → `ŷ = TS(x)` = **Model 1/2 exactly**. So the Usage Gap = MSE(M1/2) − MSE(M3/4, real) and B − A = w·MLP(z(e)) (§7a) |
 | CFA (Lee et al. 2026) | Primary defense baseline |
 | Distribution | GitHub toolkit + Streamlit demo (demo = P7) |
 | Streamlit CSV upload | ❌ Cut from scope |
@@ -115,8 +117,11 @@ Related Work in P8, and re-run the arXiv search then.
 | `src/models/dlinear.py` | P2 | ✅ trained (§7) |
 | `src/models/patchtst.py` | P2 | ✅ trained (§7) |
 | `src/models/train_baselines.py` | P2 | ✅ resumable runner — saves each config × domain × model unit, skips finished ones |
-| `src/models/dlinear_bert.py` | P2 | ⚪ |
-| `src/models/patchtst_bert.py` | P2 | ⚪ |
+| `src/models/text_encoder.py` | P2 | ✅ frozen BERT + on-disk embedding cache |
+| `src/models/embed_texts.py` | P2 | ✅ pre-embeds all texts; truncation report (0 / 1305) |
+| `src/models/late_fusion.py` | P2 | ✅ fusion mixin shared by Models 3/4 (15 tests) |
+| `src/models/dlinear_bert.py` | P2 | ✅ Model 3 (thin module → `late_fusion`) |
+| `src/models/patchtst_bert.py` | P2 | ✅ Model 4 (thin module → `late_fusion`) |
 | `src/models/qwen_forecaster.py` | P2 | ⚪ |
 | `src/models/dummy.py` | P2 | ✅ (26 tests) |
 | `src/attacks/*.py` (6 conditions) | P3 | ⚪ |
@@ -300,7 +305,7 @@ with human labels only **72%** of the time: it missed signed changes ("changed b
 `text_direction.py` (P6) must use Qwen classification, validated against the 100 hand labels in
 `results/summary_directional_*.csv`, not rules.
 
-**MM-TSFlib fusion mechanism (from reading the code):** ______
+**MM-TSFlib fusion mechanism (from reading the code):** late additive fusion; at h=1 its text term is identically 0 — see §7a.
 
 ### Time-MMD layout & text decisions (P1.1–1.2, 2026-09-28)
 
@@ -459,6 +464,144 @@ column only shows the networks and recipe are MM-TSFlib's; it is not a claim of 
 
 ---
 
+## 7a. Late-fusion text models (P2.3)
+
+### How MM-TSFlib fuses text (issue #3 — read 2026-10-07)
+
+`exp/exp_long_term_forecasting.py`, with the shipped `scripts/week_health.sh` settings:
+
+```
+prompt = "<|start_prompt|Make predictions about the future based on the following information: {text}<|<end_prompt>|>"
+E      = BERT.get_input_embeddings()(tokens)       # use_fullmodel=0: word-embedding table only, no transformer
+t      = avg_pool_tokens( MLP(E) )                 # MLP 768→96→pred_len per token; padding included in the average
+ŷ      = (1 − w)·TS(x) + w·( norm(t) + prior_y )   # w = prompt_weight: 0.01 default, 0.1 in the script
+norm(t)= (t − mean_h t) / std_h t                  # z-score ACROSS THE FORECAST HORIZON, per sample
+```
+
+→ **Late, additive fusion** (our assumption holds). But, as shipped:
+
+1. **At h=1 the text term is identically 0.** `norm()` subtracts the mean over the horizon;
+   with one step that is the value itself. Verified numerically and locked in by
+   `tests/test_late_fusion.py::test_mmtsflib_norm_is_identically_zero_at_horizon_1`. At h>1
+   the text can only reshape the forecast (zero-mean across steps), never shift its level —
+   a "rose → fell" attack cannot move it by construction.
+2. **`prior_y` is a numeric seasonal prior in the "text" branch.** It is the
+   `prior_history_avg` column at the target date: same month last year (Economy, 97% of rows)
+   or the mean of the same month over the last 2 years (Traffic, SocialGood, 95%). That is
+   lag-12 information the 8-month window lacks — a co-shipped numeric column, the confound
+   Sridhar et al. (2026) warn about.
+3. Smaller: padding tokens are averaged into the text vector (batch-dependent); early
+   stopping restores only the backbone, not the text MLP; missing text becomes the string
+   `"nan"`; `mlp_proj`, `weight1`, `weight2` are built and never used.
+
+📄 **Paper finding A — MM-TSFlib's text term is exactly zero at horizon 1.** It is
+normalised across the forecast horizon (`norm()`), and a single value minus its own mean is
+0. At h=1, MM-TSFlib's text models are effectively numbers-only (plus `prior_y`, below).
+Evidence: `tests/test_late_fusion.py::test_mmtsflib_norm_is_identically_zero_at_horizon_1`.
+
+📄 **Paper finding B — MM-TSFlib's text branch carries a co-shipped numeric value.**
+`prior_y` = `prior_history_avg` = the same month 1 year (Economy, 97% of rows) or the mean of
+the same month 1–2 years earlier (Traffic, SocialGood, 95%). This **independently confirms
+the mechanism behind Sridhar et al. (2026)'s finding** that "text gains" in multimodal TSF
+can come from a numeric column rather than the text.
+
+### What we implemented (decided 2026-10-07)
+
+`ŷ = (1 − w)·TS(x) + w·MLP(e_text)`, `src/models/late_fusion.py`:
+
+| Part | MM-TSFlib | Ours | Why |
+|---|---|---|---|
+| Fusion | late, additive, w = 0.1 | same (`TS + w·MLP` ≡ `(1−w)·TS + w·MLP` up to a backbone constant) | faithful |
+| Text MLP | 768→96→h, ReLU, dropout 0.3 | same | faithful |
+| Backbone | DLinear / PatchTST | same networks; PatchTST `patching="window"` | §7 clamp bug |
+| `norm()` | z-score across horizon | **dropped** | ≡ 0 at h=1 |
+| `prior_y` | numeric seasonal prior | **dropped** | not text; Models 1/2 lack it |
+| BERT | word-embedding table only | **all 12 layers, frozen, mean-pooled over real tokens** | must read context to test meaning-inverting attacks |
+| Embedding scaling | none | **per-dim z-score, fit on train texts only** | see below |
+| Training | joint (TS + MLP), 10 epochs, TS lr 1e-4, MLP lr 1e-2 | **two-stage: TS = trained Model 1/2 (same seed), frozen + eval mode; text head trained under the P2.2 protocol** (head lr ∈ {1e-4, 1e-3, 1e-2} on val, 200 epochs, patience 20, 3 seeds) | critical check — below |
+| Missing text | string `"nan"` | text branch absent | well-defined `text=None` |
+
+**Embedding scaling — found while building.** Mean-pooled BERT vectors are nearly identical
+across texts (a large shared direction; per-dimension spread across texts only 0.03–0.25).
+Fed raw into the MLP at MM-TSFlib's lr 1e-2, every ReLU unit died within 1–3 epochs on
+Economy (PatchTST+BERT: 0/96 alive) and the model gave every text the same output — text-deaf
+through optimisation, not architecture. Standardising each dimension with train-split
+statistics keeps all 96 units alive. BERT itself is untouched.
+
+**Truncation:** 0 of 1305 period texts exceed 512 tokens (max 488, Traffic; medians 84–128).
+`python -m src.models.embed_texts`. Re-check for P3's attacked texts (exaggerated may be longer).
+
+### What `text=None` means for Models 3/4 — and why the backbone is frozen
+
+`predict(x, None)` (also blank text, and periods with no report) **drops the text branch**:
+`ŷ = TS(x)`, which is Model 1/2's forecast exactly (same seed, frozen weights). Then
+
+- Text Usage Gap = MSE(Model 1/2) − MSE(Model 3/4, real text): the effect of text and nothing else
+- TextGuard's A = Model 1/2, B − A = w·MLP(z(e_text)); `A + g·(B − A)` interpolates between
+  the numbers-only and the text-informed forecast
+
+**How we got here (val only, seed 2021, P2.2 lrs).** First implementation: MM-TSFlib's joint
+training, `text=None` = a "null prompt" (empty template), kept in-distribution by text
+dropout. The no-text path stayed worse than the numbers-only model:
+
+| val MSE | numbers-only | joint, None, p=0.2 | joint, None, p=0.5 |
+|---|---|---|---|
+| Economy DLinear / PatchTST | 0.101 / 0.080 | 0.123 / 0.089 | 0.111 / 0.082 |
+| SocialGood DLinear / PatchTST | 0.019 / 0.009 | 0.018 / 0.012 | 0.020 / 0.013 |
+| Traffic DLinear / PatchTST | 1.021 / 0.041 | 1.199 / **0.121** | 1.165 / 0.047 |
+| Health_US DLinear / PatchTST | 0.043 / 0.062 | 0.049 / 0.064 | 0.048 / 0.055 |
+
+The full joint run (p=0.5) on Economy DLinear+BERT gave `text=None` val 0.111 / 0.109 / 0.128
+over 3 seeds vs Model 1's 0.101, with real text 0.093–0.095: most of the "text gain" was the
+backbone co-adapting with text and becoming a weaker numbers-only model — an inflated Usage
+Gap. Stopped; the frozen-backbone design replaces it. Val comparison, real text:
+
+| val MSE, seed 2021 | `text=None` (= M1/M2) | frozen + real text | joint p=0.5 + real text |
+|---|---|---|---|
+| Economy DLinear / PatchTST | 0.101 / 0.076 | **0.071 / 0.063** | 0.095 / 0.069 |
+| SocialGood DLinear / PatchTST | 0.019 / 0.009 | **0.017 / 0.008** | 0.019 / 0.014 |
+| Traffic DLinear / PatchTST | 1.012 / 0.034 | **0.467 / 0.029** | 0.641 / 0.035 |
+| Health_US DLinear / PatchTST | 0.043 / 0.050 | **0.043 / 0.048** | 0.049 / 0.055 |
+
+Frozen wins all 8 cells with real text and passes the critical check by construction.
+(Val numbers include lr selection on val, for both variants alike.)
+
+📄 **Method note (accepted 2026-10-07) — Models 3 and 4 are "frozen backbone + additive
+text head".** This differs from MM-TSFlib, which trains backbone and text MLP jointly. With
+`text=None` they reproduce Models 1/2 **exactly** (all 1479 main-config predictions per model:
+DLinear+BERT bit-identical to DLinear; PatchTST+BERT identical to float32 precision, ≤2.4e-7
+relative), so **B − A = w·MLP(z(e_text)) isolates the text effect** — nothing else changes
+between A and B. Rationale for the paper: jointly trained late-fusion models can show a
+positive Text Usage Gap that is really a weakened no-text path (Economy above).
+
+📄 **Method note (accepted 2026-10-07) — BERT embeddings standardised per dimension with
+train-only statistics**, because raw mean-pooled BERT vectors share a dominant direction and
+killed the text MLP's ReLUs (above).
+
+### Results — test MSE, real text vs `text=None` (h=1, normalised, mean ± std, 3 seeds)
+
+| Domain | Persistence | M1 DLinear | M2 PatchTST | M3 real | M3 None | M4 real | M4 None |
+|---|---|---|---|---|---|---|---|
+| Economy | 0.280 | 0.198 ± 0.002 | 0.183 ± 0.011 | **0.169 ± 0.012** | 0.198 ± 0.002 | **0.177 ± 0.018** | 0.183 ± 0.011 |
+| SocialGood | **0.573** | 0.740 ± 0.007 | 0.883 ± 0.092 | 0.783 ± 0.012 | 0.740 ± 0.007 | 0.886 ± 0.103 | 0.883 ± 0.092 |
+| Traffic | 1.582 | 1.043 ± 0.005 | 0.885 ± 0.032 | 1.599 ± 0.146 | 1.043 ± 0.005 | 0.911 ± 0.066 | 0.885 ± 0.032 |
+| Health_US | 0.150 | 0.109 ± 0.004 | 0.159 ± 0.032 | 0.112 ± 0.007 | 0.109 ± 0.004 | **0.145 ± 0.023** | 0.159 ± 0.032 |
+
+Val (selection split), real vs None: Economy 0.076 vs 0.101 (M3), 0.070 vs 0.080 (M4) ·
+SocialGood 0.018 vs 0.019, 0.010 vs 0.009 · **Traffic 0.585 vs 1.021**, 0.038 vs 0.041 ·
+Health_US 0.042 vs 0.042, 0.063 vs 0.062. Chosen head lr (M3 / M4): Economy 1e-2 / 1e-4 ·
+SocialGood 1e-2 / 1e-3 · Traffic 1e-3 / 1e-2 · Health_US 1e-4 / 1e-3.
+
+Reading it (preliminary — P5 does the proper screening with shuffled/cross-domain controls):
+- **Economy:** text helps both models on val and test — the cleanest "text is used" case.
+- **Traffic:** text halves Model 3's val error (year-over-year info, issue #22) but **hurts on
+  test** (1.04 → 1.60; M4 0.885 → 0.911). The test span contains 2020; genuine extreme
+  COVID-era reports are far outside the text head's training range → issue #23.
+- **SocialGood:** text slightly hurts on test; val gain ≈ 0. Sparse-text domain (issue #9).
+- **Health_US:** ≈ no text effect on val; M4 test improves (0.159 → 0.145) within noise.
+- Several heads early-stop at epoch 1–7 (SocialGood M4 best epoch 1, Health_US M4 2):
+  little learnable text signal there on val. Expected for level-language domains.
+
 ## 8. Fake text validation (P3)
 
 - Samples manually checked: ___ / 100
@@ -511,7 +654,7 @@ column only shows the networks and recipe are MM-TSFlib's; it is not a claim of 
 |---|---|---|---|
 | 1 | Does Time-MMD text make directional claims? (≥30% needed) | P1 | ✅ 58% overall (§6) |
 | 2 | Is text guaranteed available *before* its forecast window? | P1 | ✅ Yes, with `anchor="end"` + 5 leakers dropped (§6) |
-| 3 | How does MM-TSFlib actually fuse text? (we assume late) | P2 | ⬜ Open |
+| 3 | How does MM-TSFlib actually fuse text? (we assume late) | P2 | ✅ Late additive; text term ≡ 0 at h=1, numeric prior in the text branch (§7a) |
 | 4 | Can CFA (`seunghan96/cfa`) run as a defense baseline? | P6 | ⬜ Open |
 | 5 | Colab VS Code extension unreliable — use colab.research.google.com directly for GPU work (Qwen) in P2; `git clone` the repo inside the notebook | P2 | ⬜ Open |
 | 6 | MM-TSFlib uses `search` text, we default to `report` — first suspect if P2 baselines don't match | P2 | ⬜ Open |
@@ -527,16 +670,36 @@ column only shows the networks and recipe are MM-TSFlib's; it is not a claim of 
 | 16 | Direction classifier must be Qwen-based (heuristic only 72% vs humans); validate on the 100 hand labels | P3 | ⬜ Open |
 | 17 | NaN pairing: drop a sample from both sides if either is NaN; report parse-failure rate per model × condition (§6a) | P4 | ⬜ Open |
 | 18 | TextGuard: if B is NaN, final = A (§6a) | P6 | ⬜ Open |
-| 19 | **Models 3/4 must reuse the val-tuned protocol** (`train_baselines.LR_GRID`, `TUNED`, `TUNE_SEED`, `patching="window"`) — else a Text Usage Gap mixes text with extra training | P2.3 | ⬜ Open |
-| 20 | MM-TSFlib PatchTST clamps patch_len to pred_len → at h=1 it reads 2 of 8 inputs; Models 4 (and 6) must use `patching="window"` too | P2.3 | ✅ Fixed for Model 2; ⬜ apply to Model 4 |
+| 19 | **Models 3/4 must reuse the val-tuned protocol** (`train_baselines.LR_GRID`, `TUNED`, `TUNE_SEED`, `patching="window"`) — else a Text Usage Gap mixes text with extra training | P2.3 | ✅ Applied — same `LR_GRID`/`TUNED`/seeds, lr tuned per domain for Models 3/4 |
+| 20 | MM-TSFlib PatchTST clamps patch_len to pred_len → at h=1 it reads 2 of 8 inputs; Models 4 (and 6) must use `patching="window"` too | P2.3 | ✅ Fixed for Models 2 and 4 |
 | 21 | Repro column far above published MSE (e.g. Traffic DLinear 2.87 vs 0.35) | P2/P8 | ✅ Closed — explained by different test periods and splits; not pursued further — listed as a limitation in the paper |
 | 22 | Lookback 8 < 12-month seasonality: DLinear can't see lag 12 (Traffic val 1.02 vs PatchTST 0.04). Traffic reports state **year-over-year** changes ("−1.6% vs January 2009") — exactly the information an 8-month window lacks. So Traffic is the domain most likely to show **genuine text use**, and the **strongest P5 attack target**. Lookback stays 8 to match the published setup | P5 | ⬜ Open — note when interpreting |
+| 23 | **P5 extra analysis: report Traffic with and without 2020.** Genuine, extreme COVID-era Traffic text hurts Model 3 on test (test MSE 1.04 → 1.60 with text) although text halves val error — the text head never saw year-over-year changes of that size. Same regime-shift theme as #10 | P5 | ⬜ Open |
 
 ---
 
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-07 — P2.3: text models 3 and 4 (frozen backbone + BERT text head)
+- Read MM-TSFlib's fusion (issue #3): late additive; **text term ≡ 0 at h=1** (`norm()` across
+  the horizon) and a **co-shipped numeric prior** (`prior_y`) in the text branch → paper
+  findings A and B (§7a). Implemented its fusion minus `norm()` and `prior_y`, full frozen BERT
+- `text_encoder.py`: frozen `bert-base-uncased`, mean-pooled, on-disk cache (`/cache/`); BERT
+  loaded only on a cache miss, `unload()` before every training unit. 0/1305 texts truncated
+- Found: raw BERT vectors killed the head's ReLUs (0/96 alive) → per-dim z-score, train-only
+- Critical check failed with joint training (Economy M3 text=None val 0.109–0.128 vs M1 0.101)
+  → **frozen Model 1/2 backbone + trained text head**; text=None ≡ Model 1/2 (verified on all
+  predictions). Both changes accepted. Val probes for both designs in §7a
+- Runner: Models 3/4 in the same resumable runner, P2.2 protocol, predictions saved with
+  `condition` = real / empty; `NeuralForecaster` refactored to hooks (Models 1/2 bit-identical)
+- Results §7a: text helps on Economy; on Traffic it halves val error but hurts test (2020) → #23
+- 133 tests passing (18 new in `test_late_fusion.py`)
+- **Broke:** first full run killed by Claude Code under *system* memory pressure (15.7 GB box,
+  4.7 GB free before training; the training process itself peaks ~0.54 GB, BERT never
+  loaded). Resumed: 5 finished units skipped, 3 run
+- **Next:** P2.4 — Qwen2.5-1.5B forecaster (Model 5) on Colab
 
 ### 2026-10-07 — P2.2: numbers-only baselines trained (val-tuned protocol)
 - Persistence, DLinear, PatchTST trained on all 4 domains: lr grid {1e-4, 1e-3, 1e-2} on val,

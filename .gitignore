@@ -46,3 +46,5 @@ Thumbs.db
 /checkpoints/
 # per-unit raw outputs of resumable runners (combined CSVs are derivable from them)
 /results/p2_baselines/
+# cached text embeddings (recomputable; never commit)
+/cache/

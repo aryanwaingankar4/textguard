@@ -1,4 +1,10 @@
-"""Train and evaluate the numbers-only baselines (P2.2): Persistence, DLinear, PatchTST.
+"""Train and evaluate Models 1–4 (P2.2–P2.3): Persistence, DLinear, PatchTST, and the
+late-fusion text models DLinear+BERT (Model 3) and PatchTST+BERT (Model 4).
+
+Models 3/4 run in the ``main`` config only, under **the same tuned protocol** as Models 1/2,
+and every forecast is saved twice: with the real text (``condition="real"``) and with
+``text=None`` (``condition="empty"``). Numbers-only models ignore text, so their rows are
+``condition="real"`` and are equally their ``empty`` result.
 
 Why this is the cleanest reproduction check: numbers-only models never see text, so the
 text source (``report`` vs MM-TSFlib's ``search``, issue #6) cannot explain a mismatch with
@@ -56,6 +62,7 @@ Run: ``python -m src.models.train_baselines`` (``--no-mlflow`` to skip tracking,
 from __future__ import annotations
 
 import argparse
+import gc
 import json
 import os
 import shutil
@@ -67,6 +74,8 @@ import pandas as pd
 from src.data.splits import load_splits
 from src.data.windows import DOMAIN_FREQ, PUBLISHED_HORIZON, lookback_for, split_windows
 from src.models.dlinear import DLinearForecaster
+from src.models.late_fusion import (DLinearBertForecaster, PatchTSTBertForecaster,
+                                     unload_encoders)
 from src.models.patchtst import PatchTSTForecaster
 from src.models.persistence import PersistenceForecaster
 
@@ -95,42 +104,53 @@ PUBLISHED_UNI_MSE = {
     ("Health_US", "DLinear"): 2.37, ("Health_US", "PatchTST"): 1.23,
 }
 
-MODEL_CLASSES = {"DLinear": DLinearForecaster, "PatchTST": PatchTSTForecaster}
+MODEL_CLASSES = {"DLinear": DLinearForecaster, "PatchTST": PatchTSTForecaster,
+                 "DLinear+BERT": DLinearBertForecaster, "PatchTST+BERT": PatchTSTBertForecaster}
+TEXT_MODELS = ("DLinear+BERT", "PatchTST+BERT")  # main config only: no published h=1 text numbers
 
 
 def make_model(name: str, config: str, seq_len: int, horizon: int, seed: int,
-               lr: float | None = None):
+               lr: float | None = None, domain: str | None = None):
     kw = dict(TUNED, lr=lr) if config == "main" else dict(MMTSFLIB_RECIPE)
-    if name == "PatchTST":
+    if name.startswith("PatchTST"):
         kw["patching"] = "window" if config == "main" else "mmtsflib"
+    if name in TEXT_MODELS:  # frozen backbone = this domain's Model 1/2, same config and seed
+        kw["backbone_ckpt"] = backbone_ckpt(name, domain, config, seed)
     return MODEL_CLASSES[name](seq_len, horizon, seed=seed, **kw)
+
+
+def backbone_ckpt(name: str, domain: str | None, config: str, seed: int) -> Path:
+    return CHECKPOINTS / name.removesuffix("+BERT") / str(domain) / f"{config}_seed{seed}.pt"
 
 
 def best_val(model) -> float:
     return min(h["val_loss"] for h in model.history)
 
 
-def tune_lr(name, seq_len, w, train_values, log=None):
+def tune_lr(name, seq_len, w, train_values, log=None, domain=None):
     """Grid-search lr on val (seed TUNE_SEED). Returns (best_lr, fitted model, grid rows)."""
-    rows, fitted = [], {}
+    rows, best = [], None
     for lr in LR_GRID:
-        m = make_model(name, "main", seq_len, 1, TUNE_SEED, lr).fit(w["train"], w["val"],
+        m = make_model(name, "main", seq_len, 1, TUNE_SEED, lr, domain).fit(w["train"], w["val"],
                                                                      train_values)
-        fitted[lr] = m
         rows.append({"model": name, "lr": lr, "best_val_loss": best_val(m),
                      "epochs_run": len(m.history),
                      "best_epoch": int(np.argmin([h["val_loss"] for h in m.history])) + 1})
         if log:
             log(rows[-1])
-    best_lr = min(rows, key=lambda r: r["best_val_loss"])["lr"]
-    return best_lr, fitted[best_lr], rows
+        if best is None or rows[-1]["best_val_loss"] < best[0]:  # keep only the best model
+            best = (rows[-1]["best_val_loss"], lr, m)
+        del m
+        gc.collect()
+    return best[1], best[2], rows
 
 
-def _rows(config, model_name, domain, seed, split, w, pred, mean, std, lr=None):
+def _rows(config, model_name, domain, seed, split, w, pred, mean, std, lr=None,
+          condition="real"):
     n, h = w.Y.shape
     return pd.DataFrame({
         "config": config, "model": model_name, "domain": domain, "seed": seed, "lr": lr,
-        "horizon": h, "split": split,
+        "horizon": h, "split": split, "condition": condition,
         "sample_id": np.repeat(w.target_start.strftime("%Y-%m-%d"), h),
         "step": np.tile(np.arange(1, h + 1), n),
         "y_true": w.Y.ravel(), "y_pred": pred.ravel(),
@@ -156,8 +176,13 @@ def protocol(name: str, config: str, seq_len: int, horizon: int, seeds=SEEDS) ->
         p.update(lr_grid=list(LR_GRID), tune_seed=TUNE_SEED, **TUNED)
     else:
         p.update(**MMTSFLIB_RECIPE)
-    if name == "PatchTST":
+    if name.startswith("PatchTST"):
         p["patching"] = "window" if config == "main" else "mmtsflib"
+    if name in TEXT_MODELS:
+        m = make_model(name, config, seq_len, horizon, TUNE_SEED, 1e-3)
+        p.update(prompt_weight=m.prompt_weight, encoder=m.encoder_name,
+                 emb_scaling="train_zscore", backbone="frozen_model_1_2_same_seed",
+                 text_none="backbone_only")
     return p
 
 
@@ -218,12 +243,13 @@ def run_unit(config, domain, name, w, train_values, seq_len, horizon, seeds, use
             if use_mlflow:
                 with mlflow.start_run(run_name=f"tune-{name}-{domain}-lr{r['lr']:g}"):
                     mlflow.log_params({"model": name, "domain": domain,
-                                       "condition": "numbers_only", "seed": TUNE_SEED,
+                                       "condition": "real" if name in TEXT_MODELS else "numbers_only",
+                                       "seed": TUNE_SEED,
                                        "config": "tune", "lr": r["lr"],
                                        "horizon": 1, "seq_len": seq_len})
                     mlflow.log_metrics({"best_val_loss": r["best_val_loss"],
                                         "epochs_run": r["epochs_run"]})
-        lr, reuse, grid = tune_lr(name, seq_len, w, train_values, log)
+        lr, reuse, grid = tune_lr(name, seq_len, w, train_values, log, domain)
         tuning = pd.DataFrame([{"domain": domain, **r, "chosen": r["lr"] == lr} for r in grid])
     for seed in seeds:
         ckpt = CHECKPOINTS / name / domain / f"{config}_seed{seed}.pt"
@@ -231,18 +257,25 @@ def run_unit(config, domain, name, w, train_values, seq_len, horizon, seeds, use
             model = reuse
             model.save(ckpt)
         else:
-            model = make_model(name, config, seq_len, horizon, seed, lr)
+            model = make_model(name, config, seq_len, horizon, seed, lr, domain)
             model.fit(w["train"], w["val"], train_values, checkpoint=ckpt)
         metrics = {}
         for split in ("val", "test"):
-            pred = model.predict_windows(w[split].X)
+            pred = model.predict_windows(w[split].X, w[split].text)
             frames.append(_rows(config, name, domain, seed, split, w[split],
                                 pred, mean, std, model.lr))
             metrics[f"{split}_mse_norm"] = float(np.mean(((w[split].Y - pred) / std) ** 2))
+            if name in TEXT_MODELS:  # same model, text removed: the A of TextGuard
+                pred0 = model.predict_windows(w[split].X, None)
+                frames.append(_rows(config, name, domain, seed, split, w[split],
+                                    pred0, mean, std, model.lr, condition="empty"))
+                metrics[f"{split}_mse_norm_empty"] = float(
+                    np.mean(((w[split].Y - pred0) / std) ** 2))
         if use_mlflow:
             with mlflow.start_run(run_name=f"{config}-{name}-{domain}-{seed}"):
                 mlflow.log_params({"model": name, "domain": domain,
-                                   "condition": "numbers_only", "seed": seed,
+                                   "condition": ("real+empty" if name in TEXT_MODELS
+                                                 else "numbers_only"), "seed": seed,
                                    "config": config, "horizon": horizon,
                                    "seq_len": seq_len, "lr": model.lr,
                                    "max_epochs": model.epochs,
@@ -250,14 +283,16 @@ def run_unit(config, domain, name, w, train_values, seq_len, horizon, seeds, use
                                    "patching": getattr(model, "patching", "-"),
                                    "n_train_windows": len(w["train"])})
                 mlflow.log_metrics({**metrics, "epochs_run": len(model.history)})
+        empty = (f" | text=None val={metrics['val_mse_norm_empty']:.4f} "
+                 f"test={metrics['test_mse_norm_empty']:.4f}" if name in TEXT_MODELS else "")
         print(f"    {name:<9} seed={seed} lr={model.lr:g} epochs={len(model.history):>3} "
-              f"val={metrics['val_mse_norm']:.4f} test={metrics['test_mse_norm']:.4f}",
+              f"val={metrics['val_mse_norm']:.4f} test={metrics['test_mse_norm']:.4f}{empty}",
               flush=True)
     return pd.concat(frames, ignore_index=True), tuning
 
 
 def run(domains=DOMAINS, seeds=SEEDS, configs=("main", "repro"), use_mlflow=True,
-        fresh=False):
+        fresh=False, models=("Persistence", *MODEL_CLASSES)):
     """Run every unit not already saved, then collect all saved units.
 
     Returns (raw-predictions frame, lr-tuning frame) over every finished unit.
@@ -278,14 +313,19 @@ def run(domains=DOMAINS, seeds=SEEDS, configs=("main", "repro"), use_mlflow=True
             print(f"{domain:<10} {config:<5} seq_len={seq_len} h={horizon} windows "
                   f"train={len(w['train'])} val={len(w['val'])} test={len(w['test'])}",
                   flush=True)
-            for name in ("Persistence", *MODEL_CLASSES):
+            for name in models:
+                if name in TEXT_MODELS and config != "main":
+                    continue
                 proto = protocol(name, config, seq_len, horizon, seeds)
                 if unit_done(config, domain, name, proto):
                     print(f"    {name:<11} already done, skipped", flush=True)
                     continue
+                unload_encoders()  # BERT is only needed on a cache miss, never in training
                 preds, tuning = run_unit(config, domain, name, w, train_values, seq_len,
                                          horizon, seeds, use_mlflow)
                 save_unit(config, domain, name, proto, preds, tuning)
+                del preds, tuning  # free memory between units
+                gc.collect()
     return collect()
 
 
@@ -295,6 +335,10 @@ def collect() -> tuple[pd.DataFrame, pd.DataFrame]:
     if not stems:
         raise RuntimeError(f"no finished units in {UNIT_DIR}")
     preds = pd.concat([pd.read_csv(UNIT_DIR / f"{s}.csv") for s in stems], ignore_index=True)
+    if "condition" in preds:  # units saved before P2.3 have no condition column
+        preds["condition"] = preds["condition"].fillna("real")
+    else:
+        preds["condition"] = "real"
     tuning_files = [UNIT_DIR / f"{s}_tuning.csv" for s in stems
                     if (UNIT_DIR / f"{s}_tuning.csv").exists()]
     tuning = pd.DataFrame()
@@ -312,10 +356,11 @@ def collect() -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 def summarise(preds: pd.DataFrame) -> pd.DataFrame:
-    """Normalised MSE per (config, domain, model, split): mean ± std over seeds."""
+    """Normalised MSE per (config, domain, model, split, condition): mean ± std over seeds."""
     p = preds.assign(se=((preds.y_true - preds.y_pred) / preds.train_std) ** 2)
-    per_seed = p.groupby(["config", "domain", "model", "split", "seed"]).se.mean()
-    out = per_seed.groupby(["config", "domain", "model", "split"]).agg(["mean", "std"]).reset_index()
+    keys = ["config", "domain", "model", "split", "condition"]
+    per_seed = p.groupby(keys + ["seed"]).se.mean()
+    out = per_seed.groupby(keys).agg(["mean", "std"]).reset_index()
     out["std"] = out["std"].fillna(0.0)
     out["published_uni_mse"] = [PUBLISHED_UNI_MSE.get((d, m)) if c == "repro" and s == "test"
                                 else None for c, d, m, s in
@@ -327,11 +372,12 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--no-mlflow", action="store_true")
     ap.add_argument("--domains", nargs="+", default=DOMAINS)
+    ap.add_argument("--models", nargs="+", default=["Persistence", *MODEL_CLASSES])
     ap.add_argument("--fresh", action="store_true",
                     help="discard saved units and retrain everything")
     args = ap.parse_args()
     preds, tuning = run(domains=args.domains, use_mlflow=not args.no_mlflow,
-                        fresh=args.fresh)
+                        fresh=args.fresh, models=args.models)
     summary = summarise(preds)
     summary.to_csv(RESULTS / "summary_p2_baselines.csv", index=False)
     with pd.option_context("display.width", 200, "display.max_rows", 200):

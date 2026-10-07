@@ -161,7 +161,8 @@ def tiny_runner(monkeypatch, tmp_path):
 @needs_mmtsflib
 def test_runner_crash_loses_only_the_unit_in_progress(tiny_runner, monkeypatch):
     tb = tiny_runner
-    kw = dict(domains=["Economy"], seeds=[2021], configs=("main",), use_mlflow=False)
+    kw = dict(domains=["Economy"], seeds=[2021], configs=("main",), use_mlflow=False,
+              models=("Persistence", "DLinear", "PatchTST"))
     real_run_unit = tb.run_unit
 
     def crash_on_patchtst(config, domain, name, *a):
@@ -191,7 +192,8 @@ def test_runner_crash_loses_only_the_unit_in_progress(tiny_runner, monkeypatch):
 @needs_mmtsflib
 def test_runner_refuses_units_from_a_different_protocol(tiny_runner, monkeypatch):
     tb = tiny_runner
-    kw = dict(domains=["Economy"], seeds=[2021], configs=("main",), use_mlflow=False)
+    kw = dict(domains=["Economy"], seeds=[2021], configs=("main",), use_mlflow=False,
+              models=("Persistence", "DLinear", "PatchTST"))
     tb.run(**kw)
     monkeypatch.setattr(tb, "LR_GRID", (1e-3,))
     with pytest.raises(RuntimeError, match="different protocol"):

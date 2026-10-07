@@ -85,17 +85,38 @@ class NeuralForecaster(BaseForecaster):
     def _unscale(self, z: np.ndarray) -> np.ndarray:
         return z * self.std + self.mean
 
+    # --- hooks (overridden by the text-fusion models, Models 3/4) ----------------------
+    #
+    # The training loop below is shared by Models 1–4, so "with text" and "without text"
+    # models differ only in these hooks, never in how they are trained or early-stopped.
+
+    def _inputs(self, w: Windows, texts=None) -> tuple[torch.Tensor, ...]:
+        """Network inputs for windows ``w``, on the normalised scale."""
+        return (torch.as_tensor(self._scale(np.asarray(w.X, float)), dtype=torch.float32),)
+
+    def _forward(self, inputs: tuple[torch.Tensor, ...], train: bool = False) -> torch.Tensor:
+        """Inputs -> normalised forecasts (N, horizon)."""
+        return self.net(inputs[0].unsqueeze(-1), None, None, None)[:, -self.horizon:, 0]
+
+    def _build(self) -> list[torch.optim.Optimizer]:
+        """Create every trainable module (after seeding) and return their optimisers."""
+        self.net = self.build_network()
+        return [torch.optim.Adam(self.net.parameters(), lr=self.lr)]
+
+    def _modules(self) -> dict[str, nn.Module]:
+        """Every trained module: saved, restored to the best epoch, switched train/eval."""
+        return {"net": self.net}
+
+    def _set_train(self, on: bool) -> None:
+        for m in self._modules().values():
+            m.train(on)
+
     # --- training --------------------------------------------------------------------
 
-    def _forward(self, z: np.ndarray) -> np.ndarray:
-        """Normalised windows (N, L) -> normalised forecasts (N, H)."""
-        x = torch.as_tensor(z, dtype=torch.float32).unsqueeze(-1)
-        return self.net(x, None, None, None)[:, -self.horizon:, 0]
-
     def _loss(self, w: Windows) -> float:
-        self.net.eval()
+        self._set_train(False)
         with torch.no_grad():
-            pred = self._forward(self._scale(w.X))
+            pred = self._forward(self._inputs(w))
             return float(nn.functional.mse_loss(pred, torch.as_tensor(self._scale(w.Y),
                                                                       dtype=torch.float32)))
 
@@ -111,74 +132,88 @@ class NeuralForecaster(BaseForecaster):
         self.std = float(train_values.std()) or 1.0  # constant series: avoid division by 0
 
         set_seed(self.seed)
-        self.net = self.build_network()
-        optim = torch.optim.Adam(self.net.parameters(), lr=self.lr)
-        X = torch.as_tensor(self._scale(train.X), dtype=torch.float32)
+        optims = self._build()
+        inputs = self._inputs(train)
         Y = torch.as_tensor(self._scale(train.Y), dtype=torch.float32)
         gen = torch.Generator().manual_seed(self.seed)
         # drop_last as in MM-TSFlib, unless that would leave no batch at all (tiny tests)
-        drop_last = len(X) >= self.batch_size
+        n = len(Y)
+        drop_last = n >= self.batch_size
 
         best, best_state, bad_epochs = np.inf, None, 0
         self.history = []
         for epoch in range(self.epochs):
-            self.net.train()
-            perm = torch.randperm(len(X), generator=gen)
-            n_batches = len(X) // self.batch_size if drop_last else -(-len(X) // self.batch_size)
+            self._set_train(True)
+            perm = torch.randperm(n, generator=gen)
+            n_batches = n // self.batch_size if drop_last else -(-n // self.batch_size)
             losses = []
             for b in range(n_batches):
                 idx = perm[b * self.batch_size:(b + 1) * self.batch_size]
-                optim.zero_grad()
-                loss = nn.functional.mse_loss(self._forward(X[idx].numpy()), Y[idx])
+                for o in optims:
+                    o.zero_grad()
+                loss = nn.functional.mse_loss(
+                    self._forward(tuple(t[idx] for t in inputs), train=True), Y[idx])
                 loss.backward()
-                optim.step()
+                for o in optims:
+                    o.step()
                 losses.append(loss.item())
             val_loss = self._loss(val)
             self.history.append(dict(epoch=epoch + 1, train_loss=float(np.mean(losses)),
                                      val_loss=val_loss))
             if val_loss < best:
-                best, best_state, bad_epochs = val_loss, copy.deepcopy(self.net.state_dict()), 0
+                best, bad_epochs = val_loss, 0
+                best_state = {k: copy.deepcopy(m.state_dict()) for k, m in self._modules().items()}
             else:
                 bad_epochs += 1
                 if bad_epochs >= self.patience:
                     break
-        self.net.load_state_dict(best_state)
-        self.net.eval()
+        for k, m in self._modules().items():  # best epoch for *every* module
+            m.load_state_dict(best_state[k])
+        self._set_train(False)
         if checkpoint is not None:
             self.save(checkpoint)
         return self
 
     # --- inference -------------------------------------------------------------------
 
-    def predict_windows(self, X: np.ndarray) -> np.ndarray:
+    def predict_windows(self, X: np.ndarray, texts=None) -> np.ndarray:
         """Batched forecasts for many windows, raw units, shape (N, horizon).
 
-        Same computation as ``predict``, just vectorised for evaluation. Text is not an
-        argument because these models ignore it.
+        Same computation as ``predict``, vectorised for evaluation. ``texts`` (one
+        ``str | None`` per window) is ignored by the numbers-only models.
         """
         if self.net is None:
             raise RuntimeError("model is not trained; call fit() or load() first")
-        self.net.eval()
+        X = np.asarray(X, float)
+        self._set_train(False)
         with torch.no_grad():
-            return self._unscale(self._forward(self._scale(np.asarray(X, float))).numpy())
+            z = self._forward(self._inputs(Windows(X, np.zeros((len(X), self.horizon)),
+                                                   None, texts)))
+            return self._unscale(z.numpy())
 
     def _predict(self, numbers: np.ndarray, text: str | None) -> np.ndarray:
-        return self.predict_windows(numbers[None, :])[0]
+        return self.predict_windows(numbers[None, :], [text])[0]
 
     # --- checkpoints -----------------------------------------------------------------
 
     def save(self, path: Path | str) -> None:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
+        mods = self._modules()
         torch.save({"hyperparams": self.hyperparams(), "mean": self.mean, "std": self.std,
-                    "state_dict": self.net.state_dict(), "history": self.history}, path)
+                    "state_dict": mods["net"].state_dict(),
+                    "extra_state": {k: m.state_dict() for k, m in mods.items() if k != "net"},
+                    "history": self.history}, path)
 
     @classmethod
     def load(cls, path: Path | str) -> "NeuralForecaster":
         ckpt = torch.load(path, weights_only=False)
         model = cls(**ckpt["hyperparams"])
         model.mean, model.std, model.history = ckpt["mean"], ckpt["std"], ckpt["history"]
-        model.net = model.build_network()
-        model.net.load_state_dict(ckpt["state_dict"])
-        model.net.eval()
+        model._build()
+        mods = model._modules()
+        mods["net"].load_state_dict(ckpt["state_dict"])
+        for k, st in ckpt.get("extra_state", {}).items():
+            mods[k].load_state_dict(st)
+        model._set_train(False)
         return model
