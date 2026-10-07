@@ -141,3 +141,60 @@ def test_repro_config_uses_mm_tsflib_recipe():
     from src.models import train_baselines as tb
     m = tb.make_model("DLinear", "repro", 8, 6, seed=2021)
     assert (m.epochs, m.patience, m.lr) == (10, 5, 1e-4)
+
+
+# --- resumable runner --------------------------------------------------------------------
+
+@pytest.fixture
+def tiny_runner(monkeypatch, tmp_path):
+    """train_baselines with synthetic data, 2-epoch training and all outputs under tmp_path."""
+    from src.models import train_baselines as tb
+    s, _ = _data(n=80)
+    monkeypatch.setattr(tb, "load_splits", lambda domain: s)
+    monkeypatch.setattr(tb, "TUNED", dict(epochs=2, patience=2))
+    monkeypatch.setattr(tb, "RESULTS", tmp_path / "results")
+    monkeypatch.setattr(tb, "UNIT_DIR", tmp_path / "results" / "units")
+    monkeypatch.setattr(tb, "CHECKPOINTS", tmp_path / "ckpt")
+    return tb
+
+
+@needs_mmtsflib
+def test_runner_crash_loses_only_the_unit_in_progress(tiny_runner, monkeypatch):
+    tb = tiny_runner
+    kw = dict(domains=["Economy"], seeds=[2021], configs=("main",), use_mlflow=False)
+    real_run_unit = tb.run_unit
+
+    def crash_on_patchtst(config, domain, name, *a):
+        if name == "PatchTST":
+            raise KeyboardInterrupt("simulated power cut")
+        return real_run_unit(config, domain, name, *a)
+
+    monkeypatch.setattr(tb, "run_unit", crash_on_patchtst)
+    with pytest.raises(KeyboardInterrupt):
+        tb.run(**kw)
+    done = sorted(p.name for p in tb.UNIT_DIR.glob("*.done.json"))
+    assert done == ["main_Economy_DLinear.done.json", "main_Economy_Persistence.done.json"]
+
+    trained = []
+    monkeypatch.setattr(tb, "run_unit",
+                        lambda c, d, name, *a: trained.append(name) or real_run_unit(c, d, name, *a))
+    preds, tuning = tb.run(**kw)
+    assert trained == ["PatchTST"]                  # finished units were skipped
+    assert set(preds.model) == {"Persistence", "DLinear", "PatchTST"}
+    assert set(tuning.model) == {"DLinear", "PatchTST"}
+
+    trained.clear()
+    tb.run(**kw)
+    assert trained == []                            # everything done: nothing retrained
+
+
+@needs_mmtsflib
+def test_runner_refuses_units_from_a_different_protocol(tiny_runner, monkeypatch):
+    tb = tiny_runner
+    kw = dict(domains=["Economy"], seeds=[2021], configs=("main",), use_mlflow=False)
+    tb.run(**kw)
+    monkeypatch.setattr(tb, "LR_GRID", (1e-3,))
+    with pytest.raises(RuntimeError, match="different protocol"):
+        tb.run(**kw)
+    preds, tuning = tb.run(**kw, fresh=True)
+    assert set(tuning.lr) == {1e-3}

@@ -5,12 +5,15 @@ training, early stopping, checkpointing and the ``predict`` contract must be *id
 or a difference between the two models could come from the pipeline instead of the
 architecture.
 
-Training mirrors MM-TSFlib's ``exp_long_term_forecasting.train`` so our numbers are
-comparable with the published ones:
+The training loop mirrors MM-TSFlib's ``exp_long_term_forecasting.train``:
 
-* Adam, MSE loss on the **normalised** scale, lr 1e-4 constant (MM-TSFlib has its
+* Adam, MSE loss on the **normalised** scale, constant lr (MM-TSFlib has its
   ``adjust_learning_rate`` call commented out), batch 32, shuffled, ``drop_last=True``
-* up to 10 epochs, early stopping on validation loss with patience 5, best epoch restored
+* early stopping on validation loss, best epoch restored
+
+The constructor defaults (10 epochs, patience 5, lr 1e-4) are MM-TSFlib's recipe, used for
+the reproduction check. Main experiments override them with the val-tuned protocol in
+``train_baselines.py`` (up to 200 epochs, patience 20, lr chosen on val).
 
 What deliberately differs: the data. Splits are ours (chronological over the text window,
 issue #7) and the scaler is fit on **our train split only**.

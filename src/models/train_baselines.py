@@ -35,19 +35,30 @@ in the Time-MMD tables. Equivalently: raw MSE / train variance.
 
 Outputs:
 
+* ``results/p2_baselines/<config>_<domain>_<model>.csv`` (+ ``_tuning.csv``, ``.done.json``)
+  — one set per finished unit (config × domain × model), written the moment the unit ends.
+  **Resumable:** a re-run skips finished units, so a crash loses only the unit in progress.
+  A unit is reused only if its saved protocol matches the current one; ``--fresh`` wipes
+  them all. Gitignored.
 * ``results/p2_baselines_predictions.csv`` — every (config, model, domain, seed, split,
-  sample, step) prediction in raw units. Gitignored; metrics are derivable from it.
+  sample, step) prediction in raw units, collected from the units. Gitignored; metrics are
+  derivable from it.
 * ``results/summary_p2_baselines.csv`` — aggregated MSE (kept in git).
 * ``results/summary_p2_lr_tuning.csv`` — val loss for every grid point (kept in git).
 * ``checkpoints/<model>/<domain>/<config>_seed<s>.pt`` — gitignored.
-* one MLflow run per (config, model, domain, seed), plus one per tuning grid point.
+* one MLflow run per (config, model, domain, seed), plus one per tuning grid point. A unit
+  that crashed may leave orphan MLflow runs; the CSVs are the source of truth.
 
-Run: ``python -m src.models.train_baselines`` (``--no-mlflow`` to skip tracking).
+Run: ``python -m src.models.train_baselines`` (``--no-mlflow`` to skip tracking,
+``--fresh`` to retrain everything).
 """
 
 from __future__ import annotations
 
 import argparse
+import json
+import os
+import shutil
 from pathlib import Path
 
 import numpy as np
@@ -72,6 +83,8 @@ MMTSFLIB_RECIPE = dict(epochs=10, patience=5, lr=1e-4)
 ROOT = Path(__file__).resolve().parents[2]
 CHECKPOINTS = ROOT / "checkpoints"
 RESULTS = ROOT / "results"
+# one predictions CSV (+ tuning CSV + done marker) per finished unit; gitignored
+UNIT_DIR = RESULTS / "p2_baselines"
 
 # Time-MMD paper (Liu et al., NeurIPS 2024), App. O, Tables 11/14/16/17: unimodal ("Uni")
 # MSE at the shortest horizon — monthly 6, weekly 12. Normalised scale.
@@ -125,76 +138,176 @@ def _rows(config, model_name, domain, seed, split, w, pred, mean, std, lr=None):
     })
 
 
-def run(domains=DOMAINS, seeds=SEEDS, configs=("main", "repro"), use_mlflow=True):
-    """Train everything; return (raw-predictions frame, lr-tuning frame)."""
+# --- resumable units -------------------------------------------------------------------
+#
+# A *unit* is one (config, domain, model): for a neural model in ``main`` that is the lr
+# grid plus 3 seeds. Each finished unit is written to ``UNIT_DIR`` at once and skipped on
+# the next run, so a crash loses only the unit in progress.
+
+def protocol(name: str, config: str, seq_len: int, horizon: int, seeds=SEEDS) -> dict:
+    """Every setting that determines a unit's result. Stored with the unit, so a saved unit
+    is only reused under the protocol that produced it, never silently mixed with a new one.
+    (It does not fingerprint the code itself: after changing model code, run ``--fresh``.)"""
+    p = dict(model=name, config=config, seq_len=seq_len, horizon=horizon)
+    if name == "Persistence":
+        return p
+    p["seeds"] = list(seeds)
+    if config == "main":
+        p.update(lr_grid=list(LR_GRID), tune_seed=TUNE_SEED, **TUNED)
+    else:
+        p.update(**MMTSFLIB_RECIPE)
+    if name == "PatchTST":
+        p["patching"] = "window" if config == "main" else "mmtsflib"
+    return p
+
+
+def unit_paths(config: str, domain: str, name: str) -> dict[str, Path]:
+    stem = f"{config}_{domain}_{name}"
+    return {"preds": UNIT_DIR / f"{stem}.csv",
+            "tuning": UNIT_DIR / f"{stem}_tuning.csv",
+            "done": UNIT_DIR / f"{stem}.done.json"}
+
+
+def unit_done(config: str, domain: str, name: str, proto: dict) -> bool:
+    """True if the unit finished under ``proto``. Raises if it finished under another one."""
+    paths = unit_paths(config, domain, name)
+    if not (paths["done"].exists() and paths["preds"].exists()):
+        return False
+    saved = json.loads(paths["done"].read_text())
+    if saved != proto:
+        raise RuntimeError(
+            f"{paths['done'].name} was produced under a different protocol:\n"
+            f"  saved   {saved}\n  current {proto}\n"
+            "Re-run with --fresh to discard saved units.")
+    return True
+
+
+def _atomic_write(path: Path, write) -> None:
+    tmp = path.with_name(path.name + ".tmp")
+    write(tmp)
+    os.replace(tmp, path)
+
+
+def save_unit(config: str, domain: str, name: str, proto: dict,
+              preds: pd.DataFrame, tuning: pd.DataFrame | None) -> None:
+    """Write the unit's files. The ``.done.json`` marker goes last, so a crash mid-save
+    leaves an unfinished unit (re-run next time), never a half-written one that looks done."""
+    paths = unit_paths(config, domain, name)
+    UNIT_DIR.mkdir(parents=True, exist_ok=True)
+    _atomic_write(paths["preds"], lambda f: preds.to_csv(f, index=False))
+    if tuning is not None:
+        _atomic_write(paths["tuning"], lambda f: tuning.to_csv(f, index=False))
+    _atomic_write(paths["done"], lambda f: f.write_text(json.dumps(proto, indent=1)))
+
+
+def run_unit(config, domain, name, w, train_values, seq_len, horizon, seeds, use_mlflow):
+    """Train and evaluate one (config, domain, model). Returns (predictions, tuning | None)."""
+    mean, std = float(train_values.mean()), float(train_values.std())
+    if name == "Persistence":  # deterministic: one run, seed recorded as 0
+        pers = PersistenceForecaster(horizon=horizon, lookback=seq_len)
+        return pd.concat([_rows(config, name, domain, 0, split, w[split],
+                                pers.predict_windows(w[split].X), mean, std)
+                          for split in ("val", "test")], ignore_index=True), None
+    if use_mlflow:
+        import mlflow
+    frames, tuning, lr, reuse = [], None, None, None
+    if config == "main":
+        def log(r):
+            print(f"    tune {name:<9} lr={r['lr']:g} best_val={r['best_val_loss']:.4f} "
+                  f"best_epoch={r['best_epoch']} epochs_run={r['epochs_run']}", flush=True)
+            if use_mlflow:
+                with mlflow.start_run(run_name=f"tune-{name}-{domain}-lr{r['lr']:g}"):
+                    mlflow.log_params({"model": name, "domain": domain,
+                                       "condition": "numbers_only", "seed": TUNE_SEED,
+                                       "config": "tune", "lr": r["lr"],
+                                       "horizon": 1, "seq_len": seq_len})
+                    mlflow.log_metrics({"best_val_loss": r["best_val_loss"],
+                                        "epochs_run": r["epochs_run"]})
+        lr, reuse, grid = tune_lr(name, seq_len, w, train_values, log)
+        tuning = pd.DataFrame([{"domain": domain, **r, "chosen": r["lr"] == lr} for r in grid])
+    for seed in seeds:
+        ckpt = CHECKPOINTS / name / domain / f"{config}_seed{seed}.pt"
+        if reuse is not None and seed == TUNE_SEED:
+            model = reuse
+            model.save(ckpt)
+        else:
+            model = make_model(name, config, seq_len, horizon, seed, lr)
+            model.fit(w["train"], w["val"], train_values, checkpoint=ckpt)
+        metrics = {}
+        for split in ("val", "test"):
+            pred = model.predict_windows(w[split].X)
+            frames.append(_rows(config, name, domain, seed, split, w[split],
+                                pred, mean, std, model.lr))
+            metrics[f"{split}_mse_norm"] = float(np.mean(((w[split].Y - pred) / std) ** 2))
+        if use_mlflow:
+            with mlflow.start_run(run_name=f"{config}-{name}-{domain}-{seed}"):
+                mlflow.log_params({"model": name, "domain": domain,
+                                   "condition": "numbers_only", "seed": seed,
+                                   "config": config, "horizon": horizon,
+                                   "seq_len": seq_len, "lr": model.lr,
+                                   "max_epochs": model.epochs,
+                                   "patience": model.patience,
+                                   "patching": getattr(model, "patching", "-"),
+                                   "n_train_windows": len(w["train"])})
+                mlflow.log_metrics({**metrics, "epochs_run": len(model.history)})
+        print(f"    {name:<9} seed={seed} lr={model.lr:g} epochs={len(model.history):>3} "
+              f"val={metrics['val_mse_norm']:.4f} test={metrics['test_mse_norm']:.4f}",
+              flush=True)
+    return pd.concat(frames, ignore_index=True), tuning
+
+
+def run(domains=DOMAINS, seeds=SEEDS, configs=("main", "repro"), use_mlflow=True,
+        fresh=False):
+    """Run every unit not already saved, then collect all saved units.
+
+    Returns (raw-predictions frame, lr-tuning frame) over every finished unit.
+    ``fresh=True`` deletes saved units first (checkpoints are simply overwritten).
+    """
+    if fresh and UNIT_DIR.exists():
+        shutil.rmtree(UNIT_DIR)
     if use_mlflow:
         import mlflow
         mlflow.set_experiment("p2_baselines")
-    frames, tuning = [], []
     for domain in domains:
         splits = load_splits(domain)
         train_values = splits.train["value"].to_numpy(float)
-        mean, std = float(train_values.mean()), float(train_values.std())
         seq_len = lookback_for(domain)
         for config in configs:
             horizon = 1 if config == "main" else PUBLISHED_HORIZON[DOMAIN_FREQ[domain]]
             w = split_windows(splits, seq_len, horizon)
             print(f"{domain:<10} {config:<5} seq_len={seq_len} h={horizon} windows "
-                  f"train={len(w['train'])} val={len(w['val'])} test={len(w['test'])}", flush=True)
-            # Persistence is deterministic: one run, seed recorded as 0
-            pers = PersistenceForecaster(horizon=horizon, lookback=seq_len)
-            for split in ("val", "test"):
-                frames.append(_rows(config, "Persistence", domain, 0, split, w[split],
-                                    pers.predict_windows(w[split].X), mean, std))
-            for name in MODEL_CLASSES:
-                lr, reuse = None, None
-                if config == "main":
-                    def log(r, name=name):
-                        print(f"    tune {name:<9} lr={r['lr']:g} best_val={r['best_val_loss']:.4f} "
-                              f"best_epoch={r['best_epoch']} epochs_run={r['epochs_run']}", flush=True)
-                        if use_mlflow:
-                            with mlflow.start_run(run_name=f"tune-{name}-{domain}-lr{r['lr']:g}"):
-                                mlflow.log_params({"model": name, "domain": domain,
-                                                   "condition": "numbers_only", "seed": TUNE_SEED,
-                                                   "config": "tune", "lr": r["lr"],
-                                                   "horizon": 1, "seq_len": seq_len})
-                                mlflow.log_metrics({"best_val_loss": r["best_val_loss"],
-                                                    "epochs_run": r["epochs_run"]})
-                    lr, reuse, grid = tune_lr(name, seq_len, w, train_values, log)
-                    tuning += [{"domain": domain, **r, "chosen": r["lr"] == lr} for r in grid]
-                for seed in seeds:
-                    ckpt = CHECKPOINTS / name / domain / f"{config}_seed{seed}.pt"
-                    if reuse is not None and seed == TUNE_SEED:
-                        model = reuse
-                        model.save(ckpt)
-                    else:
-                        model = make_model(name, config, seq_len, horizon, seed, lr)
-                        model.fit(w["train"], w["val"], train_values, checkpoint=ckpt)
-                    metrics = {}
-                    for split in ("val", "test"):
-                        pred = model.predict_windows(w[split].X)
-                        frames.append(_rows(config, name, domain, seed, split, w[split],
-                                            pred, mean, std, model.lr))
-                        metrics[f"{split}_mse_norm"] = float(np.mean(((w[split].Y - pred) / std) ** 2))
-                    if use_mlflow:
-                        with mlflow.start_run(run_name=f"{config}-{name}-{domain}-{seed}"):
-                            mlflow.log_params({"model": name, "domain": domain,
-                                               "condition": "numbers_only", "seed": seed,
-                                               "config": config, "horizon": horizon,
-                                               "seq_len": seq_len, "lr": model.lr,
-                                               "max_epochs": model.epochs,
-                                               "patience": model.patience,
-                                               "patching": getattr(model, "patching", "-"),
-                                               "n_train_windows": len(w["train"])})
-                            mlflow.log_metrics({**metrics, "epochs_run": len(model.history)})
-                    print(f"    {name:<9} seed={seed} lr={model.lr:g} epochs={len(model.history):>3} "
-                          f"val={metrics['val_mse_norm']:.4f} test={metrics['test_mse_norm']:.4f}",
-                          flush=True)
-    preds = pd.concat(frames, ignore_index=True)
+                  f"train={len(w['train'])} val={len(w['val'])} test={len(w['test'])}",
+                  flush=True)
+            for name in ("Persistence", *MODEL_CLASSES):
+                proto = protocol(name, config, seq_len, horizon, seeds)
+                if unit_done(config, domain, name, proto):
+                    print(f"    {name:<11} already done, skipped", flush=True)
+                    continue
+                preds, tuning = run_unit(config, domain, name, w, train_values, seq_len,
+                                         horizon, seeds, use_mlflow)
+                save_unit(config, domain, name, proto, preds, tuning)
+    return collect()
+
+
+def collect() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Concatenate every finished unit into the combined predictions and tuning CSVs."""
+    stems = sorted(d.name.removesuffix(".done.json") for d in UNIT_DIR.glob("*.done.json"))
+    if not stems:
+        raise RuntimeError(f"no finished units in {UNIT_DIR}")
+    preds = pd.concat([pd.read_csv(UNIT_DIR / f"{s}.csv") for s in stems], ignore_index=True)
+    tuning_files = [UNIT_DIR / f"{s}_tuning.csv" for s in stems
+                    if (UNIT_DIR / f"{s}_tuning.csv").exists()]
+    tuning = pd.DataFrame()
+    if tuning_files:  # stable order: domains as in DOMAINS, then model, then lr
+        tuning = pd.concat([pd.read_csv(f) for f in tuning_files], ignore_index=True)
+        rank = {d: i for i, d in enumerate(DOMAINS)}
+        tuning = (tuning.assign(_r=tuning.domain.map(rank))
+                  .sort_values(["_r", "model", "lr"]).drop(columns="_r")
+                  .reset_index(drop=True))
     RESULTS.mkdir(exist_ok=True)
     preds.to_csv(RESULTS / "p2_baselines_predictions.csv", index=False)
-    tuning = pd.DataFrame(tuning)
     tuning.to_csv(RESULTS / "summary_p2_lr_tuning.csv", index=False)
+    print(f"collected {len(stems)} finished units", flush=True)
     return preds, tuning
 
 
@@ -214,8 +327,11 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--no-mlflow", action="store_true")
     ap.add_argument("--domains", nargs="+", default=DOMAINS)
+    ap.add_argument("--fresh", action="store_true",
+                    help="discard saved units and retrain everything")
     args = ap.parse_args()
-    preds, tuning = run(domains=args.domains, use_mlflow=not args.no_mlflow)
+    preds, tuning = run(domains=args.domains, use_mlflow=not args.no_mlflow,
+                        fresh=args.fresh)
     summary = summarise(preds)
     summary.to_csv(RESULTS / "summary_p2_baselines.csv", index=False)
     with pd.option_context("display.width", 200, "display.max_rows", 200):

@@ -44,3 +44,5 @@ Thumbs.db
 
 # Model checkpoints (P2+)
 /checkpoints/
+# per-unit raw outputs of resumable runners (combined CSVs are derivable from them)
+/results/p2_baselines/

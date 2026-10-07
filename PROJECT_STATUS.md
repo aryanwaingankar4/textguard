@@ -5,7 +5,7 @@
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
 **Current phase:** P2 — Model Wrappers
-**Last updated:** 2026-10-02
+**Last updated:** 2026-10-07
 
 > 👤 **Solo project.** All work by Aryan.
 > 📌 **Phase-gated, no deadlines.** See `PHASES.md`.
@@ -18,7 +18,7 @@
 |---|---|---|---|
 | P0 | Environment, repo, folder skeleton | ✅ | ✅ Done |
 | P1 | Data pipeline — loader, splits, domain selection | ✅ | ✅ Done |
-| P2 | Model wrappers — 5 models, one interface | ✅ | 🔵 In progress (2.1, 2.5 done) |
+| P2 | Model wrappers — 5 models, one interface | ✅ | 🔵 In progress (2.1, 2.2, 2.5 done) |
 | P3 | Attack module — 6 text conditions | ✅ | ⚪ Pending |
 | P4 | Metrics module — DSS, Flip Rate, etc. | ✅ | ⚪ Pending |
 | P5 | Experiment runner — screening + attack | ✅ | ⚪ Pending |
@@ -62,6 +62,9 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 | Blank text | `""` / whitespace → `None`: `empty` ≡ `has_text=False` ≡ TextGuard's A |
 | Prediction failures | **NaN**, never raise or drop; NaN-pairing rule for P4/P6 (§6a) |
 | Scoring horizon | **horizon = 1** for main experiments; DSS and Flip Rate scored at h=1 |
+| Training protocol (main) | **Val-tuned:** up to 200 epochs, patience 20, lr ∈ {1e-4, 1e-3, 1e-2} chosen per domain × model by val loss (seed 2021), then 3 seeds. **Models 3 and 4 (P2.3) must reuse it exactly** — see §7 |
+| Training protocol (repro) | MM-TSFlib's original recipe (10 epochs, patience 5, lr 1e-4), published horizon, PatchTST as shipped — only for the reproduction column |
+| PatchTST patching (main) | `patching="window"`: patch_len = L/2, stride = L/4 — bypasses MM-TSFlib's patch_len clamp (§7) |
 
 ---
 
@@ -105,8 +108,13 @@ Related Work in P8, and re-run the arXiv search then.
 | `src/data/check_timing.py` | P1 | ✅ run — FAILS with current default |
 | `src/data/inspect_domains.py` | P1 | ✅ (3 tests) |
 | `src/models/base.py` | P2 | ✅ (27 tests) |
-| `src/models/dlinear.py` | P2 | ⚪ |
-| `src/models/patchtst.py` | P2 | ⚪ |
+| `src/data/windows.py` | P2 | ✅ (lookback windows; val/test take context from earlier splits) |
+| `src/models/_mmtsflib.py` | P2 | ✅ (imports MM-TSFlib networks only, not its data pipeline) |
+| `src/models/neural.py` | P2 | ✅ (shared train/scale/checkpoint for DLinear + PatchTST) |
+| `src/models/persistence.py` | P2 | ✅ (sanity floor) |
+| `src/models/dlinear.py` | P2 | ✅ trained (§7) |
+| `src/models/patchtst.py` | P2 | ✅ trained (§7) |
+| `src/models/train_baselines.py` | P2 | ✅ resumable runner — saves each config × domain × model unit, skips finished ones |
 | `src/models/dlinear_bert.py` | P2 | ⚪ |
 | `src/models/patchtst_bert.py` | P2 | ⚪ |
 | `src/models/qwen_forecaster.py` | P2 | ⚪ |
@@ -358,11 +366,96 @@ with `horizon` and `predict(numbers, text)`, no inheritance required. Our wrappe
 
 ---
 
-## 7. Baseline reproduction (P2)
+## 7. Baselines (P2.2)
 
-| Domain | Model | Our MSE | Published MSE | Close? |
+`python -m src.models.train_baselines` → `results/summary_p2_baselines.csv`,
+`results/summary_p2_lr_tuning.csv`; raw predictions in `results/p2_baselines_predictions.csv`.
+Normalised MSE (÷ train variance), mean ± std over seeds 2021–2023. Lookback 8 (monthly) / 24 (weekly).
+
+### Main config — horizon 1, val-tuned protocol (what P5 uses)
+
+| Domain | Split | Persistence | DLinear | PatchTST |
 |---|---|---|---|---|
-| _(pending)_ | | | | |
+| Economy | val | 0.150 | 0.101 ± 0.000 | **0.080 ± 0.011** |
+| Economy | test | 0.280 | 0.198 ± 0.002 | **0.183 ± 0.011** |
+| SocialGood | val | 0.033 | 0.019 ± 0.000 | **0.009 ± 0.001** |
+| SocialGood | test | **0.573** | 0.740 ± 0.007 | 0.883 ± 0.092 |
+| Traffic | val | 1.331 | 1.021 ± 0.008 | **0.041 ± 0.008** |
+| Traffic | test | 1.582 | 1.043 ± 0.005 | **0.885 ± 0.032** |
+| Health_US | val | 0.057 | **0.042 ± 0.001** | 0.062 ± 0.015 |
+| Health_US | test | 0.150 | **0.109 ± 0.004** | 0.159 ± 0.032 |
+
+Chosen lr (val loss, seed 2021): Economy 1e-3 / 1e-3 · SocialGood 1e-2 / 1e-3 ·
+Traffic 1e-2 / 1e-4 · Health_US 1e-2 / 1e-3 (DLinear / PatchTST). Every chosen run stopped
+early (best epoch 15–60), well inside the 200-epoch cap.
+
+Reading the table:
+- **Val numbers are optimistic** — lr was selected on val. Test is the honest column.
+- **SocialGood test: both models lose to persistence.** Its test span (2017-05 → 2023-01)
+  contains the 2020 unemployment spike; no 8-month window predicts it. Expected, and the
+  same regime shift as the P6 COVID analysis (issue #10).
+- **Traffic: DLinear val 1.02 vs PatchTST 0.04 is real, not a bug.** Traffic has a strong
+  12-month cycle and the lookback is 8, so lag 12 is never visible. PatchTST infers the
+  seasonal phase from the window's shape (e.g. predicts the March rebound after the February
+  trough); a linear map cannot (issue #22). Traffic reports state year-over-year changes
+  ("−1.6% vs January 2009") — exactly what the 8-month window lacks — so Traffic is the
+  likeliest domain for genuine text use and the strongest P5 attack target. Lookback stays 8.
+- **Health_US: PatchTST does not beat persistence** (test 0.159 vs 0.150, high seed variance).
+  DLinear does. Keep in mind when Model 4's gap is computed on Health_US.
+- Training is deterministic: an independent re-run on 2026-10-07 reproduced the 2026-10-02
+  run to ≤1.3e-7 (CSV round-off).
+
+### ⚠️ Why the tuned protocol exists — DLinear under MM-TSFlib's recipe ≈ window mean
+
+Under MM-TSFlib's recipe (10 epochs, patience 5, lr 1e-4 ≈ 70 Adam steps) DLinear barely
+leaves its initialisation (weights 1/L = a window average). At h=1, 3 seeds:
+
+| Domain | Split | DLinear (MM-TSFlib recipe) | Window-mean predictor | corr(DLinear pred, window mean) |
+|---|---|---|---|---|
+| Economy | test | 0.348 ± 0.032 | 0.309 | 0.9999 |
+| SocialGood | test | 1.341 ± 0.023 | 1.322 | 0.9999 |
+| Traffic | test | 2.547 ± 0.031 | 2.561 | 0.9996 |
+| Health_US | test | 2.245 ± 0.037 | 2.823 | 0.9758 |
+
+On the monthly domains the "trained" model *is* the window mean (corr ≥ 0.9996; on val
+≥ 0.9984). An untrained backbone would make any text gain in Model 3 meaningless — text would
+be compensating for under-training. Hence the tuned protocol, and hence:
+
+> **Models 3 and 4 (P2.3) must reuse the tuned protocol exactly** — `LR_GRID`, `TUNED`
+> (200 epochs, patience 20), `TUNE_SEED`, the same 3 seeds, and `patching="window"` for
+> PatchTST — tuned per domain on val. Otherwise a Text Usage Gap mixes the effect of text
+> with the effect of extra trainable parameters / different training (issue #19).
+
+### ⚠️ PatchTST patch_len clamp (MM-TSFlib bug at h=1)
+
+MM-TSFlib's `models/PatchTST.py` has `if patch_len > pred_len: patch_len = pred_len` (not in
+the original PatchTST). At `pred_len=1` this gives patch_len 1, stride 8: on a lookback of 8
+the encoder sees **2 of 8 inputs** — `x[0]` and the padded copy of `x[7]`. Six inputs are never
+read. Our main config uses `patching="window"` (patch_len L/2, stride L/4 → 4 overlapping
+patches covering every input); the as-shipped network is used only in the repro config at
+h=6/12, where the clamp does not fire. Tested in `tests/test_baseline_models.py`.
+**Model 4 (PatchTST + BERT) inherits the same constructor → must use `patching="window"`** (issue #20).
+
+### Reproduction config — MM-TSFlib recipe, published horizon (monthly 6, weekly 12)
+
+| Domain | Model | Our MSE (test) | Published Uni MSE | Close? |
+|---|---|---|---|---|
+| Economy | DLinear | 0.493 ± 0.044 | 0.08 | ❌ |
+| Economy | PatchTST | 0.285 ± 0.003 | 0.02 | ❌ |
+| SocialGood | DLinear | 2.101 ± 0.035 | 1.01 | ❌ |
+| SocialGood | PatchTST | 2.299 ± 0.172 | 0.88 | ❌ |
+| Traffic | DLinear | 2.869 ± 0.034 | 0.35 | ❌ |
+| Traffic | PatchTST | 2.248 ± 0.015 | 0.21 | ❌ |
+| Health_US | DLinear | 3.107 ± 0.008 | 2.37 | ❌ (closest) |
+| Health_US | PatchTST | 1.607 ± 0.042 | 1.23 | ❌ (closest) |
+
+Same networks, same recipe, numbers-only — so text source (issue #6) cannot explain the gap.
+**Cause:** different test periods and splits. Ours is chronological over the text window,
+and the monthly test sets contain 2020; MM-TSFlib splits its own CSVs by row position over the
+whole series, and its Economy CSV is unsorted (issue #7), so its test set is not the future.
+Health_US — the one domain whose test span (2017–2020) ends before COVID — is the closest.
+**Closed (2026-10-07): not pursued further** — listed as a limitation in the paper. The repro
+column only shows the networks and recipe are MM-TSFlib's; it is not a claim of matching their numbers (issue #21).
 
 ---
 
@@ -434,12 +527,33 @@ with `horizon` and `predict(numbers, text)`, no inheritance required. Our wrappe
 | 16 | Direction classifier must be Qwen-based (heuristic only 72% vs humans); validate on the 100 hand labels | P3 | ⬜ Open |
 | 17 | NaN pairing: drop a sample from both sides if either is NaN; report parse-failure rate per model × condition (§6a) | P4 | ⬜ Open |
 | 18 | TextGuard: if B is NaN, final = A (§6a) | P6 | ⬜ Open |
+| 19 | **Models 3/4 must reuse the val-tuned protocol** (`train_baselines.LR_GRID`, `TUNED`, `TUNE_SEED`, `patching="window"`) — else a Text Usage Gap mixes text with extra training | P2.3 | ⬜ Open |
+| 20 | MM-TSFlib PatchTST clamps patch_len to pred_len → at h=1 it reads 2 of 8 inputs; Models 4 (and 6) must use `patching="window"` too | P2.3 | ✅ Fixed for Model 2; ⬜ apply to Model 4 |
+| 21 | Repro column far above published MSE (e.g. Traffic DLinear 2.87 vs 0.35) | P2/P8 | ✅ Closed — explained by different test periods and splits; not pursued further — listed as a limitation in the paper |
+| 22 | Lookback 8 < 12-month seasonality: DLinear can't see lag 12 (Traffic val 1.02 vs PatchTST 0.04). Traffic reports state **year-over-year** changes ("−1.6% vs January 2009") — exactly the information an 8-month window lacks. So Traffic is the domain most likely to show **genuine text use**, and the **strongest P5 attack target**. Lookback stays 8 to match the published setup | P5 | ⬜ Open — note when interpreting |
 
 ---
 
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-07 — P2.2: numbers-only baselines trained (val-tuned protocol)
+- Persistence, DLinear, PatchTST trained on all 4 domains: lr grid {1e-4, 1e-3, 1e-2} on val,
+  up to 200 epochs / patience 20, 3 seeds; repro column on MM-TSFlib's recipe. Results §7
+- Found: DLinear under MM-TSFlib's recipe ≈ window-mean predictor (corr ≥ 0.9996 monthly) →
+  tuned protocol, **binding on Models 3/4** (issue #19)
+- Found: MM-TSFlib PatchTST clamps patch_len to pred_len → reads 2 of 8 inputs at h=1;
+  `patching="window"` bypasses it (issue #20)
+- Repro column far above published MSE — explained by different test periods/splits; closed as a limitation (issue #21)
+- `train_baselines.py` made resumable: each config × domain × model unit saved to
+  `results/p2_baselines/` on completion with a protocol fingerprint; finished units skipped;
+  `--fresh` retrains all. 115 tests passing (2 new: simulated crash/resume, protocol mismatch)
+- **Broke:** laptop shut down mid-session. The 2026-10-02 tuned run had in fact completed
+  (MLflow: 72 finished runs, nothing after); its CSVs were verified complete, then reproduced
+  by an independent re-run with the new runner (tuning identical, MSE ≤1.3e-7)
+- **Next:** P2.3 — read MM-TSFlib fusion code (issue #3), then DLinear+BERT / PatchTST+BERT
+  with the tuned protocol
 
 ### 2026-10-02 — P2.1 + P2.5: forecaster interface + dummy model
 - `src/models/base.py`: `Forecaster` Protocol + `BaseForecaster` ABC; univariate raw-unit input,
