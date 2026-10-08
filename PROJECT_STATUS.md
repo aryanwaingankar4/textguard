@@ -122,7 +122,10 @@ Related Work in P8, and re-run the arXiv search then.
 | `src/models/late_fusion.py` | P2 | ✅ fusion mixin shared by Models 3/4 (15 tests) |
 | `src/models/dlinear_bert.py` | P2 | ✅ Model 3 (thin module → `late_fusion`) |
 | `src/models/patchtst_bert.py` | P2 | ✅ Model 4 (thin module → `late_fusion`) |
-| `src/models/qwen_forecaster.py` | P2 | ⚪ |
+| `src/models/qwen_prompt.py` | P2 | ✅ prompt + parser, single source of truth |
+| `src/models/export_qwen_inputs.py` | P2 | ✅ 493 val + test windows → one CSV |
+| `notebooks/p2_qwen_forecaster.ipynb` | P2 | ✅ built by `build_p2_qwen_notebook.py`; ⬜ not yet run on Colab |
+| `src/models/qwen_forecaster.py` | P2 | ✅ serves the Colab CSV (23 tests); ⬜ waiting for the CSV |
 | `src/models/dummy.py` | P2 | ✅ (26 tests) |
 | `src/attacks/*.py` (6 conditions) | P3 | ⚪ |
 | `src/metrics.py` | P4 | ⚪ |
@@ -602,6 +605,51 @@ Reading it (preliminary — P5 does the proper screening with shuffled/cross-dom
 - Several heads early-stop at epoch 1–7 (SocialGood M4 best epoch 1, Health_US M4 2):
   little learnable text signal there on val. Expected for level-language domains.
 
+## 7b. Model 5 — Qwen2.5-1.5B-Instruct, early fusion (P2.4)
+
+**Workflow** (Colab web UI, issue #5):
+`python -m src.models.export_qwen_inputs` → `results/qwen/qwen_inputs.csv` (493 val + test
+windows, 4 domains; lookback in raw units, aligned report text, y_true, train scaler; 329 KB,
+gitignored) → upload with `notebooks/p2_qwen_forecaster.ipynb` to colab.research.google.com
+(T4) → `p2_qwen_predictions.csv` back into `results/qwen/` → `QwenForecaster(domain)` serves
+`predict(numbers, text)` from it, so P4–P6 treat Model 5 like Models 1–4.
+
+| Decision | Value | Why |
+|---|---|---|
+| Fusion | **early**: numbers + report in one chat prompt | the model decides how to combine them |
+| Precision / hardware | fp16 on a Colab T4 | free tier; 1.5B fits easily |
+| Decoding | **greedy, batch size 1** (no padding) | deterministic: **one run replaces 3 seeds** (recorded as seed 0). Seed variance for Model 5 is not reported because there is none |
+| Numeric prompt | values labelled `t-L … t-1`, **no dates** | reduces recall of memorised historical values |
+| `text=None` | **identical prompt with the report block removed** | A is a natural, valid prompt; B − A = the effect of adding the report |
+| Parsing | first number; handles "282,558", Unicode minus, echoed `t-1` labels, "billion" vs a "million" unit | `nan` + `parse_ok=False` on failure, **never dropped**; raw output kept in the CSV |
+| Source of truth | `src/models/qwen_prompt.py`, pasted verbatim into the notebook by `notebooks/build_p2_qwen_notebook.py` | a test fails if the notebook drifts; `QwenForecaster` recomputes every `prompt_sha` at load and refuses a CSV from a different prompt |
+| Crash safety | appends to Drive (if mounted) every 10 prompts; re-running the loop resumes | a Colab disconnect loses ≤ 10 rows |
+
+Output CSV: `domain, split, sample_id, condition (real / none), y_true, y_pred, parse_ok`,
+plus `raw_output` and `prompt_sha` for auditing.
+
+**⚠️ Limitation — memorisation leakage.** Qwen2.5's pretraining very likely includes these
+public statistics (US trade balance, unemployment, VMT, ILI) and even the reports themselves.
+Removing dates from the numeric prompt makes recall harder, but **the report text keeps its
+dates** (e.g. "…for March 2020 as compared with March 2019") — editing them would change the
+`real` condition itself. Model 5's absolute accuracy may therefore be optimistic; DSS (a
+*difference* between two prompts that share everything but the report) is less exposed than
+MSE. **List as a limitation in the paper.**
+
+**⚠️ Data caveat — report figures are not the series values.** Economy's target is the
+**goods** balance (May 2015: −58,365 M$) while its reports quote the goods-**and-services**
+deficit ("$41.9 billion"); Traffic's reports quote a different VMT estimate (March 2020:
+"221.0 billion" vs series 226,638 M). Qwen must not copy the report's headline number. The
+prompt names the series precisely (e.g. "trade balance in goods"). Check Qwen's errors for
+copying in P5.
+
+**⚠️ Risk for P3/P6 — same-model circularity.** Qwen will (a) generate the fake text in P3 and
+(b) judge text direction inside TextGuard in P6. A model may find its *own* rewrites easy to
+classify, so detection could look easier than it is against human-written or other-model
+manipulations. **P6 must validate the direction judge against the human labels from
+`check_directional`** (`results/summary_directional_*.csv`, 100 hand-labelled reports), and
+ideally test on fakes from a second generator (rule-based word flip, issue #16 / CLAUDE.md §15).
+
 ## 8. Fake text validation (P3)
 
 - Samples manually checked: ___ / 100
@@ -675,6 +723,9 @@ Reading it (preliminary — P5 does the proper screening with shuffled/cross-dom
 | 21 | Repro column far above published MSE (e.g. Traffic DLinear 2.87 vs 0.35) | P2/P8 | ✅ Closed — explained by different test periods and splits; not pursued further — listed as a limitation in the paper |
 | 22 | Lookback 8 < 12-month seasonality: DLinear can't see lag 12 (Traffic val 1.02 vs PatchTST 0.04). Traffic reports state **year-over-year** changes ("−1.6% vs January 2009") — exactly the information an 8-month window lacks. So Traffic is the domain most likely to show **genuine text use**, and the **strongest P5 attack target**. Lookback stays 8 to match the published setup | P5 | ⬜ Open — note when interpreting |
 | 23 | **P5 extra analysis: report Traffic with and without 2020.** Genuine, extreme COVID-era Traffic text hurts Model 3 on test (test MSE 1.04 → 1.60 with text) although text halves val error — the text head never saw year-over-year changes of that size. Same regime-shift theme as #10 | P5 | ⬜ Open |
+| 24 | Model 5 memorisation leakage: Qwen may have seen these statistics/reports in pretraining; numeric prompt is undated, report text still dated — paper limitation (§7b) | P8 | ⬜ Open |
+| 25 | Same-model circularity: Qwen generates P3 fakes and judges direction in P6 → validate the P6 judge on the human labels from `check_directional`, ideally also on non-Qwen fakes (§7b) | P3/P6 | ⬜ Open |
+| 26 | Report figures ≠ series values (Economy goods vs goods-and-services; Traffic VMT estimates) — check Qwen errors for copying the report's number (§7b) | P5 | ⬜ Open |
 
 ---
 
