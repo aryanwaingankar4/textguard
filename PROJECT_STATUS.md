@@ -1182,10 +1182,10 @@ different window mask) is **exploratory** and will be labelled so.
   P2.4 answers, Hub revision pinned + recorded), `load_all_predictions`
 - **Broke:** pandas 3 turned `None` texts into NaN in a string column (caught by the
   real-text cross-check before any prediction was saved) → object dtype
-- 221 tests passing (10 new); 226 after the follow-up
+- 221 tests passing (10 new); 225 after the follow-up
 - Follow-up (Aryan's review): a failed probe now regenerates real + none too (986 rows),
   not only the conditions; `setup` recorded per row; `qwen_rows()` refuses mixed setups
-  (5 new tests: probe pass / fail, mixed classes, tampered probe, two-setup file)
+  (P5 Qwen tests 4 → 8: setup string, probe pass / fail, mixed classes, failed-probe reuse, two-setup file)
 - **Next:** Aryan runs the Colab notebook → `qwen_rows()` → P5b analysis
 
 ### 2026-10-09 — P4: metrics module → **P4 complete**
