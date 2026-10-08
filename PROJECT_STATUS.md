@@ -4,7 +4,7 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** P4 — Metrics Module (P3 complete)
+**Current phase:** P5 — Experiments (P4 complete)
 **Last updated:** 2026-10-09
 
 > 👤 **Solo project.** All work by Aryan.
@@ -20,7 +20,7 @@
 | P1 | Data pipeline — loader, splits, domain selection | ✅ | ✅ Done |
 | P2 | Model wrappers — 5 models, one interface | ✅ | ✅ Done |
 | P3 | Attack module — 6 text conditions | ✅ | ✅ Done |
-| P4 | Metrics module — DSS, Flip Rate, etc. | ✅ | ⚪ Pending |
+| P4 | Metrics module — DSS, Flip Rate, etc. | ✅ | ✅ Done |
 | P5 | Experiment runner — screening + attack | ✅ | ⚪ Pending |
 | P6 | TextGuard defense | ✅ Core | ⚪ Pending |
 | P7 | Auditor, demo, extras | ⬜ Optional | ⚪ Pending |
@@ -29,6 +29,78 @@
 Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 
 **P0–P6 + P8 = complete paper. P7 is upside.**
+
+---
+
+## 1a. ▶ START HERE — handoff for the next session (P5a)
+
+> Written 2026-10-09 at the end of P4. Replace this section at the end of P5a.
+
+**Scope assumed:** P5a = **5.1 runner + 5.2 screening** (PHASES.md); P5b = **5.3 attack**
+(flipped / exaggerated, DSS, Flip Rate, significance). PHASES.md does not name P5a/P5b —
+confirm the split with Aryan if it matters.
+
+### What exists and where
+
+| Artifact | Path | In git? | How to regenerate |
+|---|---|---|---|
+| Splits / windows | `src/data/splits.py`, `src/data/windows.py` (h=1; lookback 8 monthly / 24 weekly) | code | — |
+| Models 1–4 predictions, **real + empty only**, val + test, 3 seeds | `results/p2_baselines_predictions.csv` (`config=main`; `condition` = real / empty; Models 1–2 real only) | ❌ (raw) | `python -m src.models.train_baselines` (resumable; ~1 h CPU; units in `results/p2_baselines/`) |
+| Models 1–4 checkpoints | `checkpoints/<model>/<domain>/main_seed{2021,2022,2023}.pt` (model ∈ DLinear, PatchTST, DLinear+BERT, PatchTST+BERT) | ❌ | same runner (deterministic) |
+| BERT embedding cache | `cache/text_emb/` | ❌ | `python -m src.models.embed_texts` (real texts); new texts are embedded on first use |
+| Model 5 predictions, **real + none only**, val + test | `results/qwen/p2_qwen_predictions.csv` + `qwen_inputs.csv` | ✅ predictions (backed up), inputs ❌ | Colab notebook (§7b); inputs: `python -m src.models.export_qwen_inputs` |
+| All 7 text conditions, val + test (493 windows each) | `texts/<condition>.csv` (real, empty, shuffled, cross_domain, time_shifted, flipped, exaggerated) | ❌ | `python -m src.attacks.generate` (deterministic) |
+| Metrics | `src/metrics.py` (§9) | code | — |
+
+### What P5a must build (`src/run_experiments.py` — still a placeholder)
+
+1. **Runner** (resumable unit = model × domain × condition; save after each unit; skip
+   finished ones — reuse the pattern of `train_baselines.run`). Save **every raw prediction**:
+   `model, domain, split, condition, seed, sample_id, y_true, y_pred, y_last, train_std`
+   (+ `parse_ok`, `scale_ok` for Model 5). Log each run to MLflow (model, domain, condition, seed).
+2. **Screening conditions:** real, empty, shuffled, cross_domain, time_shifted — texts from
+   `texts/<condition>.csv`, joined on `(domain, split, sample_id)`.
+   * Models 1–2: text-blind — predictions must equal `real`; assert `metrics.is_text_blind`
+     instead of trusting it.
+   * Models 3–4: load the 3 seed checkpoints (`DLinearBertForecaster.load(...)`), call
+     `predict_windows(X, texts)`. New texts → BERT cache misses → BERT loads (~440 MB);
+     call `late_fusion.unload_encoders()` afterwards. **System RAM is tight** (15.7 GB box,
+     ~4.7 GB free; a run was killed once — P2.3 log).
+   * Model 5: **needs a second Colab run** (issue #29). `QwenForecaster` / the notebook /
+     the export only know `real` and `none` today — extend the export to one row per
+     (window, condition, text) and `CONDITION_TEXT` in `qwen_forecaster.py`; keep
+     `prompt_sha` verification. Re-run all conditions in one Colab session (P5a screening +
+     P5b flipped / exaggerated) to spend GPU time once; the new run must record `revision`
+     (issue #28).
+3. **Screening metrics** per model × domain, pooled headline + per-domain (`metrics.grouped`),
+   on **test**, with paired bootstrap CIs: `text_usage_gap` (empty vs real),
+   `text_sensitivity` + `text_moves_share`, `paired_mse` across real / empty / shuffled /
+   cross_domain / time_shifted, `failure_rates`. **Attack targets = models with text
+   sensitivity > 0, not by usage gap** (§9). Record in §9 "P5 — Screening" table.
+
+### Rules a fresh session must not break
+
+* **Never tune on test.** Any P5 choice (thresholds, which models to attack) is made on val
+  or fixed in advance; test is for reporting.
+* **Seeds:** `metrics.seed_mean` before any metric (Models 1–4); Model 5 = one greedy run.
+* **Condition names:** Models 3–4 call no-text `empty`; Model 5 calls it `none`. Same thing
+  (§6a) — map `none → empty` when joining.
+* **NaN pairing** is inside every metric; report `failure_rates` next to every metric
+  (Model 5: 3 Traffic real-text scale failures, issue #27).
+* **σ** = `train_std` per domain (already in every predictions file). **y_last** = last
+  lookback value (`windows.X[:, -1]` or `json.loads(lookback)[-1]` in `qwen_inputs.csv`).
+* **Not every window has text:** compare text conditions only on windows where `real` has
+  text (SocialGood 46/69 and Health_US 130/134 test windows do), else report separately
+  (§6 caveat).
+
+### Interpretation notes already decided
+
+* DSS ≈ 0 / gap ≈ 0 on Models 3–4 is a **finding, not a failure** (CLAUDE.md §4a).
+* Traffic: report **with and without 2020** (issue #23) — genuine COVID-era text hurts Model 3
+  on test; use the `mask` argument. Traffic is the likeliest genuine text user (#22).
+* SocialGood / Health_US are sparse-text domains (#9) — don't attribute a low gap there to
+  fusion type alone.
+* Model 5 is a weak forecaster but text moves it in 65–78% of windows → expected attack target.
 
 ---
 
@@ -66,6 +138,7 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 | Blank text | `""` / whitespace → `None`: `empty` ≡ `has_text=False` ≡ TextGuard's A |
 | Prediction failures | **NaN**, never raise or drop; NaN-pairing rule for P4/P6 (§6a) |
 | Scoring horizon | **horizon = 1** for main experiments; DSS and Flip Rate scored at h=1 |
+| Attack-target selection (P5) | **by text sensitivity, not Text Usage Gap** — sensitivity is what makes a model attackable (§9) |
 | Training protocol (main) | **Val-tuned:** up to 200 epochs, patience 20, lr ∈ {1e-4, 1e-3, 1e-2} chosen per domain × model by val loss (seed 2021), then 3 seeds. **Models 3 and 4 (P2.3) must reuse it exactly** — see §7 |
 | Training protocol (repro) | MM-TSFlib's original recipe (10 epochs, patience 5, lr 1e-4), published horizon, PatchTST as shipped — only for the reproduction column |
 | PatchTST patching (main) | `patching="window"`: patch_len = L/2, stride = L/4 — bypasses MM-TSFlib's patch_len clamp (§7) |
@@ -134,7 +207,7 @@ Related Work in P8, and re-run the arXiv search then.
 | `src/attacks/rules.py` | P3 | ✅ rule engine: headline reader, flip / exaggerate, coherence checks |
 | `src/attacks/flipped.py`, `exaggerated.py` | P3 | ✅ 384 / 381 attacked texts |
 | `src/attacks/generate.py`, `validate_attacks.py` | P3 | ✅ all 7 conditions → `texts/`; validation report (26 tests in `test_attacks.py`) |
-| `src/metrics.py` | P4 | ⚪ |
+| `src/metrics.py` | P4 | ✅ pure functions; worked example reproduced (27 tests) |
 | `src/run_experiments.py` | P5 | ⚪ |
 | `src/textguard/trend_detector.py` | P6 | ⚪ |
 | `src/textguard/text_direction.py` | P6 | ⚪ |
@@ -837,6 +910,60 @@ baseline, sign agreement in "changed by S% (T billion)"); length fake/real 0.95�
 
 ## 9. Results
 
+### Metric definitions (P4, `src/metrics.py`)
+
+Every metric is the **mean of a per-window term** over the *valid* windows — inside the
+optional `mask` (every function takes one: P5 excludes 2020 with it, issue #23), with every
+input finite (**NaN pairing**, §6a: a failure on either side drops the window from both),
+and, for attack metrics, attacked (d ≠ 0). Each returns a `Metric`: value, `n` used, `n_nan`
+dropped by NaN pairing, `n_masked`, `n_not_attacked`, `coverage`, and the per-window `terms`.
+
+σ = the **train-split std of the domain's series** (population std — the models' own scaler),
+fixed before any test data is seen; scalar or one per window (pooled tables mix domains).
+
+| Metric | Definition | Reading |
+|---|---|---|
+| `mse` / `mae` | mean ((y − ŷ)/σ)² / mean \|y − ŷ\|/σ | lower = better; `paired_mse` scores several conditions on the same windows |
+| `text_usage_gap` | MSE(text=None) − MSE(real), paired per window; `empty` ≡ None | > 0: text improves accuracy; ≈ 0: text collapse |
+| `text_sensitivity` | mean \|ŷ_real − ŷ_none\|/σ (+ `text_moves_share`: share of windows with any change) | does text **move** the forecast, right or wrong |
+| `dss` | mean d·(ŷ_fake − ŷ_real)/σ over **attacked** windows; d = P3's recorded `claimed_direction` (never a classifier) | > 0: pulled toward the lie (σ units). `exaggerated`: d = the real claim's direction, > 0 = pushed further. Coverage reported (issue #30) |
+| `flip_rate` | share of attacked windows with sign(ŷ_real − y_last) ≠ d **and** sign(ŷ_fake − y_last) = d | forecast direction turned toward the lie |
+| `false_block_rate` | share of **genuine** texts with gate g < 0.5 | the honesty check: a block-everything defence fails here (P6) |
+
+**Flip Rate zero-change rule** (exact equality, no tolerance — Model 5 copies the last value
+often): real forecast exactly at y_last (sign 0) is *not* in the lie's direction, so a fake
+forecast moving in direction d **counts** (flat → toward the lie); a fake forecast exactly at
+y_last **never counts**; a real forecast already in direction d cannot flip but stays in the
+denominator (all attacked, valid windows).
+
+**Attack targets are selected by text sensitivity, not Text Usage Gap** (decided
+2026-10-09). A model is attackable if text *moves* its forecast, whether or not the text
+makes it more accurate. Model 5 shows why: its text *hurts* accuracy on Health_US (MSE 1.054
+→ 1.348), yet the text changes its answer in 65–78% of windows (§7b). Selecting by usage gap
+would wrongly drop it.
+
+**Seeds:** per-window predictions are averaged over the 3 seeds before any metric
+(`seed_mean`); a window that failed in any seed stays NaN. Model 5 is one greedy run.
+**Failures:** `failure_rates` per model × condition, next to every metric; for Model 5 parse
+and format (unit-confusion, issue #27) failures are broken out.
+
+**Statistics:** paired percentile **bootstrap CIs** over windows (10,000 resamples, seed 0;
+pooled numbers stratified by domain so each domain keeps its share); comparisons bootstrap
+the per-window difference (`paired_difference`), which is what makes them paired. **Paired
+Wilcoxon signed-rank** (two-sided, zero differences dropped; all-zero → p = 1). **Holm**
+correction across each family of comparisons (e.g. TextGuard vs undefended and vs each
+baseline defence). **Pooled across domains = headline; per-domain = breakdown** (`grouped`,
+issue #8).
+
+**Sanity (Models 1–2):** `is_text_blind` — real, None and fake forecasts bit-identical, so
+DSS, sensitivity and Flip Rate are exactly 0. Tested on real DLinear/PatchTST networks; P5
+asserts it on the actual predictions.
+
+**Worked example reproduced** (PHASES.md, `DummyForecaster`): A = 116, B_fake = 106,
+ŷ_real = 120, y_true = 117, y_last = 112, σ = 10 → errors 11 (undefended) → 2 (TextGuard
+final 115); DSS +1.4 → +0.5; real up / fake down (d = −1) → flipped; final 115 up → not
+flipped; usage gap −0.08, sensitivity 0.4; genuine text (g = 1) not blocked.
+
 ### P5 — Screening: which models use text
 | Model | Fusion | MSE(real) | MSE(empty) | MSE(shuffled) | Usage Gap | Uses text? |
 |---|---|---|---|---|---|---|
@@ -882,7 +1009,7 @@ baseline, sign agreement in "changed by S% (T billion)"); length fake/real 0.95�
 | 5 | Colab VS Code extension unreliable — use colab.research.google.com directly for GPU work (Qwen) in P2; `git clone` the repo inside the notebook | P2 | ⬜ Open |
 | 6 | MM-TSFlib uses `search` text, we default to `report` — first suspect if P2 baselines don't match | P2 | ⬜ Open |
 | 7 | MM-TSFlib Economy CSV unsorted + positional split ⇒ non-chronological split in their baseline | P2 | ⬜ Open |
-| 8 | Small test sets (~30–60 sequences/domain) → pool DSS across domains as headline, bootstrap CIs in P4 | P4/P5 | ⬜ Open |
+| 8 | Small test sets (~30–60 sequences/domain) → pool DSS across domains as headline, bootstrap CIs in P4 | P4/P5 | 🔵 P4 done: stratified paired bootstrap + `grouped` (pooled headline, per-domain breakdown); apply in P5 |
 | 9 | Health_US: 183/470 train periods lack text vs 97% test coverage — low Usage Gap may be training sparsity, not architecture | P5 | ⬜ Open |
 | 10 | COVID-2020 in 3 test sets → dedicated "TextGuard under genuine regime change" False Block Rate analysis | P6 | ⬜ Open |
 | 11 | Timing: `anchor="end"` default + drop 5 real leakers | P1 | ✅ Done — check passes |
@@ -891,7 +1018,7 @@ baseline, sign agreement in "changed by S% (T billion)"); length fake/real 0.95�
 | 14 | Swap SocialGood (56% directional, 61% coverage) for Energy (100% directional, but 351/354 reports contain the forecast target; needs lag 2)? | P1→P2 | ⬜ Open — needs decision |
 | 15 | Generalise TextGuard gate to "text claim vs numerical evidence" (change + level branches); update CLAUDE.md §8 | P6 | ⬜ Open |
 | 16 | Direction classifier must be Qwen-based (heuristic only 72% vs humans); validate on the 100 hand labels | P6 | ⬜ Open — P3 no longer needs it: fakes carry their known `claimed_direction`; still needed for TextGuard's judge in P6 |
-| 17 | NaN pairing: drop a sample from both sides if either is NaN; report parse-failure rate per model × condition (§6a) | P4 | ⬜ Open |
+| 17 | NaN pairing: drop a sample from both sides if either is NaN; report parse-failure rate per model × condition (§6a) | P4 | ✅ Built into every metric; `failure_rates` per model × condition |
 | 18 | TextGuard: if B is NaN, final = A (§6a) | P6 | ⬜ Open |
 | 19 | **Models 3/4 must reuse the val-tuned protocol** (`train_baselines.LR_GRID`, `TUNED`, `TUNE_SEED`, `patching="window"`) — else a Text Usage Gap mixes text with extra training | P2.3 | ✅ Applied — same `LR_GRID`/`TUNED`/seeds, lr tuned per domain for Models 3/4 |
 | 20 | MM-TSFlib PatchTST clamps patch_len to pred_len → at h=1 it reads 2 of 8 inputs; Models 4 (and 6) must use `patching="window"` too | P2.3 | ✅ Fixed for Models 2 and 4 |
@@ -901,16 +1028,27 @@ baseline, sign agreement in "changed by S% (T billion)"); length fake/real 0.95�
 | 24 | Model 5 memorisation leakage: Qwen may have seen these statistics/reports in pretraining; numeric prompt is undated, report text still dated — paper limitation (§7b) | P8 | ⬜ Open |
 | 25 | Same-model circularity: Qwen generates P3 fakes and judges direction in P6 → validate the P6 judge on the human labels from `check_directional`, ideally also on non-Qwen fakes (§7b) | P6 | 🔵 Generation side removed (rule-based fakes, §8); still validate the P6 Qwen judge on the human labels |
 | 26 | Report figures ≠ series values (Economy goods vs goods-and-services; Traffic VMT estimates) — check Qwen errors for copying the report's number (§7b) | P5 | ✅ Checked: real 5.9% vs 4.1% chance; Economy 0%, Traffic 1.2%; Health_US copies are same-series and accurate |
-| 27 | Model 5 unit confusion: 3/80 Traffic real-text answers in billions (report's unit) → scale failures (NaN). Report the rate next to every Model 5 metric; consider it in P5 as a text-channel failure mode | P4/P5 | ⬜ Open |
+| 27 | Model 5 unit confusion: 3/80 Traffic real-text answers in billions (report's unit) → scale failures (NaN). Report the rate next to every Model 5 metric; consider it in P5 as a text-channel failure mode | P5 | 🔵 P4 done: `failure_rates` breaks out format failures; report in P5 |
 | 28 | Qwen run `revision` unrecorded (transformers 5 dropped `_commit_hash`); notebook now queries the Hub. Re-run Model 5 in P3 (attacked texts) will record it | P3 | ⬜ Open |
 | 29 | Model 5 needs a second Colab run on the attacked conditions (shuffled, cross_domain, time_shifted, flipped, exaggerated) — export from `texts/`, `QwenForecaster` must accept the new conditions' text | P5 | ⬜ Open |
-| 30 | DSS / Flip Rate only over `attacked` windows; report attacked counts (384 flipped / 381 exaggerated of 458 texts) next to every attack metric | P4/P5 | ⬜ Open |
+| 30 | DSS / Flip Rate only over `attacked` windows; report attacked counts (384 flipped / 381 exaggerated of 458 texts) next to every attack metric | P5 | 🔵 P4 done: d = 0 windows excluded, `n_not_attacked` / `coverage` on every attack metric |
 
 ---
 
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-09 — P4: metrics module → **P4 complete**
+- `src/metrics.py`: mse, mae, paired_mse, text_usage_gap, text_sensitivity, text_moves_share,
+  dss, flip_rate, false_block_rate, is_text_blind; seed_mean, failure_rates; bootstrap_ci
+  (stratified, paired via differences), wilcoxon, holm, grouped — definitions in §9
+- NaN pairing, optional window mask and attacked-only filtering built into every metric
+- Decided: P5 selects attack targets by **text sensitivity**, not usage gap (Model 5)
+- 27 tests in `test_metrics.py` (worked example via DummyForecaster; Models 1–2 exactly
+  text-blind on real networks); suite 211 passing
+- **Next:** P5 — experiment runner: screening (usage gap + sensitivity), then the attack;
+  Model 5 second Colab run on the attacked conditions (#29)
 
 ### 2026-10-09 — P3: attack module (rule-based flip + exaggerate) → **P3 complete**
 - **Design change:** fakes generated by deterministic rules, not Qwen (Qwen-on-Qwen bias,
