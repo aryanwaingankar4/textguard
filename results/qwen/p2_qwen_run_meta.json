@@ -1,0 +1,16 @@
+{
+ "model_id": "Qwen/Qwen2.5-1.5B-Instruct",
+ "revision": null,
+ "dtype": "float16",
+ "decoding": "greedy",
+ "batch_size": 1,
+ "max_new_tokens": 24,
+ "gpu": "Tesla T4",
+ "torch": "2.11.0+cu130",
+ "transformers": "5.18.0",
+ "inputs": "qwen_inputs.csv",
+ "started": "2026-10-08T18:48:38.259055+00:00",
+ "finished": "2026-10-08T18:54:29.596222+00:00",
+ "rows": 986,
+ "parse_failures": 0
+}

@@ -1,0 +1,17 @@
+domain,model,split,condition,mse_norm,n_valid,parse_failures,scale_failures,n,rate
+Economy,Qwen2.5-1.5B,test,none,0.310982508345429,70,0,0,70,0.0
+Economy,Qwen2.5-1.5B,test,real,0.3019808492894081,70,0,0,70,0.0
+Economy,Qwen2.5-1.5B,val,none,0.2093206916929333,36,0,0,36,0.0
+Economy,Qwen2.5-1.5B,val,real,0.20474346737008758,36,0,0,36,0.0
+Health_US,Qwen2.5-1.5B,test,none,1.0544071197186256,134,0,0,134,0.0
+Health_US,Qwen2.5-1.5B,test,real,1.3476220986005998,134,0,0,134,0.0
+Health_US,Qwen2.5-1.5B,val,none,0.29657843943443624,68,0,0,68,0.0
+Health_US,Qwen2.5-1.5B,val,real,0.5898960512472885,68,0,0,68,0.0
+SocialGood,Qwen2.5-1.5B,test,none,0.6480890972397653,69,0,0,69,0.0
+SocialGood,Qwen2.5-1.5B,test,real,0.6333420427365698,69,0,0,69,0.0
+SocialGood,Qwen2.5-1.5B,val,none,0.03818608152814165,36,0,0,36,0.0
+SocialGood,Qwen2.5-1.5B,val,real,0.03257048130341494,36,0,0,36,0.0
+Traffic,Qwen2.5-1.5B,test,none,2.0020813775487047,53,0,0,53,0.0
+Traffic,Qwen2.5-1.5B,test,real,1.9049666634069684,50,0,3,53,0.05660377358490566
+Traffic,Qwen2.5-1.5B,val,none,2.1304110656214785,27,0,0,27,0.0
+Traffic,Qwen2.5-1.5B,val,real,1.8833424461862038,27,0,0,27,0.0

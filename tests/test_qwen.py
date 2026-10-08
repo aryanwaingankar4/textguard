@@ -88,6 +88,7 @@ def test_notebook_uses_greedy_decoding_and_requests_a_gpu():
     assert nb["metadata"]["colab"]["gpuType"] == "T4"
     gen = next(s for s, _ in _cells() if "def generate" in s)
     assert "do_sample=False" in gen and "torch.float16" in gen
+    assert "torch.is_tensor(ids)" in gen    # transformers >= 5: apply_chat_template -> BatchEncoding
 
 
 # --- notebook logic, run locally with a fake model ----------------------------------------
@@ -147,19 +148,20 @@ def test_notebook_loop_resumes_after_disconnect_and_never_drops_failures(tmp_pat
 
 def test_forecaster_serves_notebook_output(tmp_path):
     inp = _inputs(tmp_path / "qwen_inputs.csv")
-    _run_notebook(tmp_path, lambda p: "-66.4 billion" if "Economy" in p else "4.5")
+    _run_notebook(tmp_path, lambda p: "0.105 billion" if "Economy" in p else "104.5")
     df = load_predictions(tmp_path / "p2_qwen_predictions.csv", tmp_path / "qwen_inputs.csv")
     m = QwenForecaster("Economy", data=df)
     r = inp[(inp.domain == "Economy")].iloc[2]
     x = np.array(json.loads(r.lookback))
-    assert m.predict(x, r.text)[0] == pytest.approx(-66400.0)
+    assert m.predict(x, r.text)[0] == pytest.approx(105.0)       # billion -> million unit
     assert m.predict(x, None).shape == (1,)
     np.testing.assert_array_equal(m.predict(x, "  "), m.predict(x, None))
     with pytest.raises(KeyError, match="no precomputed"):
         m.predict(x, "a fake report that was never sent to Qwen")
     with pytest.raises(KeyError):
         m.predict(x + 0.5, None)
-    assert parse_failure_rate(df)["failures"].sum() == 0
+    rate = parse_failure_rate(df)
+    assert rate.parse_failures.sum() == 0 and rate.scale_failures.sum() == 0
 
 
 def test_forecaster_rejects_predictions_from_a_different_prompt(tmp_path, monkeypatch):
@@ -169,3 +171,28 @@ def test_forecaster_rejects_predictions_from_a_different_prompt(tmp_path, monkey
     monkeypatch.setattr(qf, "build_prompt", lambda *a: "a changed prompt")
     with pytest.raises(ValueError, match="different prompt"):
         qf.load_predictions(tmp_path / "p2_qwen_predictions.csv", tmp_path / "qwen_inputs.csv")
+
+
+def test_off_scale_answer_is_a_format_failure_not_a_forecast(tmp_path):
+    """Traffic case: answered '267.0' (billions) for a series in millions -> NaN, counted."""
+    _inputs(tmp_path / "qwen_inputs.csv")
+    _run_notebook(tmp_path, lambda p: "0.5" if "rose 2" in p else "103")  # window ~100-108
+    df = load_predictions(tmp_path / "p2_qwen_predictions.csv", tmp_path / "qwen_inputs.csv")
+    bad = df[~df.scale_ok]
+    assert len(bad) > 0 and bad.y_pred.isna().all() and (bad.y_pred_raw == 0.5).all()
+    assert bad.parse_ok.all() and not bad.format_ok.any()
+    assert df[df.scale_ok].y_pred.notna().all()
+    rate = parse_failure_rate(df, by=("domain", "condition"))
+    assert rate.scale_failures.sum() == len(bad) and rate.parse_failures.sum() == 0
+    r = df[~df.scale_ok].iloc[0]
+    m = QwenForecaster(r.domain, data=df)
+    assert np.isnan(m.predict(json.loads(r.lookback), r.text)[0])
+
+
+def test_scale_ok_bounds():
+    from src.models.qwen_forecaster import scale_ok
+    window = [250000.0, 280000.0]
+    assert scale_ok(260000.0, window) and scale_ok(2_000_000.0, window)
+    assert not scale_ok(267.0, window) and not scale_ok(3e6, window)
+    assert scale_ok(-60000.0, [-66000.0, -45000.0])       # sign-agnostic (Economy deficits)
+    assert scale_ok(float("nan"), window)                 # NaN is a parse failure, not scale

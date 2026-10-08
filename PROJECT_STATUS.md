@@ -4,8 +4,8 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** P2 — Model Wrappers
-**Last updated:** 2026-10-07
+**Current phase:** P3 — Attack Module (P2 complete)
+**Last updated:** 2026-10-09
 
 > 👤 **Solo project.** All work by Aryan.
 > 📌 **Phase-gated, no deadlines.** See `PHASES.md`.
@@ -18,7 +18,7 @@
 |---|---|---|---|
 | P0 | Environment, repo, folder skeleton | ✅ | ✅ Done |
 | P1 | Data pipeline — loader, splits, domain selection | ✅ | ✅ Done |
-| P2 | Model wrappers — 5 models, one interface | ✅ | 🔵 In progress (2.1, 2.2, 2.3, 2.5 done; 2.4 Qwen next) |
+| P2 | Model wrappers — 5 models, one interface | ✅ | ✅ Done |
 | P3 | Attack module — 6 text conditions | ✅ | ⚪ Pending |
 | P4 | Metrics module — DSS, Flip Rate, etc. | ✅ | ⚪ Pending |
 | P5 | Experiment runner — screening + attack | ✅ | ⚪ Pending |
@@ -124,8 +124,8 @@ Related Work in P8, and re-run the arXiv search then.
 | `src/models/patchtst_bert.py` | P2 | ✅ Model 4 (thin module → `late_fusion`) |
 | `src/models/qwen_prompt.py` | P2 | ✅ prompt + parser, single source of truth |
 | `src/models/export_qwen_inputs.py` | P2 | ✅ 493 val + test windows → one CSV |
-| `notebooks/p2_qwen_forecaster.ipynb` | P2 | ✅ built by `build_p2_qwen_notebook.py`; ⬜ not yet run on Colab |
-| `src/models/qwen_forecaster.py` | P2 | ✅ serves the Colab CSV (23 tests); ⬜ waiting for the CSV |
+| `notebooks/p2_qwen_forecaster.ipynb` | P2 | ✅ run on Colab T4 2026-10-08 (986 rows, 6 min) |
+| `src/models/qwen_forecaster.py` | P2 | ✅ serves the Colab CSV; prompt fingerprints + scale check (26 tests) |
 | `src/models/dummy.py` | P2 | ✅ (26 tests) |
 | `src/attacks/*.py` (6 conditions) | P3 | ⚪ |
 | `src/metrics.py` | P4 | ⚪ |
@@ -622,6 +622,7 @@ gitignored) → upload with `notebooks/p2_qwen_forecaster.ipynb` to colab.resear
 | Numeric prompt | values labelled `t-L … t-1`, **no dates** | reduces recall of memorised historical values |
 | `text=None` | **identical prompt with the report block removed** | A is a natural, valid prompt; B − A = the effect of adding the report |
 | Parsing | first number; handles "282,558", Unicode minus, echoed `t-1` labels, "billion" vs a "million" unit | `nan` + `parse_ok=False` on failure, **never dropped**; raw output kept in the CSV |
+| Scale check (decided 2026-10-09) | answer > 10× outside its own window's absolute range → NaN, `scale_ok=False`, raw kept in `y_pred_raw`; applied at load in `qwen_forecaster.py`, the Colab CSV stays raw | a unit slip is a format failure, not a forecast; it must not dominate DSS / Flip Rate. Uses only the lookback, never y_true — but was chosen after seeing the 3 rows below; **state this in the paper** |
 | Source of truth | `src/models/qwen_prompt.py`, pasted verbatim into the notebook by `notebooks/build_p2_qwen_notebook.py` | a test fails if the notebook drifts; `QwenForecaster` recomputes every `prompt_sha` at load and refuses a CSV from a different prompt |
 | Crash safety | appends to Drive (if mounted) every 10 prompts; re-running the loop resumes | a Colab disconnect loses ≤ 10 rows |
 
@@ -649,6 +650,74 @@ classify, so detection could look easier than it is against human-written or oth
 manipulations. **P6 must validate the direction judge against the human labels from
 `check_directional`** (`results/summary_directional_*.csv`, 100 hand-labelled reports), and
 ideally test on fakes from a second generator (rule-based word flip, issue #16 / CLAUDE.md §15).
+
+### Model 5 run (Colab T4, 2026-10-08)
+
+`results/qwen/p2_qwen_run_meta.json`: Qwen/Qwen2.5-1.5B-Instruct, fp16, greedy, batch 1,
+max 24 new tokens, Tesla T4, **torch 2.11.0+cu130, transformers 5.18.0**; 986 rows in 6 min.
+`revision` was recorded as **null** — transformers 5 dropped `config._commit_hash`; the
+notebook now falls back to the Hub's `model_info(...).sha` (fixed for future runs, this run's
+exact weight snapshot is unrecorded).
+
+**Bug fixed during the run:** transformers 5 returns a `BatchEncoding` from
+`apply_chat_template(..., return_tensors="pt")`, so `torch.ones_like(ids)` failed. `generate()`
+now uses `ids["input_ids"]` when the result is not a tensor (patched on Colab, then in
+`build_p2_qwen_notebook.py`; regression-tested).
+
+**Integrity:** all 986 prompt fingerprints match the current `qwen_prompt.build_prompt`; 986 =
+2 × 493 windows; `QwenForecaster.predict` round-trips every row.
+
+**Failures** (`results/summary_p2_qwen.csv`):
+
+| | Economy | SocialGood | Traffic | Health_US |
+|---|---|---|---|---|
+| parse failures (real / none) | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| scale failures (real / none) | 0 / 0 | 0 / 0 | **3 / 0** (3.75% of 80) | 0 / 0 |
+
+The 3 scale failures are all Traffic test, real text: Qwen answered "267.0", "269.3", "259.7" —
+the report's unit (billion vehicle miles) for a prompt asking for million. They were 90% of
+Traffic's real-text squared error (MSE 18.3 → 1.905 without them). **Text-induced unit
+confusion: 3/80 with the report vs 0/80 without** — itself a small text-channel failure mode.
+
+### Results — h=1 test MSE, all 5 models (normalised)
+
+| Domain | Persistence | M1 DLinear | M2 PatchTST | M3 real | M3 None | M4 real | M4 None | M5 real | M5 None |
+|---|---|---|---|---|---|---|---|---|---|
+| Economy | 0.280 | 0.198 ± 0.002 | 0.183 ± 0.011 | 0.169 ± 0.012 | 0.198 ± 0.002 | 0.177 ± 0.018 | 0.183 ± 0.011 | 0.302 | 0.311 |
+| SocialGood | 0.573 | 0.740 ± 0.007 | 0.883 ± 0.092 | 0.783 ± 0.012 | 0.740 ± 0.007 | 0.886 ± 0.103 | 0.883 ± 0.092 | 0.633 | 0.648 |
+| Traffic | 1.582 | 1.043 ± 0.005 | 0.885 ± 0.032 | 1.599 ± 0.146 | 1.043 ± 0.005 | 0.911 ± 0.066 | 0.885 ± 0.032 | 1.905* | 2.002 |
+| Health_US | 0.150 | 0.109 ± 0.004 | 0.159 ± 0.032 | 0.112 ± 0.007 | 0.109 ± 0.004 | 0.145 ± 0.023 | 0.159 ± 0.032 | 1.348 | 1.054 |
+
+Model 5 is one deterministic run (no ±). *Traffic M5 real over 50 of 53 test windows (3 scale
+failures NaN); M5 None over all 53 is 2.002, over the same 50 windows 1.880 — P4 applies
+the NaN-pairing rule. Model 5 val (real / none): Economy 0.205 / 0.209 · SocialGood 0.033 /
+0.038 · Traffic 1.883 / 2.130 · Health_US 0.590 / 0.297.
+
+Reading it:
+- **Model 5 is a weak forecaster** — worse than persistence on Economy and Traffic, and far
+  worse on Health_US — but it is not what we need it for. It mostly **copies a recent value**:
+  its answer equals some lookback value exactly in 35–87% of windows (t-1 itself in 24–51%).
+- **It does read the text:** the real and none answers differ in 65–78% of windows that have a
+  report. That makes it an attack surface, which is its role in P5.
+- **Health_US is heavy-tailed, not broken:** median squared error 0.018 (none) / 0.052 (real);
+  the mean comes from a few decimal slips ("7.72384" for t-1 = 0.772384) and copies of the
+  wrong lookback value during flu peaks.
+
+**Issue #26 check — does Qwen copy the report's number?** Rarely. Exact match between Qwen's
+answer and a number quoted in the report (billion → million converted; years excluded), in
+windows that have a report: **real 5.9%, none 4.1%** (chance baseline: the same comparison
+when the report was never shown).
+
+| | Economy | SocialGood | Traffic | Health_US |
+|---|---|---|---|---|
+| real | 0.0% | 18.2% | 1.2% | 6.1% |
+| none (chance) | 0.0% | 24.7% | 0.0% | 0.0% |
+
+SocialGood's matches are coincidences on round values (5.0, 6.0) — more frequent *without*
+the report. Health_US's 6.1% are genuine copies, and harmless: its reports quote last week's
+value of this same series ("ILI was 2.1%"), so those predictions score test MSE 0.029. The
+Economy/Traffic risk (copying a goods-and-services or differently-estimated figure) did not
+materialise (0% / 1.2%). → issue #26 closed.
 
 ## 8. Fake text validation (P3)
 
@@ -725,13 +794,30 @@ ideally test on fakes from a second generator (rule-based word flip, issue #16 /
 | 23 | **P5 extra analysis: report Traffic with and without 2020.** Genuine, extreme COVID-era Traffic text hurts Model 3 on test (test MSE 1.04 → 1.60 with text) although text halves val error — the text head never saw year-over-year changes of that size. Same regime-shift theme as #10 | P5 | ⬜ Open |
 | 24 | Model 5 memorisation leakage: Qwen may have seen these statistics/reports in pretraining; numeric prompt is undated, report text still dated — paper limitation (§7b) | P8 | ⬜ Open |
 | 25 | Same-model circularity: Qwen generates P3 fakes and judges direction in P6 → validate the P6 judge on the human labels from `check_directional`, ideally also on non-Qwen fakes (§7b) | P3/P6 | ⬜ Open |
-| 26 | Report figures ≠ series values (Economy goods vs goods-and-services; Traffic VMT estimates) — check Qwen errors for copying the report's number (§7b) | P5 | ⬜ Open |
+| 26 | Report figures ≠ series values (Economy goods vs goods-and-services; Traffic VMT estimates) — check Qwen errors for copying the report's number (§7b) | P5 | ✅ Checked: real 5.9% vs 4.1% chance; Economy 0%, Traffic 1.2%; Health_US copies are same-series and accurate |
+| 27 | Model 5 unit confusion: 3/80 Traffic real-text answers in billions (report's unit) → scale failures (NaN). Report the rate next to every Model 5 metric; consider it in P5 as a text-channel failure mode | P4/P5 | ⬜ Open |
+| 28 | Qwen run `revision` unrecorded (transformers 5 dropped `_commit_hash`); notebook now queries the Hub. Re-run Model 5 in P3 (attacked texts) will record it | P3 | ⬜ Open |
 
 ---
 
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-09 — P2.4: Qwen forecaster (Model 5) → **P2 complete**
+- `export_qwen_inputs.py` → 493 val + test windows; `qwen_prompt.py` (undated `t-L…t-1` prompt,
+  text=None = same prompt minus the report block, robust parser); notebook built from it
+- Colab T4 run (2026-10-08): 986 rows in 6 min, **0 parse failures**, all prompt fingerprints
+  verified; transformers 5.18.0, torch 2.11.0+cu130
+- **Broke:** transformers 5 `apply_chat_template` returns a `BatchEncoding` → fixed in the
+  builder (`ids["input_ids"]`), regression test added; run `revision` came out null → Hub fallback
+- 3 Traffic real-text answers in billions (the report's unit) → **scale check**: >10× outside
+  the window's range = NaN format failure (decided with Aryan). Traffic M5 real MSE 18.3 → 1.905
+- Issue #26: Qwen copies a report number in 5.9% of real answers vs 4.1% chance — closed
+- Model 5 is weak (mostly copies recent values) but text changes its answer in 65–78% of windows
+- P2 exit criterion met: all 5 models answer `predict(numbers, text)` and `predict(numbers, None)`
+  (Model 5 for every exported window)
+- **Next:** P3 — attack module (6 text conditions); Model 5 needs a second Colab run for them
 
 ### 2026-10-07 — P2.3: text models 3 and 4 (frozen backbone + BERT text head)
 - Read MM-TSFlib's fusion (issue #3): late additive; **text term ≡ 0 at h=1** (`norm()` across

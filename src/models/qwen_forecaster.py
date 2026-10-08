@@ -14,6 +14,15 @@ Integrity check at load: every row's ``prompt_sha`` is recomputed with the *curr
 ``qwen_prompt.build_prompt``. If the prompt code changed after the Colab run, loading fails
 instead of silently serving predictions from a different prompt.
 
+**Scale check (decided 2026-10-09, PROJECT_STATUS §7b).** An answer more than
+``SCALE_FACTOR`` (10×) outside the absolute range of its own lookback window is a *format*
+failure, like a parse failure: ``y_pred`` becomes NaN (the raw value is kept in
+``y_pred_raw``) and ``scale_ok`` is False. Why: on Traffic, Qwen sometimes answered in the
+report's unit ("267.0", meaning 267.0 billion) although the prompt asks for million — a unit
+slip, not a forecast. Left in, one such row is ~90% of a domain's squared error and would
+dominate DSS / Flip Rate, which must measure *direction*. The rule uses only the lookback,
+never y_true; it was chosen after seeing these 3 rows, which the paper states.
+
 Determinism: greedy decoding, batch size 1 → one run stands in for 3 seeds (``seed = 0``
 in results files).
 """
@@ -32,6 +41,15 @@ from src.models.qwen_prompt import build_prompt, prompt_sha
 
 PREDICTIONS = OUT_DIR / "p2_qwen_predictions.csv"
 CONDITION_TEXT = {"real": True, "none": False}  # does the condition use the report text?
+SCALE_FACTOR = 10.0  # answer > 10x outside the window's |range| -> format failure
+
+
+def scale_ok(y_pred: float, lookback) -> bool:
+    """False if ``y_pred`` is more than ``SCALE_FACTOR`` outside the window's absolute range."""
+    if not np.isfinite(y_pred):
+        return True  # NaN is already a parse failure; not double-counted
+    a = np.abs(np.asarray(lookback, float))
+    return a.min() / SCALE_FACTOR <= abs(y_pred) <= a.max() * SCALE_FACTOR
 
 
 def load_predictions(predictions: Path | str = PREDICTIONS,
@@ -61,14 +79,25 @@ def load_predictions(predictions: Path | str = PREDICTIONS,
     if bad.any():
         raise ValueError(f"{int(bad.sum())} predictions were made with a different prompt than "
                          "qwen_prompt.build_prompt now builds; re-run the Colab notebook")
+    df["y_pred_raw"] = df["y_pred"]
+    df["scale_ok"] = [scale_ok(y, json.loads(x)) for y, x in zip(df.y_pred, df.lookback)]
+    df.loc[~df.scale_ok, "y_pred"] = np.nan
+    df["format_ok"] = df.parse_ok & df.scale_ok
     return df.drop(columns=["_merge", "y_true_input"])
 
 
-def parse_failure_rate(df: pd.DataFrame) -> pd.DataFrame:
-    """Parse-failure rate per domain × split × condition — reported next to every metric."""
-    return (df.assign(failed=~df.parse_ok)
-            .groupby(["domain", "split", "condition"]).failed.agg(["sum", "size", "mean"])
-            .rename(columns={"sum": "failures", "size": "n", "mean": "rate"}))
+def parse_failure_rate(df: pd.DataFrame, by=("domain", "split", "condition")) -> pd.DataFrame:
+    """Failure counts and rate per group — reported next to every Model 5 metric.
+
+    ``parse_failures`` (no number) and ``scale_failures`` (number on the wrong scale) are
+    shown separately; ``rate`` is their union, i.e. the share of NaN predictions.
+    """
+    g = df.assign(parse_failures=~df.parse_ok, scale_failures=~df.scale_ok,
+                  failed=~df.format_ok).groupby(list(by))
+    out = g[["parse_failures", "scale_failures"]].sum()
+    out["n"] = g.size()
+    out["rate"] = g.failed.mean()
+    return out
 
 
 class QwenForecaster(BaseForecaster):

@@ -95,13 +95,27 @@ model = AutoModelForCausalLM.from_pretrained(MODEL_ID, torch_dtype=torch.float16
 def generate(user_prompt: str) -> str:
     \"\"\"Greedy, batch size 1 (no padding), so the same prompt always gives the same answer.\"\"\"
     msgs = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user_prompt}]
-    ids = tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors="pt").to("cuda")
+    ids = tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors="pt")
+    if not torch.is_tensor(ids):   # transformers >= 5 returns a BatchEncoding, not a tensor
+        ids = ids["input_ids"]
+    ids = ids.to("cuda")
     out = model.generate(ids, attention_mask=torch.ones_like(ids), max_new_tokens=MAX_NEW_TOKENS,
                          do_sample=False, temperature=None, top_p=None, top_k=None,
                          pad_token_id=tok.eos_token_id)
     return tok.decode(out[0, ids.shape[1]:], skip_special_tokens=True).strip()
 
-meta = dict(model_id=MODEL_ID, revision=getattr(model.config, "_commit_hash", None),
+def model_revision():
+    \"\"\"Hub commit of the weights actually loaded (transformers 5 dropped config._commit_hash).\"\"\"
+    rev = getattr(model.config, "_commit_hash", None)
+    if rev is None:
+        try:
+            from huggingface_hub import model_info
+            rev = model_info(MODEL_ID).sha
+        except Exception as e:  # offline etc. — record why, never fail the run over metadata
+            rev = f"unknown ({type(e).__name__})"
+    return rev
+
+meta = dict(model_id=MODEL_ID, revision=model_revision(),
             dtype="float16", decoding="greedy", batch_size=1, max_new_tokens=MAX_NEW_TOKENS,
             gpu=torch.cuda.get_device_name(0), torch=torch.__version__,
             transformers=transformers.__version__, inputs=os.path.basename(INPUTS),
