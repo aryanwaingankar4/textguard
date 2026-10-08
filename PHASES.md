@@ -157,8 +157,9 @@ timing verified.
 - [ ] Unit tests: shuffled text genuinely comes from other dates; the time-shift offset is correct
 
 ### 3.2 Fake text (the core attack)
-- [ ] `flipped.py` — Qwen rewrites each report inverting directional polarity
-      ("rose" → "fell"), keeping everything else identical
+- [ ] `flipped.py` — **deterministic rules** (not Qwen — see CLAUDE.md §7) invert each
+      report's directional polarity ("rose" → "fell"), keeping everything else identical and
+      the numbers coherent; record `claimed_direction`
 - [ ] `exaggerated.py` — text agrees with the trend but overstates the magnitude.
       This is TextGuard's known weak spot; we test it honestly
 

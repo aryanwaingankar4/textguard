@@ -1,0 +1,13 @@
+section,domain,n,directional,flipped_correctly,rules_read_same,attacked,attacked_pct,headline_ok,claimed_up,claimed_down
+human_labels,Economy,13,12.0,12.0,13.0,,,,,
+human_labels,Health_US,12,2.0,2.0,3.0,,,,,
+human_labels,SocialGood,13,3.0,3.0,13.0,,,,,
+human_labels,Traffic,12,12.0,12.0,12.0,,,,,
+flipped,Economy,105,,,,105.0,100.0,105.0,61.0,44.0
+flipped,Health_US,196,,,,157.0,80.1,157.0,99.0,58.0
+flipped,SocialGood,77,,,,43.0,55.8,43.0,40.0,3.0
+flipped,Traffic,80,,,,79.0,98.8,79.0,23.0,56.0
+exaggerated,Economy,105,,,,105.0,100.0,105.0,44.0,61.0
+exaggerated,Health_US,196,,,,156.0,79.6,156.0,59.0,97.0
+exaggerated,SocialGood,77,,,,43.0,55.8,43.0,4.0,39.0
+exaggerated,Traffic,80,,,,77.0,96.2,77.0,56.0,21.0

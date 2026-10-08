@@ -4,7 +4,7 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** P3 — Attack Module (P2 complete)
+**Current phase:** P4 — Metrics Module (P3 complete)
 **Last updated:** 2026-10-09
 
 > 👤 **Solo project.** All work by Aryan.
@@ -19,7 +19,7 @@
 | P0 | Environment, repo, folder skeleton | ✅ | ✅ Done |
 | P1 | Data pipeline — loader, splits, domain selection | ✅ | ✅ Done |
 | P2 | Model wrappers — 5 models, one interface | ✅ | ✅ Done |
-| P3 | Attack module — 6 text conditions | ✅ | ⚪ Pending |
+| P3 | Attack module — 6 text conditions | ✅ | ✅ Done |
 | P4 | Metrics module — DSS, Flip Rate, etc. | ✅ | ⚪ Pending |
 | P5 | Experiment runner — screening + attack | ✅ | ⚪ Pending |
 | P6 | TextGuard defense | ✅ Core | ⚪ Pending |
@@ -56,7 +56,9 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 | Text source | `report` by default, `search` selectable — MM-TSFlib uses `search` (see §6) |
 | Text alignment | `anchor="end"` + lag 1: each text placed in the period containing its end date; row t gets period t−1's texts (see §6) |
 | Known report defects | 5 leakers dropped (Health_US 3, Traffic 2); SocialGood influenza junk filtered; 7 year-typos **kept** (see §6) |
-| Attack variants | **change-flip** for change-language text (Economy, Traffic); **level-flip** for level-language text (Health_US, SocialGood) — see §6 |
+| Attack variants | **change-flip** in practice for Economy, Traffic **and SocialGood** (its reports state changes, not levels); **level-flip only for Health_US** (§8) |
+| Attack generator | **Deterministic rules** (`src/attacks/rules.py`), **not Qwen** — avoids Qwen-on-Qwen bias (Model 5) and same-model circularity with the P6 judge (#25); minimal, exact, auditable edit. Paper: a conservative, minimal-edit attacker. LLM-written attack = optional P7 extra (§8) |
+| Attack direction for DSS | `claimed_direction` recorded per fake (+1/−1, about the forecast target) — **DSS uses the known attack direction, never a classifier** |
 | TextGuard gate | Generalised: "text claim vs numerical evidence", with a **change branch** and a **level branch** (P6) |
 | Text direction classifier | **Qwen-based**, not rule-based — keyword heuristic agreed with humans only 72% |
 | Forecaster interface | `predict(numbers, text) -> ndarray (horizon,)`; `Forecaster` Protocol (duck-typed) + optional `BaseForecaster` ABC — see §6a |
@@ -127,7 +129,11 @@ Related Work in P8, and re-run the arXiv search then.
 | `notebooks/p2_qwen_forecaster.ipynb` | P2 | ✅ run on Colab T4 2026-10-08 (986 rows, 6 min) |
 | `src/models/qwen_forecaster.py` | P2 | ✅ serves the Colab CSV; prompt fingerprints + scale check (26 tests) |
 | `src/models/dummy.py` | P2 | ✅ (26 tests) |
-| `src/attacks/*.py` (6 conditions) | P3 | ⚪ |
+| `src/attacks/common.py` | P3 | ✅ windows (val + test), timelines, save/load `texts/<condition>.csv` |
+| `src/attacks/empty.py`, `shuffled.py`, `time_shifted.py`, `cross_domain.py` | P3 | ✅ simple conditions |
+| `src/attacks/rules.py` | P3 | ✅ rule engine: headline reader, flip / exaggerate, coherence checks |
+| `src/attacks/flipped.py`, `exaggerated.py` | P3 | ✅ 384 / 381 attacked texts |
+| `src/attacks/generate.py`, `validate_attacks.py` | P3 | ✅ all 7 conditions → `texts/`; validation report (26 tests in `test_attacks.py`) |
 | `src/metrics.py` | P4 | ⚪ |
 | `src/run_experiments.py` | P5 | ⚪ |
 | `src/textguard/trend_detector.py` | P6 | ⚪ |
@@ -719,13 +725,113 @@ value of this same series ("ILI was 2.1%"), so those predictions score test MSE 
 Economy/Traffic risk (copying a goods-and-services or differently-estimated figure) did not
 materialise (0% / 1.2%). → issue #26 closed.
 
-## 8. Fake text validation (P3)
+## 8. Attack module and fake-text validation (P3)
 
-- Samples manually checked: ___ / 100
-- Direction correctly flipped: ___%
-- Length similarity passed: ___%
-- Automatic classifier agreement: ___%
-- Failure modes seen: _(pending)_
+`python -m src.attacks.generate` → `texts/<condition>.csv` (gitignored; 7 files: real, empty,
+shuffled, cross_domain, time_shifted, flipped, exaggerated; 493 val + test windows each).
+`python -m src.attacks.validate_attacks` → report + `results/summary_p3_attack_validation.csv`.
+Fake rows carry `synthetic=True`; `texts/README.txt` labels them as synthetic research text.
+
+### Design change (decided 2026-10-09) — fakes are written by RULES, not Qwen
+
+Reasons: (1) Model 5 is Qwen — a Qwen-written attack on Qwen biases the result; (2) P6's
+direction judge is Qwen — same-model circularity (issue #25); (3) rules make a **minimal,
+exact, reproducible** edit — only the direction (flip) or magnitude (exaggerate) changes —
+and every edit is auditable. **Paper framing: a conservative, minimal-edit attacker.** An
+LLM-written attack is an optional P7 extra. Also recorded in CLAUDE.md §7.
+
+### The conditions
+
+| Condition | Definition | Why this way |
+|---|---|---|
+| `empty` | no text | identical to `text=None` / TextGuard's A |
+| `shuffled` | a real report from an **earlier** date, same domain (seeded per window; never its own text) | earlier-only: a random *future* report could leak information |
+| `time_shifted` | same domain, the period **one year earlier** (12 months / 52 weeks) | same season and style, only the timing is wrong; backward only (forward = a leakage probe, not a control) |
+| `cross_domain` | the latest report another domain had published by the forecast date (Economy ← SocialGood ← Traffic ← Health_US ← Economy) | only the topic differs, timing held fixed |
+| `flipped` | direction reversed, numbers kept coherent | the core attack |
+| `exaggerated` | direction kept, stated change ×3, "sharply"/"well" | TextGuard's known weak spot |
+
+**Variants in practice:** change-flip for **Economy, Traffic and SocialGood** (SocialGood's
+reports state changes — "declined by 0.2 percentage point to 3.6 percent" — not levels);
+level-flip **only for Health_US** ("ILI was 1.8%, below the national baseline of 2.1%").
+
+**Flip rules** (`src/attacks/rules.py`): direction words swap; signed changes flip sign and
+unsigned "changed by 1.0%" becomes "-1.0%"; dependent numbers are recomputed keeping the
+*current* level fixed ("X, up Y from Z" → "X, down Y from X+Y"; "X, down from Z" → "X, up from
+2X−Z"); Health_US levels are mirrored to the **same distance on the other side of the
+baseline (2B − V)**, falling back to the ratio mirror B²/V only if 2B − V ≤ 0. Each fake
+records `real_direction` and `claimed_direction` (+1/−1 about the forecast target; Economy's
+"deficit up" = balance −1). A text that cannot be flipped cleanly is kept unchanged with
+`attacked=False` and a reason — **never emitted self-contradictory**.
+
+**Level mirror — decided 2026-10-09:** the first version used the ratio mirror B²/V for all
+Health_US levels. It produced implausible values (0.9% → 5.4%, a flu-peak level in late
+summer; 26 of 133 above 5%). Implausible fakes are trivially detectable and would make
+TextGuard's P6 results look better than they are — **fair evaluation needs plausible
+attacks.** Now linear first: **0 of 133 flipped values above 5%** (range 0.5–3.8%, median
+2.9%); the ratio fallback fires 16 times, all for flu-peak values 4.4–7.5% → 0.6–1.1%.
+
+### Validation results
+
+**1. Human labels** — the 50 reports hand-labelled in P1 (written before the test period):
+
+| Domain | Texts | Directional (human) | Rules read the same direction | Flipped correctly |
+|---|---|---|---|---|
+| Economy | 13 | 12 | 13 | **12 / 12** |
+| Traffic | 12 | 12 | 12 | **12 / 12** |
+| SocialGood | 13 | 3 | 13 | **3 / 3** |
+| Health_US | 12 | 2 | 3 | **2 / 2** |
+| **All** | 50 | 29 | 41 | **29 / 29 (100%)** |
+
+The 9 "read differently" are all Health_US *level* claims ("ILI was 2.1%, below the national
+baseline"): P1 labelled only up/down *change* claims, so they were "none" there; level-flip
+attacks them by design.
+
+**2. Coverage** (val + test texts):
+
+| Domain | Texts | Flipped | Not attacked (reason) | Exaggerated |
+|---|---|---|---|---|
+| Economy | 105 | **105 (100%)** | — | 105 |
+| Traffic | 80 | **79 (99%)** | 1 no directional headline | 77 (2: decrease would exceed 100%) |
+| Health_US | 196 | **157 (80%)** | 38 no directional headline ("at the baseline"), 1 unhandled word "elevated" | 156 |
+| SocialGood | 77 | **43 (56%)** | 33 no directional headline ("unchanged", "little changed"), 1 unhandled word "lost" | 43 |
+| **All** | 458 | **384 (84%)** | 74 | 381 |
+
+SocialGood's 56% matches its P1 directional rate (56%).
+
+**3. Automatic checks on every attacked text:** headline reversed 384/384 (flip) / kept
+381/381 (exaggerate); **0 new contradictions** (arithmetic of "up Y from Z", side of the
+baseline, sign agreement in "changed by S% (T billion)"); length fake/real 0.95–1.02 (flip),
+1.00–1.11 (exaggerate).
+
+**4. Review by eye:** 20 before/after pairs (5 per domain, seed 0) reviewed by Aryan
+2026-10-09 → the level-mirror change above.
+
+### Edge cases found and fixed during review (each now a test in `tests/test_attacks.py`)
+
+| # | Trap | Example | Fix |
+|---|---|---|---|
+| 1 | "less than" as a duration, not a direction | "persons unemployed for **less than 5 weeks**" was flipped to "more than" | more/less flip only right after a change magnitude ("$2.9 billion more than") |
+| 2 | record phrases | "declined … to 3.6 percent, the **lowest** rate since 1969" left unflipped (contradicts "rose"); "the **highest** rate and largest … increase in the history" | highest↔lowest swap only in "… since / in the history / on record" phrases (80-char window) |
+| 3 | group comparisons | "5.8 percent, **higher than** the 4.7-percent rate for non-Hispanics" would become false | higher/lower flip only right after a change magnitude ("1% lower than") |
+| 4 | above/below a stated number | "averaged 158,000, **below** the average monthly gain of 223,000" | above/below flip only next to a baseline / threshold |
+| 5 | "less than" as an amount after up/down | "**down less than** $0.1 billion from September" — "down" was missed, leaving that clause unflipped | up/down also flips before "less/more than" |
+| 6 | regional sentence as headline | national ILI exactly *at* baseline, direction taken from "regions … at or above region-specific baseline" | Health_US headline comes from the national value only; regional sentences excluded → not attacked |
+| 7 | rewrite outside the lexicon | exaggerate turned "edged down" into "plunged", which the headline check cannot read (4 SocialGood texts rejected) | "edged up/down" → "rose/fell sharply" (lexicon words) |
+
+### Limitations (state in the paper)
+
+- **Leftover descriptive side sentences are kept unchanged** — e.g. "10 states experienced
+  high ILI activity" next to a flipped "ILI was 1.2%, below the national baseline". Flipping
+  side sentences without a tracked direction word risks new contradictions; leaving them
+  makes the attack slightly **weaker, i.e. conservative**.
+- **Coverage is partial where reports make no directional claim** (SocialGood 56%, Health_US
+  80%): those windows are not attacked, and DSS / Flip Rate are computed on attacked windows
+  only — report the attacked count next to every metric.
+- **Rules are tuned to Time-MMD's report styles** (the lexicon was built by scanning every
+  val/test report). A new domain needs its headline subject and a lexicon scan.
+- **Exaggerated level claims use the ratio scale** (V' = B·(V/B)³); not changed with the flip
+  mirror — check plausibility if exaggeration matters in P6.
 
 ---
 
@@ -781,10 +887,10 @@ materialise (0% / 1.2%). → issue #26 closed.
 | 10 | COVID-2020 in 3 test sets → dedicated "TextGuard under genuine regime change" False Block Rate analysis | P6 | ⬜ Open |
 | 11 | Timing: `anchor="end"` default + drop 5 real leakers | P1 | ✅ Done — check passes |
 | 12 | SocialGood: 41% off-topic influenza text | P1 | ✅ Filtered (131 dropped, 13 header-stripped) |
-| 13 | Directional claims concentrated in Economy/Traffic | P3 | ✅ Decided — change-flip + level-flip variants |
+| 13 | Directional claims concentrated in Economy/Traffic | P3 | ✅ change-flip (Economy, Traffic, SocialGood) + level-flip (Health_US); coverage 84% (§8) |
 | 14 | Swap SocialGood (56% directional, 61% coverage) for Energy (100% directional, but 351/354 reports contain the forecast target; needs lag 2)? | P1→P2 | ⬜ Open — needs decision |
 | 15 | Generalise TextGuard gate to "text claim vs numerical evidence" (change + level branches); update CLAUDE.md §8 | P6 | ⬜ Open |
-| 16 | Direction classifier must be Qwen-based (heuristic only 72% vs humans); validate on the 100 hand labels | P3 | ⬜ Open |
+| 16 | Direction classifier must be Qwen-based (heuristic only 72% vs humans); validate on the 100 hand labels | P6 | ⬜ Open — P3 no longer needs it: fakes carry their known `claimed_direction`; still needed for TextGuard's judge in P6 |
 | 17 | NaN pairing: drop a sample from both sides if either is NaN; report parse-failure rate per model × condition (§6a) | P4 | ⬜ Open |
 | 18 | TextGuard: if B is NaN, final = A (§6a) | P6 | ⬜ Open |
 | 19 | **Models 3/4 must reuse the val-tuned protocol** (`train_baselines.LR_GRID`, `TUNED`, `TUNE_SEED`, `patching="window"`) — else a Text Usage Gap mixes text with extra training | P2.3 | ✅ Applied — same `LR_GRID`/`TUNED`/seeds, lr tuned per domain for Models 3/4 |
@@ -793,16 +899,32 @@ materialise (0% / 1.2%). → issue #26 closed.
 | 22 | Lookback 8 < 12-month seasonality: DLinear can't see lag 12 (Traffic val 1.02 vs PatchTST 0.04). Traffic reports state **year-over-year** changes ("−1.6% vs January 2009") — exactly the information an 8-month window lacks. So Traffic is the domain most likely to show **genuine text use**, and the **strongest P5 attack target**. Lookback stays 8 to match the published setup | P5 | ⬜ Open — note when interpreting |
 | 23 | **P5 extra analysis: report Traffic with and without 2020.** Genuine, extreme COVID-era Traffic text hurts Model 3 on test (test MSE 1.04 → 1.60 with text) although text halves val error — the text head never saw year-over-year changes of that size. Same regime-shift theme as #10 | P5 | ⬜ Open |
 | 24 | Model 5 memorisation leakage: Qwen may have seen these statistics/reports in pretraining; numeric prompt is undated, report text still dated — paper limitation (§7b) | P8 | ⬜ Open |
-| 25 | Same-model circularity: Qwen generates P3 fakes and judges direction in P6 → validate the P6 judge on the human labels from `check_directional`, ideally also on non-Qwen fakes (§7b) | P3/P6 | ⬜ Open |
+| 25 | Same-model circularity: Qwen generates P3 fakes and judges direction in P6 → validate the P6 judge on the human labels from `check_directional`, ideally also on non-Qwen fakes (§7b) | P6 | 🔵 Generation side removed (rule-based fakes, §8); still validate the P6 Qwen judge on the human labels |
 | 26 | Report figures ≠ series values (Economy goods vs goods-and-services; Traffic VMT estimates) — check Qwen errors for copying the report's number (§7b) | P5 | ✅ Checked: real 5.9% vs 4.1% chance; Economy 0%, Traffic 1.2%; Health_US copies are same-series and accurate |
 | 27 | Model 5 unit confusion: 3/80 Traffic real-text answers in billions (report's unit) → scale failures (NaN). Report the rate next to every Model 5 metric; consider it in P5 as a text-channel failure mode | P4/P5 | ⬜ Open |
 | 28 | Qwen run `revision` unrecorded (transformers 5 dropped `_commit_hash`); notebook now queries the Hub. Re-run Model 5 in P3 (attacked texts) will record it | P3 | ⬜ Open |
+| 29 | Model 5 needs a second Colab run on the attacked conditions (shuffled, cross_domain, time_shifted, flipped, exaggerated) — export from `texts/`, `QwenForecaster` must accept the new conditions' text | P5 | ⬜ Open |
+| 30 | DSS / Flip Rate only over `attacked` windows; report attacked counts (384 flipped / 381 exaggerated of 458 texts) next to every attack metric | P4/P5 | ⬜ Open |
 
 ---
 
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-09 — P3: attack module (rule-based flip + exaggerate) → **P3 complete**
+- **Design change:** fakes generated by deterministic rules, not Qwen (Qwen-on-Qwen bias,
+  P6 circularity); recorded in CLAUDE.md §7 and §8 here
+- Simple conditions: empty, shuffled (earlier dates only), time_shifted (−1 year),
+  cross_domain (other domain, same date); 7 condition files in `texts/`
+- `rules.py`: headline reader + flip / exaggerate with coherent numbers; flip covers 384 / 458
+  texts (Economy 100%, Traffic 99%, Health_US 80%, SocialGood 56%)
+- Validation: **29 / 29 human-labelled directional reports flipped correctly**; 0 new
+  contradictions; 7 edge cases found by review and fixed (§8)
+- Health_US level mirror changed ratio → linear (2B − V, ratio fallback) after review: values
+  above 5% 26 → 0 (plausible fakes for a fair P6)
+- 26 tests in `test_attacks.py`; suite 184 passing
+- **Next:** P4 — metrics module (MSE, Text Usage Gap, DSS, Flip Rate, False Block Rate)
 
 ### 2026-10-09 — P2.4: Qwen forecaster (Model 5) → **P2 complete**
 - `export_qwen_inputs.py` → 493 val + test windows; `qwen_prompt.py` (undated `t-L…t-1` prompt,
