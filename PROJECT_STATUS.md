@@ -62,6 +62,9 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 | Model 5 predictions, **real + none only**, val + test | `results/qwen/p2_qwen_predictions.csv` + `qwen_inputs.csv` | ✅ predictions (backed up), inputs ❌ | Colab notebook (§7b); inputs: `python -m src.models.export_qwen_inputs` |
 | All 7 text conditions, val + test (493 windows each) | `texts/<condition>.csv` (real, empty, shuffled, cross_domain, time_shifted, flipped, exaggerated) | ❌ | `python -m src.attacks.generate` (deterministic) |
 | Metrics | `src/metrics.py` (§9) | code | — |
+| **P5a: Models 1–4 × 7 conditions**, val + test, 3 seeds (41,412 rows) | `results/p5_predictions.csv` (units in `results/p5_units/`) | ❌ (raw) | `python -m src.run_experiments` (resumable; ~15 min CPU incl. MLflow) |
+| **P5a: Qwen inputs, 5 altered conditions** (2465 rows + 40 probes) | `results/qwen/qwen_inputs_p5.csv` | ❌ | `python -m src.models.export_qwen_inputs --p5` |
+| **P5a: Qwen predictions, 5 altered conditions** | `results/qwen/p5_qwen_predictions.csv` + `p5_qwen_run_meta.json` | ⏳ **awaiting Colab** | `notebooks/p5_qwen_conditions.ipynb` (steps below) |
 
 ### What P5a must build
 
@@ -84,6 +87,34 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
    `QwenForecaster` learns the new conditions. Then **wait for the Colab CSV**.
 
 **No screening or attack metrics in P5a** — that is P5b.
+
+### P5a status (2026-10-09)
+
+* ✅ Step 0 — family pre-registered and pushed **alone** (commit `5792daf`, 04:22 IST),
+  before any P5 prediction existed.
+* ✅ Step 1 — 732 new embeddings (flipped 361, exaggerated 371; shuffled / cross_domain /
+  time_shifted were already cached — they reuse real reports). 0 truncated (max 488 tokens).
+  All 24 Model 3/4 checkpoints' scalers equal the train-text mean/std recomputed now
+  (max |diff| 0.0) → nothing was refit.
+* ✅ Step 2 — 112 units, 41,412 predictions, 0 NaN, 336 MLflow runs (`p5_experiments`).
+  BERT never loaded (all cache hits). Models 1–2 bit-identical across all 7 conditions
+  (48 model × domain × seed × split groups). `real` (and Models 3/4 `empty`) reproduce P2's
+  saved predictions exactly (max |diff| 0.0). **No metric has been computed.**
+* ⏳ Step 3 — export + notebook ready; 2215 prompts to generate (+40 probe), 250 reused
+  (fingerprints verified identical to P2.4 prompts). **Waiting for the Colab CSV.**
+
+### Colab run (Model 5, issue #29)
+
+1. colab.research.google.com → File → Upload notebook → `notebooks/p5_qwen_conditions.ipynb`.
+2. Runtime → Change runtime type → **T4 GPU**.
+3. Upload `results/qwen/qwen_inputs_p5.csv` to `/content` (or `MyDrive/textguard/`).
+4. Runtime → Run all (allow Drive access in cell 2). ~15 min. Cell 6 prints the probe
+   result (40/40 identical → reuse; otherwise it generates all 2465 rows, ~16 min).
+   On a disconnect: reconnect, run cells 1–6, then cell 7 resumes.
+5. Put `p5_qwen_predictions.csv` and `p5_qwen_run_meta.json` into `results/qwen/`.
+6. Locally: `python -c "from src.run_experiments import qwen_rows; print(len(qwen_rows()))"`
+   — verifies every fingerprint and fills the reused rows; expect 986 + 2465 = 3451.
+   Then P5b.
 
 ### Rules a fresh session must not break
 
@@ -215,7 +246,11 @@ Related Work in P8, and re-run the arXiv search then.
 | `src/attacks/flipped.py`, `exaggerated.py` | P3 | ✅ 384 / 381 attacked texts |
 | `src/attacks/generate.py`, `validate_attacks.py` | P3 | ✅ all 7 conditions → `texts/`; validation report (26 tests in `test_attacks.py`) |
 | `src/metrics.py` | P4 | ✅ pure functions; worked example reproduced (27 tests) |
-| `src/run_experiments.py` | P5 | ⚪ |
+| `src/run_experiments.py` | P5a | ✅ resumable inference runner (unit = model × domain × condition); integrity checks: text-blind M1/M2, P2 agreement, embedding scalers; `qwen_rows` for Model 5 (6 tests) |
+| `src/models/embed_texts.py --conditions` | P5a | ✅ altered-condition texts embedded (732 new, 0 truncated) |
+| `src/models/export_qwen_inputs.py --p5` | P5a | ✅ 2465 condition rows (2215 to generate, 250 reused) + 40 probe rows |
+| `notebooks/p5_qwen_conditions.ipynb` | P5a | ✅ built (`build_p5_qwen_notebook.py`); reproducibility probe, revision pinned — **awaiting Colab run** |
+| `qwen_forecaster.load_all_predictions` | P5a | ✅ P2.4 + P5 conditions, reused rows filled and re-fingerprinted (4 new tests) |
 | `src/textguard/trend_detector.py` | P6 | ⚪ |
 | `src/textguard/text_direction.py` | P6 | ⚪ |
 | `src/textguard/gate.py` | P6 | ⚪ |
@@ -1117,8 +1152,8 @@ different window mask) is **exploratory** and will be labelled so.
 | 25 | Same-model circularity: Qwen generates P3 fakes and judges direction in P6 → validate the P6 judge on the human labels from `check_directional`, ideally also on non-Qwen fakes (§7b) | P6 | 🔵 Generation side removed (rule-based fakes, §8); still validate the P6 Qwen judge on the human labels |
 | 26 | Report figures ≠ series values (Economy goods vs goods-and-services; Traffic VMT estimates) — check Qwen errors for copying the report's number (§7b) | P5 | ✅ Checked: real 5.9% vs 4.1% chance; Economy 0%, Traffic 1.2%; Health_US copies are same-series and accurate |
 | 27 | Model 5 unit confusion: 3/80 Traffic real-text answers in billions (report's unit) → scale failures (NaN). Report the rate next to every Model 5 metric; consider it in P5 as a text-channel failure mode | P5 | 🔵 P4 done: `failure_rates` breaks out format failures; report in P5 |
-| 28 | Qwen run `revision` unrecorded (transformers 5 dropped `_commit_hash`); notebook now queries the Hub. Re-run Model 5 in P3 (attacked texts) will record it | P3 | ⬜ Open |
-| 29 | Model 5 needs a second Colab run on the attacked conditions (shuffled, cross_domain, time_shifted, flipped, exaggerated) — export from `texts/`, `QwenForecaster` must accept the new conditions' text | P5 | ⬜ Open |
+| 28 | Qwen run `revision` unrecorded (transformers 5 dropped `_commit_hash`); notebook now queries the Hub. Re-run Model 5 in P3 (attacked texts) will record it | P5a | 🔵 P5 notebook resolves the Hub commit first and loads `revision=` that commit, recorded in `p5_qwen_run_meta.json`; closes when the run is back. P2.4's own snapshot stays unrecorded (paper: same model id; probe shows whether outputs reproduce) |
+| 29 | Model 5 needs a second Colab run on the attacked conditions (shuffled, cross_domain, time_shifted, flipped, exaggerated) — export from `texts/`, `QwenForecaster` must accept the new conditions' text | P5a | 🔵 Export + notebook + loader done; **waiting for the Colab CSV** |
 | 30 | DSS / Flip Rate only over `attacked` windows; report attacked counts (384 flipped / 381 exaggerated of 458 texts) next to every attack metric | P5 | 🔵 P4 done: d = 0 windows excluded, `n_not_attacked` / `coverage` on every attack metric |
 
 ---
@@ -1126,6 +1161,21 @@ different window mask) is **exploratory** and will be labelled so.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-09 — P5a: pre-registration, embeddings, Models 1–4 on all conditions, Qwen export
+- §1a corrected: P5a = generate (family, embeddings, M1–4 predictions, Qwen export for all 5
+  altered conditions); P5b = all analysis once Qwen is back
+- **Pre-registered family (§10a) committed and pushed alone first** (`5792daf`): one Holm
+  family, m = 76 (S 12, A1 30, A2 30, F 4); ablations (2020, sparse/dense) outside it
+- Embeddings: 732 new, 0 truncated; checkpoint scalers verified = train-only stats
+- `src/run_experiments.py`: 112 units / 41,412 rows / 0 NaN / 336 MLflow runs; M1–2 text-blind
+  confirmed; P2 reproduced exactly
+- Qwen: `export_qwen_inputs --p5`, `notebooks/p5_qwen_conditions.ipynb` (probe-gated reuse of
+  P2.4 answers, Hub revision pinned + recorded), `load_all_predictions`
+- **Broke:** pandas 3 turned `None` texts into NaN in a string column (caught by the
+  real-text cross-check before any prediction was saved) → object dtype
+- 221 tests passing (10 new)
+- **Next:** Aryan runs the Colab notebook → `qwen_rows()` → P5b analysis
 
 ### 2026-10-09 — P4: metrics module → **P4 complete**
 - `src/metrics.py`: mse, mae, paired_mse, text_usage_gap, text_sensitivity, text_moves_share,

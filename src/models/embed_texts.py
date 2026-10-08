@@ -8,7 +8,8 @@ Counts are per *period* text (the reports of one period joined by the loader), w
 MM-TSFlib's prompt — exactly what the models see. Only periods inside the split range (train,
 val, test) are counted.
 
-Run: ``python -m src.models.embed_texts``
+Run: ``python -m src.models.embed_texts`` (real texts, all splits) or
+``python -m src.models.embed_texts --conditions`` (P3's altered conditions, val + test — P5a).
 """
 
 from __future__ import annotations
@@ -17,8 +18,11 @@ import numpy as np
 import pandas as pd
 
 from src.data.splits import load_splits
-from src.models.text_encoder import MAX_TOKENS, BertTextEncoder
+from src.models.text_encoder import MAX_TOKENS, BertTextEncoder, make_prompt
 from src.models.train_baselines import DOMAINS
+
+# P3 conditions whose text differs from the real report (P5a embeds them; ``empty`` has none)
+ALTERED_CONDITIONS = ("shuffled", "cross_domain", "time_shifted", "flipped", "exaggerated")
 
 
 def domain_texts(domain: str) -> pd.DataFrame:
@@ -29,7 +33,49 @@ def domain_texts(domain: str) -> pd.DataFrame:
     return full[full["has_text"]][["start_date", "split", "text"]]
 
 
+def embed_conditions(conditions=ALTERED_CONDITIONS, enc: BertTextEncoder | None = None
+                     ) -> pd.DataFrame:
+    """Embed every val + test text of the altered conditions (P5a) into the same cache.
+
+    Why this is all that is needed to standardise them correctly: the cache holds **raw**
+    BERT vectors. The per-dimension z-score is the ``EmbeddingScaler`` stored inside each
+    Model 3/4 checkpoint, fitted in P2.3 on *train* texts only. Loading a checkpoint applies
+    those frozen statistics to any text, so attacked text is standardised exactly like real
+    text and can never refit the scaler (which would leak the attack into the model).
+
+    Also reports truncation per condition — exaggerated rewrites are slightly longer.
+    BERT is unloaded before returning (RAM is tight on this machine).
+    """
+    from src.attacks.common import load
+    enc = enc or BertTextEncoder()
+    rows = []
+    try:
+        for cond in conditions:
+            df = load(cond)
+            df = df[df["text"].str.strip().str.len() > 0]
+            texts = df["text"].tolist()
+            before = sum(enc._path(make_prompt(t)).exists() for t in set(texts))
+            n_tok = enc.token_counts(texts)
+            enc.encode(texts)
+            rows.append({"condition": cond, "texts": len(texts), "unique": len(set(texts)),
+                         "already_cached": before, "median_tokens": int(np.median(n_tok)),
+                         "max_tokens": int(n_tok.max()),
+                         "truncated": int((n_tok > MAX_TOKENS).sum())})
+            print(rows[-1], flush=True)
+    finally:
+        enc.unload()
+    return pd.DataFrame(rows)
+
+
 def main() -> None:
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--conditions", action="store_true",
+                    help="embed the P3 altered-condition texts (val + test) instead")
+    if ap.parse_args().conditions:
+        out = embed_conditions()
+        print(out.to_string(index=False))
+        return
     enc = BertTextEncoder()
     rows = []
     for domain in DOMAINS:
