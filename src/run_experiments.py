@@ -300,10 +300,22 @@ def qwen_rows() -> pd.DataFrame:
     """Model 5's predictions (P2.4 real/none + P5 Colab run) in this runner's schema.
 
     ``none`` is renamed ``empty`` (the same thing, PROJECT_STATUS §6a); ``seed`` = 0 (one
-    greedy run). ``parse_ok`` / ``scale_ok`` / ``reused_from`` are kept for failure reporting.
+    greedy run). ``parse_ok`` / ``scale_ok`` / ``reused_from`` are kept for failure reporting,
+    ``setup`` / ``setup_class`` for provenance.
+
+    **Refuses to mix software setups.** Every comparison (fake vs real for DSS / Flip Rate,
+    real vs none for sensitivity, M5 vs M3/M4 per window) pairs Model 5 answers across
+    conditions, and pooled numbers pair them across windows. If two answers came from setups
+    that were not certified equivalent by the reproducibility probe, a software change would
+    be measured as a text effect. So the whole table must share one ``setup_class``.
     """
     from src.models.qwen_forecaster import load_all_predictions
     q = load_all_predictions()
+    classes = q.groupby(["domain", "split", "sample_id"]).setup_class.nunique()
+    if (classes > 1).any() or q.setup_class.nunique() != 1:
+        raise ValueError(f"Model 5 answers come from {q.setup_class.nunique()} software setups "
+                         f"({int((classes > 1).sum())} windows mix them) — comparisons would "
+                         "mix a setup change into the text effect; regenerate on one setup")
     q["condition"] = q["condition"].replace({"none": "empty"})
     q["y_last"] = [json.loads(x)[-1] for x in q.lookback]
     keys = ["domain", "split", "sample_id"]
@@ -311,7 +323,8 @@ def qwen_rows() -> pd.DataFrame:
     q = q.merge(meta[keys + ["condition", "has_text", "attacked", "claimed_direction"]],
                 on=keys + ["condition"], how="left", validate="one_to_one")
     q["model"], q["seed"] = "Qwen2.5-1.5B", 0
-    extra = [c for c in ("parse_ok", "scale_ok", "reused_from") if c in q]
+    extra = [c for c in ("parse_ok", "scale_ok", "reused_from", "setup", "setup_class")
+             if c in q]
     return q[COLUMNS + extra]
 
 

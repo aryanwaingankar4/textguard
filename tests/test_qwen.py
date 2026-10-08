@@ -201,6 +201,8 @@ def test_scale_ok_bounds():
 # --- P5a: altered conditions, reuse of P2.4 answers, reproducibility probe -------------------
 
 NOTEBOOK_P5 = ROOT / "notebooks" / "p5_qwen_conditions.ipynb"
+P2_META = dict(model_id="Qwen/Qwen2.5-1.5B-Instruct", revision=None, gpu="Tesla T4",
+               torch="2.11.0+cu130", transformers="5.18.0")
 
 
 def _cells_p5():
@@ -218,93 +220,161 @@ def test_p5_notebook_embeds_qwen_prompt_verbatim_and_pins_the_revision():
     assert "revision=REVISION" in load and "model_info(MODEL_ID).sha" in load   # issue #28
 
 
+def test_notebook_setup_string_matches_setup_id():
+    from src.models.qwen_forecaster import setup_id
+    load = next(s for s, _ in _cells_p5() if "def generate" in s)
+    expr = load[load.index("SETUP = ("):load.index('meta["setup"]')]
+    ns = {"meta": {**P2_META, "revision": "abc"}, "MODEL_ID": P2_META["model_id"],
+          "REVISION": "abc"}
+    exec(expr, ns)
+    assert ns["SETUP"] == setup_id({**P2_META, "revision": "abc"})
+
+
 def _p5_files(tmp_path, change=lambda i: i % 2 == 1):
-    """P2.4 run (fake model) + a P5 inputs file: 'flipped' alters some texts (others reuse),
-    'shuffled' alters all; 2 probe rows per condition from P2.4's val answers."""
+    """P2.4 run (fake model) + its meta, and a P5 inputs file laid out like the real export:
+    baseline real/none rows for every window (reuse=p2; 2 val windows per domain are probes),
+    'flipped' altering some texts (others reuse), 'shuffled' altering all."""
     inp = _inputs(tmp_path / "qwen_inputs.csv")
     _run_notebook(tmp_path, lambda p: "101" if "Report" in p else "100")
+    (tmp_path / "p2_meta.json").write_text(json.dumps(P2_META))
     p2 = pd.read_csv(tmp_path / "p2_qwen_predictions.csv", keep_default_na=False,
                      dtype={"sample_id": str})
+    keys = ["domain", "split", "sample_id"]
+    probe_ids = set(map(tuple, inp[(inp.split == "val") & (inp.text != "")]
+                        .groupby("domain").head(2)[keys].to_numpy()))
     parts = []
+    for cond in ("real", "none"):
+        b = inp.merge(p2[p2.condition == cond][keys + ["raw_output"]], on=keys)
+        b["probe"] = [k in probe_ids for k in zip(b.domain, b.split, b.sample_id)]
+        b["expected_raw"] = b.raw_output.where(b.probe, "")
+        parts.append(b.drop(columns="raw_output").assign(
+            condition=cond, reuse="p2", text=b.text if cond == "real" else ""))
     for cond in ("flipped", "shuffled"):
         d = inp.copy()
         alter = [change(i) or cond == "shuffled" for i in range(len(d))]
         d["text"] = [f"{t} FAKE {cond}" if a and t else t for t, a in zip(d.text, alter)]
         d["reuse"] = ["none" if not t else "" if a else "real" for t, a in zip(d.text, alter)]
         parts.append(d.assign(condition=cond, probe=False, expected_raw=""))
-    pr = inp[(inp.split == "val") & (inp.text != "")].head(2)
-    for cond in ("real", "none"):
-        e = pr.merge(p2[p2.condition == cond][["domain", "split", "sample_id", "raw_output"]],
-                     on=["domain", "split", "sample_id"])
-        parts.insert(0, e.rename(columns={"raw_output": "expected_raw"}).assign(
-            condition=cond, reuse="", probe=True,
-            text=e.text if cond == "real" else ""))
     df = pd.concat(parts, ignore_index=True)
     df.to_csv(tmp_path / "qwen_inputs_p5.csv", index=False)
     return df
 
 
-def _run_p5_notebook(tmp_path, fake_generate):
+def _run_p5_notebook(tmp_path, fake_generate, setup_meta=None):
     cells = [s for s, t in _cells_p5() if t == "code"]
-    ns = {"meta": {}, "generate": fake_generate, "META": str(tmp_path / "meta.json")}
+    meta = {**P2_META, "revision": "rev5", **(setup_meta or {})}
+    from src.models.qwen_forecaster import setup_id
+    ns = {"meta": meta, "generate": fake_generate, "SETUP": setup_id(meta)}
     pick = lambda key: next(c for c in cells if key in c)
     exec(pick("# 3. Paths and inputs").replace("/content", tmp_path.as_posix()), ns)
     exec(pick("# Generated verbatim from src/models/qwen_prompt.py"), ns)
-    ns["META"] = str(tmp_path / "meta.json")
+    ns["META"] = str(tmp_path / "p5_meta.json")
     for key in ("# 6. Reproducibility probe", "# 7. Main loop", "# 8. Completeness"):
         exec(pick(key), ns)
     return ns
 
 
-def test_p5_notebook_skips_reusable_rows_when_the_probe_reproduces_p2(tmp_path):
+def _load_all(tmp_path):
+    from src.models.qwen_forecaster import load_all_predictions
+    return load_all_predictions(tmp_path / "p2_qwen_predictions.csv",
+                                tmp_path / "qwen_inputs.csv",
+                                tmp_path / "p5_qwen_predictions.csv",
+                                tmp_path / "qwen_inputs_p5.csv",
+                                tmp_path / "p2_meta.json", tmp_path / "p5_meta.json")
+
+
+def SAME_STACK(p):
+    """Today's stack reproduces P2.4 exactly."""
+    return "101" if "Report" in p else "100"
+
+
+def test_probe_pass_skips_identical_prompts_and_certifies_one_setup_class(tmp_path):
     inp = _p5_files(tmp_path)
     seen = []
     ns = _run_p5_notebook(tmp_path, lambda p: seen.append(p) or ("101" if "Report" in p else "100"))
     assert ns["REUSE_OK"]
-    rows = inp[~inp.probe]
     res = pd.read_csv(tmp_path / "p5_qwen_predictions.csv", keep_default_na=False)
-    assert len(res) == (rows.reuse == "").sum() < len(rows)        # reused rows not generated
-    assert not any("FAKE" not in p and "Report" in p for p in seen[4:])
+    assert len(res) == (inp.reuse == "").sum() < len(inp)          # only new prompts generated
+    assert not set(res.condition) & {"real", "none"}
+    assert all("FAKE" in p or "Report" not in p for p in seen[int(inp.probe.sum()):])
 
-    from src.models.qwen_forecaster import load_all_predictions
-    df = load_all_predictions(tmp_path / "p2_qwen_predictions.csv", tmp_path / "qwen_inputs.csv",
-                              tmp_path / "p5_qwen_predictions.csv",
-                              tmp_path / "qwen_inputs_p5.csv")
+    df = _load_all(tmp_path)
+    assert df.setup_class.nunique() == 1                          # certified by the probe
+    assert set(df.setup) == {ns["SETUP"], df.setup_class.iloc[0]}  # actual stacks recorded
     p5 = df[df.condition.isin(["flipped", "shuffled"])]
-    assert len(p5) == len(rows) and set(p5.reused_from) == {"", "real", "none"}
-    # a reused row is the P2.4 answer to the byte-identical prompt
+    assert len(p5) == (~inp.condition.isin(["real", "none"])).sum()
+    assert set(p5.reused_from) == {"", "real", "none"}
+    # a reused row is the P2.4 answer to the byte-identical prompt, with P2.4's setup
     reused = p5[p5.reused_from == "real"].iloc[0]
     p2_row = df[(df.condition == "real") & (df.sample_id == reused.sample_id)
                 & (df.domain == reused.domain) & (df.split == reused.split)].iloc[0]
     assert reused.prompt_sha == p2_row.prompt_sha and reused.y_pred == p2_row.y_pred
-    # the forecaster serves attacked text, and an unchanged fake = the real prediction
+    assert reused.setup == p2_row.setup != ns["SETUP"]
     m = QwenForecaster(reused.domain, data=df)
     x = json.loads(reused.lookback)
     assert m.predict(x, reused.text)[0] == m.predict(x, p2_row.text)[0]
     fake = p5[p5.reused_from == ""].iloc[0]
-    assert "FAKE" in fake.text and m.predict(json.loads(fake.lookback), fake.text)[0] == 101
+    assert "FAKE" in fake.text and fake.setup == ns["SETUP"]
+    assert m.predict(json.loads(fake.lookback), fake.text)[0] == 101
 
 
-def test_p5_notebook_generates_everything_when_the_probe_differs(tmp_path):
+def test_probe_failure_regenerates_real_and_none_too(tmp_path):
     inp = _p5_files(tmp_path)
-    ns = _run_p5_notebook(tmp_path, lambda p: "102")               # a different software stack
+    ns = _run_p5_notebook(tmp_path, lambda p: "102", {"torch": "9.9"})   # a different stack
     assert not ns["REUSE_OK"] and ns["meta"]["probe_mismatches"] > 0
     res = pd.read_csv(tmp_path / "p5_qwen_predictions.csv", keep_default_na=False)
-    assert len(res) == (~inp.probe).sum()                          # nothing reused
-    from src.models.qwen_forecaster import load_all_predictions
-    df = load_all_predictions(tmp_path / "p2_qwen_predictions.csv", tmp_path / "qwen_inputs.csv",
-                              tmp_path / "p5_qwen_predictions.csv",
-                              tmp_path / "qwen_inputs_p5.csv")
-    assert (df[df.condition == "flipped"].reused_from == "").all()
+    assert len(res) == len(inp)                                    # nothing reused, 986-style
+    assert {"real", "none"} <= set(res.condition)
+    df = _load_all(tmp_path)
+    assert set(df.setup) == set(df.setup_class) == {ns["SETUP"]}  # P2.4 rows dropped
+    assert (df.reused_from == "").all() and len(df) == len(inp)
+    assert (df[df.condition == "real"].y_pred == 102).all()       # today's real, not P2.4's
+
+
+def test_qwen_rows_refuses_mixed_setup_classes(tmp_path, monkeypatch):
+    _p5_files(tmp_path)
+    _run_p5_notebook(tmp_path, SAME_STACK)
+    df = _load_all(tmp_path)
+    import src.models.qwen_forecaster as qf
+    from src import run_experiments as rx
+    monkeypatch.setattr(rx.common, "load", lambda c: pd.DataFrame(
+        columns=["domain", "split", "sample_id", "has_text", "attacked", "claimed_direction"]))
+    bad = df.copy()
+    bad.loc[bad.condition == "flipped", "setup_class"] = "another stack"
+    monkeypatch.setattr(qf, "load_all_predictions", lambda: bad)
+    with pytest.raises(ValueError, match="software setups"):
+        rx.qwen_rows()
+
+
+def test_reuse_without_a_passing_probe_is_refused(tmp_path):
+    _p5_files(tmp_path)
+    _run_p5_notebook(tmp_path, SAME_STACK)
+    meta = json.loads((tmp_path / "p5_meta.json").read_text())
+    meta.update(reuse_p2=False, probe_mismatches=3)               # tampered / failed probe
+    (tmp_path / "p5_meta.json").write_text(json.dumps(meta))
+    with pytest.raises(ValueError, match="probe did not pass"):
+        _load_all(tmp_path)
+
+
+def test_a_file_written_by_two_setups_is_refused(tmp_path):
+    _p5_files(tmp_path)
+    _run_p5_notebook(tmp_path, SAME_STACK)
+    out = tmp_path / "p5_qwen_predictions.csv"
+    res = pd.read_csv(out, keep_default_na=False)
+    res.loc[res.index[:3], "setup"] = "another stack"
+    res.to_csv(out, index=False)
+    with pytest.raises(ValueError, match="2 software setups"):
+        _load_all(tmp_path)
+    # and the notebook itself refuses to resume into it from a different stack
+    with pytest.raises(AssertionError, match="another software setup"):
+        _run_p5_notebook(tmp_path, SAME_STACK)
 
 
 def test_incomplete_p5_run_is_refused(tmp_path):
     _p5_files(tmp_path)
-    _run_p5_notebook(tmp_path, lambda p: "101" if "Report" in p else "100")
+    _run_p5_notebook(tmp_path, SAME_STACK)
     out = tmp_path / "p5_qwen_predictions.csv"
     res = pd.read_csv(out, keep_default_na=False)
     res.iloc[:-3].to_csv(out, index=False)
-    from src.models.qwen_forecaster import load_all_predictions
     with pytest.raises(ValueError, match="incomplete"):
-        load_all_predictions(tmp_path / "p2_qwen_predictions.csv", tmp_path / "qwen_inputs.csv",
-                             out, tmp_path / "qwen_inputs_p5.csv")
+        _load_all(tmp_path)

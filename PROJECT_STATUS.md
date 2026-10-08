@@ -63,7 +63,7 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 | All 7 text conditions, val + test (493 windows each) | `texts/<condition>.csv` (real, empty, shuffled, cross_domain, time_shifted, flipped, exaggerated) | ❌ | `python -m src.attacks.generate` (deterministic) |
 | Metrics | `src/metrics.py` (§9) | code | — |
 | **P5a: Models 1–4 × 7 conditions**, val + test, 3 seeds (41,412 rows) | `results/p5_predictions.csv` (units in `results/p5_units/`) | ❌ (raw) | `python -m src.run_experiments` (resumable; ~15 min CPU incl. MLflow) |
-| **P5a: Qwen inputs, 5 altered conditions** (2465 rows + 40 probes) | `results/qwen/qwen_inputs_p5.csv` | ❌ | `python -m src.models.export_qwen_inputs --p5` |
+| **P5a: Qwen inputs** — 986 real/none baseline rows (40 flagged as probes) + 2465 condition rows | `results/qwen/qwen_inputs_p5.csv` | ❌ | `python -m src.models.export_qwen_inputs --p5` |
 | **P5a: Qwen predictions, 5 altered conditions** | `results/qwen/p5_qwen_predictions.csv` + `p5_qwen_run_meta.json` | ⏳ **awaiting Colab** | `notebooks/p5_qwen_conditions.ipynb` (steps below) |
 
 ### What P5a must build
@@ -100,21 +100,28 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
   BERT never loaded (all cache hits). Models 1–2 bit-identical across all 7 conditions
   (48 model × domain × seed × split groups). `real` (and Models 3/4 `empty`) reproduce P2's
   saved predictions exactly (max |diff| 0.0). **No metric has been computed.**
-* ⏳ Step 3 — export + notebook ready; 2215 prompts to generate (+40 probe), 250 reused
-  (fingerprints verified identical to P2.4 prompts). **Waiting for the Colab CSV.**
+* ⏳ Step 3 — export + notebook ready. **Probe passes** → 2215 new prompts generated, 1236
+  rows (986 real/none + 250 unchanged condition rows) keep P2.4's answers (fingerprints
+  verified identical). **Probe fails** → all 3451 rows regenerated, real and none included,
+  and P2.4's rows are not used. Every row records its `setup`; `qwen_rows()` refuses a table
+  that mixes setup classes (decided with Aryan 2026-10-09, §2). **Waiting for the Colab CSV.**
 
 ### Colab run (Model 5, issue #29)
 
 1. colab.research.google.com → File → Upload notebook → `notebooks/p5_qwen_conditions.ipynb`.
 2. Runtime → Change runtime type → **T4 GPU**.
 3. Upload `results/qwen/qwen_inputs_p5.csv` to `/content` (or `MyDrive/textguard/`).
-4. Runtime → Run all (allow Drive access in cell 2). ~15 min. Cell 6 prints the probe
-   result (40/40 identical → reuse; otherwise it generates all 2465 rows, ~16 min).
-   On a disconnect: reconnect, run cells 1–6, then cell 7 resumes.
+4. Runtime → Run all (allow Drive access in cell 2). Cell 6 prints the probe result:
+   * `40/40 identical to P2.4` → reuse; 2215 prompts, ~15 min;
+   * anything else → **"REGENERATE EVERYTHING, real and none included"**; 3451 prompts,
+     ~22 min. Nothing to change by hand — the notebook does it.
+   On a disconnect: reconnect, run cells 1–6, then cell 7 resumes. If the runtime came back
+   with a different torch / transformers / GPU, cell 7 refuses to append to the old file
+   (one file = one setup): rename or delete `p5_qwen_predictions.csv` and Run all again.
 5. Put `p5_qwen_predictions.csv` and `p5_qwen_run_meta.json` into `results/qwen/`.
 6. Locally: `python -c "from src.run_experiments import qwen_rows; print(len(qwen_rows()))"`
-   — verifies every fingerprint and fills the reused rows; expect 986 + 2465 = 3451.
-   Then P5b.
+   — verifies every fingerprint, fills the reused rows and checks there is one setup class;
+   expect 3451 (986 real/empty + 2465 conditions) either way. Then P5b.
 
 ### Rules a fresh session must not break
 
@@ -175,6 +182,7 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 | Model input | **Univariate** 1-D window in raw units — avoids Sridhar et al.'s co-shipped-column confound; scalers fit on train only |
 | Blank text | `""` / whitespace → `None`: `empty` ≡ `has_text=False` ≡ TextGuard's A |
 | Prediction failures | **NaN**, never raise or drop; NaN-pairing rule for P4/P6 (§6a) |
+| Model 5 software setup (P5) | **One setup class per comparison.** P2.4 answers are reused only if a 40-prompt probe reproduces them exactly on today's Colab stack; otherwise real, none and all conditions are regenerated together. Every row records `setup`; `qwen_rows()` refuses mixed classes — a stack change must never be measured as attack effect (decided 2026-10-09) |
 | Scoring horizon | **horizon = 1** for main experiments; DSS and Flip Rate scored at h=1 |
 | Attack-target selection (P5) | **by text sensitivity, not Text Usage Gap** — sensitivity is what makes a model attackable (§9) |
 | Training protocol (main) | **Val-tuned:** up to 200 epochs, patience 20, lr ∈ {1e-4, 1e-3, 1e-2} chosen per domain × model by val loss (seed 2021), then 3 seeds. **Models 3 and 4 (P2.3) must reuse it exactly** — see §7 |
@@ -1174,7 +1182,10 @@ different window mask) is **exploratory** and will be labelled so.
   P2.4 answers, Hub revision pinned + recorded), `load_all_predictions`
 - **Broke:** pandas 3 turned `None` texts into NaN in a string column (caught by the
   real-text cross-check before any prediction was saved) → object dtype
-- 221 tests passing (10 new)
+- 221 tests passing (10 new); 226 after the follow-up
+- Follow-up (Aryan's review): a failed probe now regenerates real + none too (986 rows),
+  not only the conditions; `setup` recorded per row; `qwen_rows()` refuses mixed setups
+  (5 new tests: probe pass / fail, mixed classes, tampered probe, two-setup file)
 - **Next:** Aryan runs the Colab notebook → `qwen_rows()` → P5b analysis
 
 ### 2026-10-09 — P4: metrics module → **P4 complete**

@@ -9,11 +9,15 @@ What is new compared with P2.4:
 
 * **Rows carry their own text** (one row per window × condition), so the loop sends exactly
   ``text`` — no real/none switch.
-* **Reuse with a reproducibility probe.** Rows whose prompt is identical to a P2.4 prompt
-  (``reuse`` = real / none) are skipped and filled locally from P2.4. That is only valid if
-  today's Colab stack (torch / transformers / GPU) reproduces P2.4's greedy answers, so the
-  notebook first re-runs 40 P2.4 val prompts and compares the raw text. Any mismatch → it
-  generates the reuse rows too.
+* **Reuse with a reproducibility probe.** Rows whose prompt is identical to a P2.4 prompt —
+  the 986 baseline real / none rows (``reuse`` = p2) and unchanged condition rows (``reuse``
+  = real / none) — are skipped and filled locally from P2.4. That is only valid if today's
+  Colab stack (torch / transformers / GPU / weights) reproduces P2.4's greedy answers, so the
+  notebook first re-runs 40 baseline val prompts and compares the raw text. **Any mismatch →
+  it regenerates every row, real and none included**, so no comparison ever pairs answers
+  from two different stacks (a software change would otherwise look like attack effect).
+* **Every row records its ``setup``** (GPU | torch | transformers | model@revision); a
+  resumed run refuses to append rows from a different setup to the same file.
 * **The model revision is pinned and recorded** (issue #28): the Hub commit is resolved
   first and passed to ``from_pretrained(revision=...)``, so the recorded hash is the one loaded.
 * No accuracy printout: all analysis is P5b, against the pre-registered family.
@@ -45,8 +49,10 @@ for defence research** — not real reports.
   `/content` — or placed in `MyDrive/textguard/` if Drive is mounted.
 * Output: `p5_qwen_predictions.csv` + `p5_qwen_run_meta.json`, written **incrementally**
   (every 10 prompts) to Drive if mounted, else `/content`. Re-running the loop **resumes**.
-* Rows whose prompt is identical to a P2.4 prompt (`reuse` = real / none) are skipped and filled
-  from P2.4 locally — **only if** the reproducibility probe (cell 6) reproduces P2.4 exactly.
+* Rows whose prompt is identical to a P2.4 prompt (`reuse` = p2 / real / none) are skipped and
+  filled from P2.4 locally — **only if** the reproducibility probe (cell 6) reproduces P2.4
+  exactly. If it does not, **every row is regenerated, real and none included** (3451 prompts),
+  so fake-text and real-text answers always come from the same software setup.
 * Greedy decoding, batch size 1, fp16 — identical to P2.4. Prompt and parser are generated from
   `src/models/qwen_prompt.py` — do not edit them here.
 
@@ -82,8 +88,8 @@ MAX_NEW_TOKENS = 24
 
 df = pd.read_csv(INPUTS, keep_default_na=False, dtype={"sample_id": str})   # empty text stays ""
 df["probe"] = df["probe"].astype(str) == "True"
-probes, rows = df[df.probe], df[~df.probe]
-print(f"{len(rows)} condition rows + {len(probes)} probe rows from {INPUTS}\\nsaving to {OUT}")
+probes, rows = df[df.probe], df          # probes are a subset of the baseline real/none rows
+print(f"{len(rows)} rows ({len(probes)} of them probes) from {INPUTS}\\nsaving to {OUT}")
 print(rows.assign(skip=rows.reuse != "").groupby(["condition", "split"])
       .agg(rows=("sample_id", "size"), reusable=("skip", "sum")).to_string())
 """),
@@ -132,6 +138,10 @@ meta = dict(model_id=MODEL_ID, revision=REVISION,
             gpu=torch.cuda.get_device_name(0), torch=torch.__version__,
             transformers=transformers.__version__, inputs=os.path.basename(INPUTS),
             started=datetime.datetime.now(datetime.timezone.utc).isoformat())
+# the software setup that produces every row of this run — same format as qwen_forecaster.setup_id
+SETUP = (f"{meta['gpu']} | torch {meta['torch']} | transformers {meta['transformers']} | "
+         f"{MODEL_ID}@{REVISION}")
+meta["setup"] = SETUP
 json.dump(meta, open(META, "w"), indent=1)
 print(meta)
 """),
@@ -144,7 +154,8 @@ for r in probes.itertuples():
         mismatch.append((r.domain, r.sample_id, r.condition, r.expected_raw, raw))
 REUSE_OK = len(probes) > 0 and not mismatch
 print(f"probe: {len(probes) - len(mismatch)}/{len(probes)} identical to P2.4 ->",
-      "reuse P2.4 answers for unchanged prompts" if REUSE_OK else "GENERATE EVERYTHING (no reuse)")
+      "reuse P2.4 answers for unchanged prompts" if REUSE_OK
+      else "REGENERATE EVERYTHING, real and none included (no reuse)")
 for m in mismatch[:10]:
     print("  ", m)
 meta.update(probe_n=len(probes), probe_mismatches=len(mismatch), reuse_p2=REUSE_OK)
@@ -153,10 +164,14 @@ json.dump(meta, open(META, "w"), indent=1)
     code("""
 # 7. Main loop — resumable. Appends every 10 prompts; a disconnect loses at most 10 rows.
 #    Re-run this cell (after cells 1-6) to continue where it stopped.
-COLS = ["domain", "split", "sample_id", "condition", "y_true", "y_pred", "parse_ok", "raw_output", "prompt_sha"]
+COLS = ["domain", "split", "sample_id", "condition", "y_true", "y_pred", "parse_ok", "raw_output",
+        "prompt_sha", "setup"]
 done = set()
 if os.path.exists(OUT):
     prev = pd.read_csv(OUT, keep_default_na=False, dtype={"sample_id": str})
+    other = set(prev.setup) - {SETUP}
+    assert not other, (f"{OUT} holds rows from another software setup {other}; one file = one setup. "
+                       "Rename or delete it and run again from cell 1.")
     done = set(zip(prev.domain, prev.split, prev.sample_id, prev.condition))
     print(f"resuming: {len(done)} rows already saved")
 else:
@@ -165,6 +180,8 @@ else:
 needed = rows if not REUSE_OK else rows[rows.reuse == ""]
 todo = [r for r in needed.itertuples() if (r.domain, r.split, r.sample_id, r.condition) not in done]
 print(f"{len(todo)} predictions to make ({len(rows) - len(needed)} reused from P2.4)")
+meta.update(rows_expected=len(needed))
+json.dump(meta, open(META, "w"), indent=1)
 cache, buf, n_fail, t0 = {}, [], 0, time.time()
 for k, r in enumerate(todo, 1):
     up = build_prompt(r.description, r.unit, r.freq, json.loads(r.lookback), r.text or None)
@@ -175,7 +192,8 @@ for k, r in enumerate(todo, 1):
     ok = not math.isnan(y)
     n_fail += not ok
     buf.append(dict(domain=r.domain, split=r.split, sample_id=r.sample_id, condition=r.condition,
-                    y_true=r.y_true, y_pred=y, parse_ok=ok, raw_output=raw, prompt_sha=prompt_sha(up)))
+                    y_true=r.y_true, y_pred=y, parse_ok=ok, raw_output=raw, prompt_sha=prompt_sha(up),
+                    setup=SETUP))
     if len(buf) >= 10 or k == len(todo):
         pd.DataFrame(buf, columns=COLS).to_csv(OUT, mode="a", header=False, index=False)
         buf = []
@@ -192,7 +210,10 @@ got = set(zip(res.domain, res.split, res.sample_id, res.condition))
 missing = [r for r in needed.itertuples() if (r.domain, r.split, r.sample_id, r.condition) not in got]
 assert not missing, f"{len(missing)} rows missing: re-run cell 7"
 assert not res.duplicated(["domain", "split", "sample_id", "condition"]).any()
-print(f"{len(res)} rows generated; parse failures (count):")
+assert set(res.setup) == {SETUP}, "rows from more than one software setup"
+if not REUSE_OK:
+    assert len(res) == len(rows), "probe failed: every row (real and none included) must be regenerated"
+print(f"{len(res)} rows generated by one setup; parse failures (count):")
 print((~res.parse_ok).groupby([res.condition, res.domain]).sum().unstack().to_string())
 meta.update(finished=datetime.datetime.now(datetime.timezone.utc).isoformat(), rows=len(res),
             parse_failures=int((~res.parse_ok).sum()))

@@ -28,10 +28,23 @@ in results files).
 
 **P5a — the altered conditions (issue #29).** A second Colab run
 (``notebooks/p5_qwen_conditions.ipynb``) forecasts shuffled, cross_domain, time_shifted,
-flipped and exaggerated from ``qwen_inputs_p5.csv``, whose rows carry their own condition
-``text``. Rows whose prompt is identical to a P2.4 prompt (``reuse`` = real / none) were not
-re-generated; ``load_all_predictions`` fills them from P2.4 and re-verifies every prompt
-fingerprint, so a reused answer is provably the answer to the same prompt.
+flipped and exaggerated from ``qwen_inputs_p5.csv``, whose rows carry their own ``text``.
+
+**One software setup per comparison.** DSS compares a fake-text answer with a real-text
+answer; if the two came from different torch / transformers / GPU / weight versions, a
+software change would be counted as attack effect. So every row carries ``setup`` (the stack
+that actually produced it) and ``setup_class`` (the stacks it is valid to compare with):
+
+* **probe passed** (today's stack reproduced 40/40 P2.4 answers exactly): prompts identical to
+  P2.4 prompts were not regenerated — they keep P2.4's answer and P2.4's ``setup``; new prompts
+  have the P5 ``setup``. Both share one ``setup_class`` (P2.4's), *certified by the probe*.
+* **probe failed**: the notebook regenerated everything, real and none included; P2.4's rows
+  are dropped and every row has the P5 ``setup`` and class.
+
+``load_all_predictions`` refuses any other mixture (e.g. reused rows without a passing
+probe, or one P5 file written by two stacks), and every row — reused or not — has its prompt
+fingerprint recomputed from its own text, so a reused answer is provably the answer to the
+same prompt.
 """
 
 from __future__ import annotations
@@ -48,6 +61,8 @@ from src.models.qwen_prompt import build_prompt, prompt_sha
 
 PREDICTIONS = OUT_DIR / "p2_qwen_predictions.csv"
 PREDICTIONS_P5 = OUT_DIR / "p5_qwen_predictions.csv"
+META = OUT_DIR / "p2_qwen_run_meta.json"
+META_P5 = OUT_DIR / "p5_qwen_run_meta.json"
 CONDITION_TEXT = {"real": True, "none": False}  # does the condition use the report text?
 SCALE_FACTOR = 10.0  # answer > 10x outside the window's |range| -> format failure
 
@@ -77,8 +92,7 @@ def _verify(preds: pd.DataFrame, inp: pd.DataFrame) -> pd.DataFrame:
     if preds.duplicated(keys + ["condition"]).any():
         raise ValueError("duplicate (domain, split, sample_id, condition) rows in predictions")
     per_condition = "condition" in inp.columns
-    if per_condition:
-        inp = inp[~inp["probe"].astype(str).eq("True")] if "probe" in inp else inp
+    if per_condition:  # probe rows are ordinary baseline rows (real / none), keep them
         on = keys + ["condition"]
     else:
         unknown = set(preds.condition) - set(CONDITION_TEXT)
@@ -110,24 +124,61 @@ def _verify(preds: pd.DataFrame, inp: pd.DataFrame) -> pd.DataFrame:
     return df.drop(columns=["_merge", "y_true_input"])
 
 
+def setup_id(meta: dict) -> str:
+    """The software stack a Colab run used, as one comparable string (same format as the
+    ``setup`` column the P5 notebook writes)."""
+    return (f"{meta.get('gpu')} | torch {meta.get('torch')} | transformers "
+            f"{meta.get('transformers')} | {meta.get('model_id')}@{meta.get('revision')}")
+
+
 def load_all_predictions(p2_predictions: Path | str = PREDICTIONS, p2_inputs: Path | str = INPUTS,
                          p5_predictions: Path | str = PREDICTIONS_P5,
-                         p5_inputs: Path | str = INPUTS_P5) -> pd.DataFrame:
-    """P2.4 (real, none) + P5a (5 altered conditions), one verified table.
-
-    P5a rows marked ``reuse`` in the inputs and absent from the Colab output take P2.4's
-    answer for the identical prompt (``reused_from`` = real / none). If the Colab run
-    generated them anyway (its reproducibility probe failed), the generated answer is used.
-    Every row — reused or not — has its prompt fingerprint recomputed from its own text.
-    """
-    p2 = load_predictions(p2_predictions, p2_inputs).assign(reused_from="")
+                         p5_inputs: Path | str = INPUTS_P5,
+                         p2_meta: Path | str = META, p5_meta: Path | str = META_P5
+                         ) -> pd.DataFrame:
+    """Every Model 5 answer (real, none + 5 altered conditions), one verified table, with
+    ``setup`` / ``setup_class`` / ``reused_from`` per row (see the module docstring)."""
+    p2_setup = setup_id(json.loads(Path(p2_meta).read_text()))
+    p2 = load_predictions(p2_predictions, p2_inputs).assign(reused_from="", setup=p2_setup)
     if not Path(p5_predictions).exists():
-        return p2
+        return p2.assign(setup_class=p2_setup)
     gen = pd.read_csv(p5_predictions, keep_default_na=False, dtype={"sample_id": str})
     inp = pd.read_csv(p5_inputs, keep_default_na=False, dtype={"sample_id": str})
-    inp = inp[~inp["probe"].astype(str).eq("True")]
+    meta = json.loads(Path(p5_meta).read_text())
+    if gen.empty or gen.setup.nunique() != 1:
+        raise ValueError(f"the P5 predictions come from {gen.setup.nunique()} software setups; "
+                         "one file must be written by one setup (start a fresh file)")
+    p5_setup = gen.setup.iloc[0]
+    if p5_setup != setup_id(meta):
+        raise ValueError("P5 predictions and p5_qwen_run_meta.json describe different setups")
     keys = ["domain", "split", "sample_id"]
     have = set(zip(gen.domain, gen.split, gen.sample_id, gen.condition))
+    is_base = inp.condition.isin(["real", "none"])
+
+    def numeric(df):
+        df = df.copy()
+        df["y_pred"] = pd.to_numeric(df["y_pred"], errors="coerce")
+        df["parse_ok"] = df["parse_ok"].astype(str) == "True"
+        return df
+
+    if gen.condition.isin(["real", "none"]).any():
+        # probe failed -> self-contained regeneration: every row from this one setup
+        missing = [k for k in zip(inp.domain, inp.split, inp.sample_id, inp.condition)
+                   if k not in have]
+        if missing or len(gen) != len(inp):
+            raise ValueError(f"{len(missing)} P5 rows missing — the Colab run is incomplete "
+                             "(re-run its main loop)")
+        if meta.get("reuse_p2", True):
+            raise ValueError("real/none rows were regenerated although the probe passed")
+        p5 = _verify(numeric(gen.drop(columns="setup")), inp)
+        return p5.assign(reused_from="", setup=p5_setup, setup_class=p5_setup)
+
+    # probe passed -> P2.4 answers reused for byte-identical prompts, certified by the probe
+    if not (meta.get("reuse_p2") is True and meta.get("probe_n", 0) > 0
+            and meta.get("probe_mismatches") == 0):
+        raise ValueError("P2.4 answers were reused but the run's reproducibility probe did not "
+                         "pass (p5_qwen_run_meta.json) — regenerate everything")
+    inp = inp[~is_base]
     todo = inp[[k not in have for k in zip(inp.domain, inp.split, inp.sample_id, inp.condition)]]
     if (todo.reuse == "").any():
         raise ValueError(f"{int((todo.reuse == '').sum())} P5 rows were neither generated nor "
@@ -139,15 +190,15 @@ def load_all_predictions(p2_predictions: Path | str = PREDICTIONS, p2_inputs: Pa
         on=keys + ["reuse"], how="left", validate="many_to_one")
     if reused.prompt_sha.isna().any() or (reused.prompt_sha == "").any():
         raise ValueError("a reused row has no P2.4 prediction")
-    reused = reused.rename(columns={"reuse": "reused_from"})
+    reused = reused.rename(columns={"reuse": "reused_from"}).assign(setup=p2_setup)
     gen = gen.assign(reused_from="")
-    p5_raw = pd.concat([gen, reused[gen.columns]], ignore_index=True)
-    p5_raw["y_pred"] = pd.to_numeric(p5_raw["y_pred"], errors="coerce")
-    p5_raw["parse_ok"] = p5_raw["parse_ok"].astype(str) == "True"
+    p5_raw = numeric(pd.concat([gen, reused[gen.columns]], ignore_index=True))
     if len(p5_raw) != len(inp):
         raise ValueError(f"P5 table has {len(p5_raw)} rows for {len(inp)} inputs")
+    setups = p5_raw.pop("setup")
     p5 = _verify(p5_raw, inp)
-    return pd.concat([p2, p5], ignore_index=True)
+    p5["setup"] = setups.to_numpy()
+    return pd.concat([p2, p5], ignore_index=True).assign(setup_class=p2_setup)
 
 
 def parse_failure_rate(df: pd.DataFrame, by=("domain", "split", "condition")) -> pd.DataFrame:
