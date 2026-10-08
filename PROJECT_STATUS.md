@@ -4,7 +4,7 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** P5 — Experiments (P4 complete)
+**Current phase:** P5a — Experiments: generate predictions (P4 complete)
 **Last updated:** 2026-10-09
 
 > 👤 **Solo project.** All work by Aryan.
@@ -21,7 +21,7 @@
 | P2 | Model wrappers — 5 models, one interface | ✅ | ✅ Done |
 | P3 | Attack module — 6 text conditions | ✅ | ✅ Done |
 | P4 | Metrics module — DSS, Flip Rate, etc. | ✅ | ✅ Done |
-| P5 | Experiment runner — screening + attack | ✅ | ⚪ Pending |
+| P5 | Experiment runner — screening + attack | ✅ | 🔵 P5a in progress |
 | P6 | TextGuard defense | ✅ Core | ⚪ Pending |
 | P7 | Auditor, demo, extras | ⬜ Optional | ⚪ Pending |
 | P8 | Paper & release | ✅ | ⚪ Pending |
@@ -34,11 +34,22 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 
 ## 1a. ▶ START HERE — handoff for the next session (P5a)
 
-> Written 2026-10-09 at the end of P4. Replace this section at the end of P5a.
+> Written 2026-10-09 at the end of P4; scope corrected 2026-10-09 at the start of P5a.
+> Replace this section at the end of P5a.
 
-**Scope assumed:** P5a = **5.1 runner + 5.2 screening** (PHASES.md); P5b = **5.3 attack**
-(flipped / exaggerated, DSS, Flip Rate, significance). PHASES.md does not name P5a/P5b —
-confirm the split with Aryan if it matters.
+**Scope (decided 2026-10-09):**
+
+* **P5a = generate everything, analyse nothing.** (0) the pre-registered comparison family,
+  committed before any P5 prediction exists (§10a); (1) BERT embeddings for every condition
+  text (val + test), standardised with the **train-only statistics fitted in P2.3** (the
+  scaler stored in each Model 3/4 checkpoint — never refit on attacked text); (2) Models 1–4
+  predictions on all 7 conditions × 4 domains × 3 seeds, val + test, inference only, every
+  raw per-window prediction saved, crash-safe; (3) the Qwen export + Colab notebook for
+  **all 5 altered conditions** (shuffled, cross_domain, time_shifted, flipped, exaggerated)
+  — one Colab session covers screening and attack.
+* **P5b = all analysis, once Qwen's predictions are back,** so all 5 models are analysed
+  together: screening (5.2), attack metrics (5.3), significance with Holm over the
+  pre-registered family, and the planned ablations (2020, Health_US sparsity).
 
 ### What exists and where
 
@@ -52,31 +63,27 @@ confirm the split with Aryan if it matters.
 | All 7 text conditions, val + test (493 windows each) | `texts/<condition>.csv` (real, empty, shuffled, cross_domain, time_shifted, flipped, exaggerated) | ❌ | `python -m src.attacks.generate` (deterministic) |
 | Metrics | `src/metrics.py` (§9) | code | — |
 
-### What P5a must build (`src/run_experiments.py` — still a placeholder)
+### What P5a must build
 
-1. **Runner** (resumable unit = model × domain × condition; save after each unit; skip
-   finished ones — reuse the pattern of `train_baselines.run`). Save **every raw prediction**:
-   `model, domain, split, condition, seed, sample_id, y_true, y_pred, y_last, train_std`
-   (+ `parse_ok`, `scale_ok` for Model 5). Log each run to MLflow (model, domain, condition, seed).
-2. **Screening conditions:** real, empty, shuffled, cross_domain, time_shifted — texts from
-   `texts/<condition>.csv`, joined on `(domain, split, sample_id)`.
-   * Models 1–2: text-blind — predictions must equal `real`; assert `metrics.is_text_blind`
-     instead of trusting it.
-   * Models 3–4: load the 3 seed checkpoints (`DLinearBertForecaster.load(...)`), call
-     `predict_windows(X, texts)`. New texts → BERT cache misses → BERT loads (~440 MB);
-     call `late_fusion.unload_encoders()` afterwards. **System RAM is tight** (15.7 GB box,
-     ~4.7 GB free; a run was killed once — P2.3 log).
-   * Model 5: **needs a second Colab run** (issue #29). `QwenForecaster` / the notebook /
-     the export only know `real` and `none` today — extend the export to one row per
-     (window, condition, text) and `CONDITION_TEXT` in `qwen_forecaster.py`; keep
-     `prompt_sha` verification. Re-run all conditions in one Colab session (P5a screening +
-     P5b flipped / exaggerated) to spend GPU time once; the new run must record `revision`
-     (issue #28).
-3. **Screening metrics** per model × domain, pooled headline + per-domain (`metrics.grouped`),
-   on **test**, with paired bootstrap CIs: `text_usage_gap` (empty vs real),
-   `text_sensitivity` + `text_moves_share`, `paired_mse` across real / empty / shuffled /
-   cross_domain / time_shifted, `failure_rates`. **Attack targets = models with text
-   sensitivity > 0, not by usage gap** (§9). Record in §9 "P5 — Screening" table.
+0. **Pre-registered comparison family** (§10a) — committed on its own, before any P5 prediction.
+1. **Embeddings** for every condition text (val + test) into `cache/text_emb/`. The cache holds
+   *raw* BERT vectors; standardisation happens inside each Model 3/4 checkpoint with the
+   train-only mean/std fitted in P2.3, so attacked text can never refit it. BERT is unloaded
+   afterwards.
+2. **Runner** `src/run_experiments.py` (resumable unit = model × domain; save after each unit;
+   skip finished ones — the `train_baselines.run` pattern). Models 1–4 × 7 conditions (real,
+   empty, shuffled, cross_domain, time_shifted, flipped, exaggerated) × 3 seeds × val + test,
+   **inference only** (load the P2 checkpoints, never retrain). Every raw prediction:
+   `model, domain, split, condition, seed, sample_id, y_true, y_pred, y_last, train_std`.
+   MLflow run per (model, domain, condition, seed). Assert Models 1–2 identical across all
+   conditions (`metrics.is_text_blind`) and Models 3–4 `real` / `empty` identical to P2.
+3. **Model 5 (issue #29):** export the 5 altered conditions (one row per window × condition,
+   same format as P2.4), regenerate the Colab notebook (BatchEncoding fix, `revision` recorded
+   — issue #28), same prompt / parser / off-scale rule. Windows whose condition text equals the
+   real text (or is empty) reuse P2.4's `real` (or `none`) prediction and are skipped on Colab.
+   `QwenForecaster` learns the new conditions. Then **wait for the Colab CSV**.
+
+**No screening or attack metrics in P5a** — that is P5b.
 
 ### Rules a fresh session must not break
 
@@ -998,7 +1005,88 @@ flipped; usage gap −0.08, sensitivity 0.4; genuine text (g = 1) not blocked.
 
 ---
 
-## 10. Open issues
+## 10. Pre-registration and open issues
+
+### 10a. Pre-registered comparison family (P5) — fixed 2026-10-09, before any P5 prediction
+
+> Committed **on its own**, before a single P5 prediction (Models 1–4 on the new conditions,
+> or Model 5's second Colab run) existed, so the commit timestamp shows the family was fixed
+> before the results. Holm–Bonferroni is only valid for a family chosen in advance.
+> **Do not edit this subsection after P5 results exist.** A later change goes in a dated
+> amendment below it, says what changed and why, and is reported as a deviation in the paper.
+> Already known when writing it (from P2, real vs none only): Models 3–5 test MSE (§7a, §7b)
+> and Model 5's "text changes the answer in 65–78% of windows". Nothing about shuffled,
+> cross_domain, time_shifted, flipped or exaggerated predictions was known to anyone.
+
+**Common to every hypothesis**
+
+* **Split:** test only. Val is never used for these tests.
+* **Models tested:** the text models 3 (DLinear+BERT, late), 4 (PatchTST+BERT, late),
+  5 (Qwen2.5-1.5B, early). Models 1–2 are not tested: they are *asserted* text-blind
+  (`metrics.is_text_blind`), so every attack quantity is exactly 0 for them.
+* **Predictions:** Models 3–4 averaged over seeds 2021–2023 per window (`metrics.seed_mean`)
+  before any metric; Model 5 = the single greedy run. Model 5's `none` ≡ `empty`.
+* **Windows:** screening uses test windows where the **real** text is non-empty; attack uses
+  test windows with `attacked=True` in that condition (d ≠ 0, P3's recorded
+  `claimed_direction`). NaN pairing (§6a) drops a window from both sides; the off-scale rule
+  for Model 5 is unchanged from P2.4 (answer > 10× outside its window's |range| → NaN).
+* **Scale:** σ = the domain's train-split std; y_last = the last lookback value.
+* **Pooled** = all 4 domains' windows together, each window weighted equally; bootstrap CIs
+  stratified by domain. **Per-domain** = that domain's windows only.
+* **Tests:** two-sided, α = 0.05. A directional claim ("DSS > 0") is supported only if the
+  test rejects **and** the estimate has the claimed sign; a significant negative DSS is
+  reported as "pushed away from the claim", not as support.
+* **Every metric is reported with** its 95% paired percentile bootstrap CI (10,000 resamples,
+  seed 0), `n`, NaN drops, attacked coverage and the failure rates per model × condition.
+* **No selection before testing:** the attack hypotheses are tested for **all three** text
+  models whatever the screening says, so no attack test is conditioned on a screening result.
+
+**The family — one Holm family, m = 76 hypotheses**
+
+| Block | Hypothesis (H₀) | Statistic / test | Cells | m |
+|---|---|---|---|---|
+| **S — screening** (RQ0) | text does not move the forecast: median of \|ŷ_real − ŷ_none\|/σ = 0 | `metrics.text_sensitivity` terms; Wilcoxon signed-rank (`metrics.wilcoxon`) | model {3, 4, 5} × domain {Economy, SocialGood, Traffic, Health_US} | 12 |
+| **A1 — attack, DSS** (RQ1) | fake text does not shift the forecast toward its claim: median of d·(ŷ_fake − ŷ_real)/σ = 0 | `metrics.dss` terms; Wilcoxon signed-rank | model {3, 4, 5} × condition {flipped, exaggerated} × (4 domains + pooled) | 30 |
+| **A2 — attack, Flip Rate** (RQ1) | fake text is no more likely to turn the forecast direction toward the claim than away from it | exact McNemar (two-sided binomial, p = ½) on the discordant windows: *toward* = sign(ŷ_real − y_last) ≠ d and sign(ŷ_fake − y_last) = d (the `metrics.flip_rate` numerator); *away* = sign(ŷ_real − y_last) = d and sign(ŷ_fake − y_last) ≠ d. Flip Rate itself is reported as the effect size | model {3, 4, 5} × condition {flipped, exaggerated} × (4 domains + pooled) | 30 |
+| **F — fusion type** (RQ2) | early and late fusion are equally vulnerable: median of DSS_M5 − DSS_Mk = 0 (k = 3, 4), paired per window | per-window difference of DSS terms on windows valid for both models (`metrics.paired_difference`), pooled over domains; Wilcoxon signed-rank; bootstrap CI stratified by domain | {M5 vs M3, M5 vs M4} × {flipped, exaggerated} | 4 |
+
+Holm-adjusted p-values (`metrics.holm`) over all 76 at once; a hypothesis is rejected if its
+adjusted p < 0.05. Raw and adjusted p are both reported.
+
+**Decision rules fixed in advance**
+
+* A model **"is moved by text"** in a domain if its S hypothesis is rejected there (§9 decision:
+  attack targets by sensitivity, not usage gap); a model is an **attack target** if that holds
+  in at least one domain. Stated in advance: for Models 3–4 any non-empty text adds
+  w·MLP(z(e)) ≠ 0, so S is expected to reject almost surely — the informative screening
+  numbers for them are the descriptive content controls below, and DSS itself.
+* **"Fusion type matters"** (RQ2) needs F to reject for **both** late models (M5 vs M3 and
+  M5 vs M4) in the same condition; one of the two alone is reported as model-specific.
+
+**Reported, not tested (descriptive, CIs only, not in the family):** Text Usage Gap
+(`empty` vs `real`), `text_moves_share`, `paired_mse` over real / empty / shuffled /
+cross_domain / time_shifted (the content controls: does *relevant, timely* text beat
+irrelevant or stale text?), per-condition sensitivity for the controls, failure rates,
+attacked coverage. Val-split numbers, if shown, are labelled as such.
+
+**Planned ablations — reported separately, NOT in the Holm family** (raw p-values and CIs,
+labelled as ablations; they can qualify the main results but never replace them):
+
+1. **Excluding 2020 (issue #23):** every S, A1, A2 and F quantity recomputed with a `mask`
+   that drops windows whose target period (`sample_id`) falls in calendar year 2020 — in all
+   four domains (Health_US test ends 2020-01, so it loses a few weeks). Reported side by side
+   with the full-test numbers. Motivation: genuine COVID-era text far outside the text head's
+   training range (Model 3 Traffic test).
+2. **Health_US / sparse-text training (issue #9):** pooled S, A1, A2 recomputed over the
+   **dense-text** domains (Economy, Traffic: ≥ 98% train text coverage) and the
+   **sparse-text** domains (SocialGood 56%, Health_US 61% train coverage) separately.
+   No retraining. Purpose: a low Health_US/SocialGood number must not be attributed to fusion
+   type when it may reflect a text head trained on fewer texts.
+
+Anything not listed above (other conditions as attacks, other splits, other subgroups, a
+different window mask) is **exploratory** and will be labelled so.
+
+### 10b. Open issues
 
 | # | Issue | Phase | Status |
 |---|---|---|---|
