@@ -4,7 +4,7 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** P5a — Experiments: generate predictions (P4 complete)
+**Current phase:** P6 — TextGuard (P5 complete: P5a predictions + P5b analysis)
 **Last updated:** 2026-10-09
 
 > 👤 **Solo project.** All work by Aryan.
@@ -21,7 +21,7 @@
 | P2 | Model wrappers — 5 models, one interface | ✅ | ✅ Done |
 | P3 | Attack module — 6 text conditions | ✅ | ✅ Done |
 | P4 | Metrics module — DSS, Flip Rate, etc. | ✅ | ✅ Done |
-| P5 | Experiment runner — screening + attack | ✅ | 🔵 P5a in progress |
+| P5 | Experiment runner — screening + attack | ✅ | ✅ Done (P5a + P5b) |
 | P6 | TextGuard defense | ✅ Core | ⚪ Pending |
 | P7 | Auditor, demo, extras | ⬜ Optional | ⚪ Pending |
 | P8 | Paper & release | ✅ | ⚪ Pending |
@@ -32,24 +32,19 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 
 ---
 
-## 1a. ▶ START HERE — handoff for the next session (P5a)
+## 1a. ▶ START HERE — handoff for the next session (P6)
 
-> Written 2026-10-09 at the end of P4; scope corrected 2026-10-09 at the start of P5a.
-> Replace this section at the end of P5a.
+> Written 2026-10-09 at the end of P5 (P5a + P5b). Replace this section at the end of P6.
 
-**Scope (decided 2026-10-09):**
+**P5 result in one line:** the rule-based flip attack moves Model 5 (Qwen, early fusion)
++0.46σ toward the lie and flips its direction in 24% of attacked windows (MSE +92%); Models
+3–4 (late fusion) are moved by text but not by its direction (DSS < 0.02σ). Full tables:
+§9 "P5 results"; raw p / Holm in `results/summary_p5_holm_family.csv`.
 
-* **P5a = generate everything, analyse nothing.** (0) the pre-registered comparison family,
-  committed before any P5 prediction exists (§10a); (1) BERT embeddings for every condition
-  text (val + test), standardised with the **train-only statistics fitted in P2.3** (the
-  scaler stored in each Model 3/4 checkpoint — never refit on attacked text); (2) Models 1–4
-  predictions on all 7 conditions × 4 domains × 3 seeds, val + test, inference only, every
-  raw per-window prediction saved, crash-safe; (3) the Qwen export + Colab notebook for
-  **all 5 altered conditions** (shuffled, cross_domain, time_shifted, flipped, exaggerated)
-  — one Colab session covers screening and attack.
-* **P5b = all analysis, once Qwen's predictions are back,** so all 5 models are analysed
-  together: screening (5.2), attack metrics (5.3), significance with Holm over the
-  pre-registered family, and the planned ablations (2020, Health_US sparsity).
+**P6 starts from:** Model 5 is the primary target; Models 3–4 are the direction-blind
+contrast. Health_US carries most of M5's damage (level-flip); TextGuard's level branch
+(issue #15) matters most there. Tune only on val (P5 used test for reporting only).
+The sections below describe P5a and stay valid as the artifact map.
 
 ### What exists and where
 
@@ -64,6 +59,7 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 | Metrics | `src/metrics.py` (§9) | code | — |
 | **P5a: Models 1–4 × 7 conditions**, val + test, 3 seeds (41,412 rows) | `results/p5_predictions.csv` (units in `results/p5_units/`) | ❌ (raw) | `python -m src.run_experiments` (resumable; ~15 min CPU incl. MLflow) |
 | **P5a: Qwen inputs** — 986 real/none baseline rows (40 flagged as probes) + 2465 condition rows | `results/qwen/qwen_inputs_p5.csv` | ❌ | `python -m src.models.export_qwen_inputs --p5` |
+| **P5b: analysis tables + figures** | `results/summary_p5_*.csv` (14), `paper/figures/p5_dss.*`, `p5_flip_rate.*` | ✅ | `python -m src.analyze_p5` (~20 s; `--no-figures`) |
 | **P5a: Qwen predictions, 5 altered conditions** (2215 generated) | `results/qwen/p5_qwen_predictions.csv` + `p5_qwen_run_meta.json`; all 3451 Model 5 rows via `run_experiments.qwen_rows()` | ✅ backed up (`git add -f`) | `notebooks/p5_qwen_conditions.ipynb` (steps below) |
 
 ### What P5a must build
@@ -144,8 +140,9 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 ### Interpretation notes already decided
 
 * DSS ≈ 0 / gap ≈ 0 on Models 3–4 is a **finding, not a failure** (CLAUDE.md §4a).
-* Traffic: report **with and without 2020** (issue #23) — genuine COVID-era text hurts Model 3
-  on test; use the `mask` argument. Traffic is the likeliest genuine text user (#22).
+* Traffic: report **with and without 2020** (issue #23) — *hypothesis was* that genuine
+  COVID-era text hurts Model 3 on test. **P5b: not supported** — the harm persists without
+  2020 (§9). Traffic is the likeliest genuine text user (#22).
 * SocialGood / Health_US are sparse-text domains (#9) — don't attribute a low gap there to
   fusion type alone.
 * Model 5 is a weak forecaster but text moves it in 65–78% of windows → expected attack target.
@@ -262,6 +259,7 @@ Related Work in P8, and re-run the arXiv search then.
 | `src/models/export_qwen_inputs.py --p5` | P5a | ✅ 2465 condition rows (2215 to generate, 250 reused) + 40 probe rows |
 | `notebooks/p5_qwen_conditions.ipynb` | P5a | ✅ built (`build_p5_qwen_notebook.py`); reproducibility probe, revision pinned — **awaiting Colab run** |
 | `qwen_forecaster.load_all_predictions` | P5a | ✅ P2.4 + P5 conditions, reused rows filled and re-fingerprinted (4 new tests) |
+| `src/analyze_p5.py`, `src/figures_p5.py` | P5b | ✅ screening / attack / fusion / damage / ablations → `results/summary_p5_*.csv`, `paper/figures/p5_*`; Holm family asserted = 76 (3 tests); `metrics.mcnemar_flip` (1 test) |
 | `src/textguard/trend_detector.py` | P6 | ⚪ |
 | `src/textguard/text_direction.py` | P6 | ⚪ |
 | `src/textguard/gate.py` | P6 | ⚪ |
@@ -732,6 +730,8 @@ Reading it (preliminary — P5 does the proper screening with shuffled/cross-dom
 - **Traffic:** text halves Model 3's val error (year-over-year info, issue #22) but **hurts on
   test** (1.04 → 1.60; M4 0.885 → 0.911). The test span contains 2020; genuine extreme
   COVID-era reports are far outside the text head's training range → issue #23.
+  *(P5b: this explanation is **not supported** — real text still hurts M3 on Traffic with all
+  2020 windows removed, usage gap −0.59 [−0.88, −0.31]; §9 P5.6a.)*
 - **SocialGood:** text slightly hurts on test; val gain ≈ 0. Sparse-text domain (issue #9).
 - **Health_US:** ≈ no text effect on val; M4 test improves (0.159 → 0.145) within noise.
 - Several heads early-stop at epoch 1–7 (SocialGood M4 best epoch 1, Health_US M4 2):
@@ -1017,17 +1017,281 @@ asserts it on the actual predictions.
 final 115); DSS +1.4 → +0.5; real up / fake down (d = −1) → flipped; final 115 up → not
 flipped; usage gap −0.08, sensitivity 0.4; genuine text (g = 1) not blocked.
 
-### P5 — Screening: which models use text
-| Model | Fusion | MSE(real) | MSE(empty) | MSE(shuffled) | Usage Gap | Uses text? |
+### P5 results (P5b, 2026-10-09) — test split, against the pre-registered family (§10a)
+
+`python -m src.analyze_p5` → `results/summary_p5_*.csv` (14 tables) + `paper/figures/p5_dss.*`,
+`p5_flip_rate.*` (`src/figures_p5.py`). Test split only; Models 3–4 seed-averaged per window
+first; text conditions compared only on the **299 test windows with a real report**; attack
+metrics on attacked windows only. CIs: 95% percentile bootstrap, 10,000 resamples, seed 0,
+pooled = stratified by domain. σ units. Holm over exactly the 76 pre-registered tests
+(asserted in code); everything else is descriptive or ablation (raw p).
+Note: MSE here is the MSE of the **seed-averaged** prediction, so Models 3–4 differ slightly
+from §7a (mean of per-seed MSEs), e.g. M3 Economy real 0.164 vs 0.169.
+
+#### 1. Failures (issue #27)
+
+Models 1–4: **0 failures** (41,412 rows). Model 5: **16 failures, all Traffic, all format
+(unit) failures, 0 parse failures** — the answer is a report figure in billions (e.g. "259.7")
+for a millions series.
+
+| Model 5, Traffic | real | empty | shuffled | cross_domain | time_shifted | flipped | exaggerated |
+|---|---|---|---|---|---|---|---|
+| test (53 windows) | 3 | 0 | 0 | 0 | 4 | 3 | 4 |
+| val (27 windows) | 0 | 0 | 1 | 1 | 0 | 0 | 0 |
+
+**Do failures concentrate in flipped/exaggerated? No more than in real or time_shifted** —
+7 of the 14 test failures are in the two fake conditions, but real (3) and time_shifted (4)
+fail at the same rate; cross_domain (SocialGood text, no billions) never does. Text quoting
+billions is the trigger, not the attack.
+**But NaN pairing does drop attacked windows** (`summary_p5_nan_pairing*.csv`): flipped
+loses 5 of 52 Traffic windows (2 fake-only, 2 real-only, 1 both), exaggerated 4 of 50
+(1 fake-only, 3 both). **Exploratory** (not pre-registered): rescaling the unit slips ×1000
+and recomputing, **all 4 recoverable flipped windows move toward the lie** — Traffic DSS
+0.328 → 0.378, Flip Rate 23.4% → 25.0%; pooled DSS 0.457 → 0.465. So NaN pairing hides a
+little attack effect on Traffic (conservative direction), and does not change any conclusion.
+
+#### 2. Screening (RQ0, block S + descriptive controls)
+
+Text sensitivity, mean |ŷ_real − ŷ_none|/σ (S test: Wilcoxon, Holm):
+
+| Model | Fusion | Economy | SocialGood | Traffic | Health_US | **Pooled** [95% CI] |
 |---|---|---|---|---|---|---|
-| _(pending)_ | | | | | | |
+| M3 DLinear+BERT | late | 0.194 | 0.080 | 0.521 | 0.018 | **0.158** [0.142, 0.175] |
+| M4 PatchTST+BERT | late | 0.110 | 0.036 | 0.121 | 0.048 | **0.074** [0.067, 0.081] |
+| M5 Qwen2.5-1.5B | early | 0.164 | 0.197 | 0.449 | 0.553 | **0.388** [0.308, 0.474] |
 
-**Attack targets identified:** _(pending)_
+**All 12 S hypotheses reject** (Holm p ≤ 6.3e-5) → by the pre-registered rule all three
+text models are "moved by text" in every domain → **all three are attack targets.** As
+stated in advance, S was expected to reject for M3/M4 (any text adds w·MLP(z(e)) ≠ 0); text
+changes M3/M4 in 100% of windows, M5 in 69% [63, 74]%.
 
-### P5 — Attack
-| Model | Fusion | DSS (flipped) | Flip Rate | DSS (exaggerated) |
+Content controls, pooled (sensitivity vs none / distance to the real-text forecast / MSE on
+the same windows: 299; M5 296 for sensitivity, 292 for MSE = windows valid in all 5 conditions):
+
+| Model | sens real | sens shuffled | sens cross_domain | sens time_shifted | dist shuffled→real | MSE real | empty | shuffled | cross_domain | time_shifted |
+|---|---|---|---|---|---|---|---|---|---|---|
+| M3 | 0.158 | 0.133 | 0.108 | 0.149 | 0.199 | 0.542 | **0.443** | 0.525 | 0.480 | 0.533 |
+| M4 | 0.074 | 0.077 | **0.087** | 0.073 | 0.079 | **0.436** | 0.443 | 0.451 | 0.462 | 0.441 |
+| M5 | 0.388 | 0.580 | **0.911** | 0.452 | 0.432 | 1.143 | **1.009** | 1.932 | 3.498 | 1.472 |
+
+Text Usage Gap MSE(empty) − MSE(real), pooled: M3 **−0.099** [−0.150, −0.050] (text hurts,
+driven by Traffic −0.546); M4 +0.007 [−0.006, 0.019]; M5 −0.133 [−0.485, 0.266].
+
+Reading:
+* **Presence vs content.** Irrelevant text moves every text model about as far as real text
+  (M3/M4: shuffled/cross_domain sensitivity ≈ real), and *further* for M5 (cross_domain 2.3×
+  real; Health_US 1.88 vs 0.55 — Health_US receives Traffic's report). But the controls do
+  not land where real text does (distance to the real forecast ≈ the sensitivity itself), so
+  the models react to **what** the text says, not merely to its presence — they just cannot
+  tell **relevant from irrelevant** text. Relevant text is clearly the most accurate only for
+  M3 on Economy (0.164 vs shuffled 0.243, cross 0.251; M4 Economy marginally, 0.167 vs
+  0.175–0.203). M4 on Health_US is the presence pattern: real, shuffled and time_shifted all
+  give 0.130 vs none 0.144 — *any* in-domain report helps equally. Pooled, no text model is
+  most accurate with real text.
+* **M5's errors under controls are large** (cross_domain MSE 3.50 vs real 1.14): an
+  unverified channel that degrades a forecaster badly when fed the wrong report.
+* **time_shifted leakage check:** time_shifted beats real text in **SocialGood for M3
+  (−0.073 [−0.196, −0.002]) and M4 (−0.011 [−0.022, −0.002])** — flagged. Not read as
+  leakage: time-shifted text is a year *older* than real text (it cannot carry more future
+  information, and the P1 timing check passed); in SocialGood *no* text also beats real text
+  (M3 −0.061), 11 of 46 SocialGood windows have no year-earlier report (time_shifted ≡ none
+  there), and the effect disappears without 2020 (M3 +0.003, M4 −0.003, CIs span 0). It is
+  "less text is better in SocialGood around COVID". Pooled, no model's time_shifted CI lies
+  below real (M3 −0.009 [−0.077, +0.060]; M4 +0.005; M5 +0.330).
+
+#### 3. Attack (RQ1, blocks A1 + A2)
+
+Pooled (headline). Coverage = attacked / windows with a report. Models 1–2: exactly 0
+(asserted text-blind).
+
+| Model | Fusion | Attack | Attacked | n | DSS [95% CI] | Holm p | Flip Rate [95% CI] | toward / away | Holm p |
+|---|---|---|---|---|---|---|---|---|---|
+| M3 | late | flipped | 251/299 | 251 | −0.005 [−0.010, +0.002] | 0.30 | 0.4% [0.0, 1.2] | 1 / 5 | 1 |
+| M3 | late | exaggerated | 250/299 | 250 | +0.004 [−0.006, +0.014] | 1 | 1.2% [0.0, 2.8] | 3 / 3 | 1 |
+| M4 | late | flipped | 251/299 | 251 | +0.003 [+0.001, +0.006] | 1 | 0.4% [0.0, 1.2] | 1 / 0 | 1 |
+| M4 | late | exaggerated | 250/299 | 250 | +0.002 [−0.001, +0.004] | 1 | 0.4% [0.0, 1.2] | 1 / 2 | 1 |
+| **M5** | **early** | **flipped** | 251/299 | 246 | **+0.457 [+0.348, +0.572]** | **2.4e-16** | **23.6% [18.7, 28.9]** | **58 / 4** | **1.8e-11** |
+| M5 | early | exaggerated | 250/299 | 246 | −0.098 [−0.188, −0.015] | 1 | 4.5% [2.0, 7.3] | 11 / 13 | 1 |
+
+Model 5, flipped, per domain:
+
+| Domain | Attacked | n | DSS [95% CI] | Holm p | Flip Rate | toward / away | Holm p |
+|---|---|---|---|---|---|---|---|
+| Economy | 70/70 | 70 | +0.031 [+0.005, +0.073] | 1 | 5.7% | 4 / 2 | 1 |
+| SocialGood | 26/46 | 26 | **+0.371 [+0.210, +0.563]** | 0.009 | **50.0%** | 13 / 0 | 0.013 |
+| Traffic | 52/53 | 47 | **+0.328 [+0.177, +0.520]** | 3.6e-6 | 23.4% | 11 / 0 | 0.051 |
+| Health_US | 103/130 | 103 | **+0.828 [+0.590, +1.082]** | 2.3e-7 | **29.1%** | 30 / 2 | 1.5e-5 |
+
+**Holm family: 24 of 76 reject** — S 12/12; A1 7 (5 support the claim); A2 3/3 (all M5
+flipped: SocialGood, Health_US, pooled); F 2/4.
+The 3 A1 rejections outside M5: M3 and M4 flipped SocialGood are **negative** (−0.017,
+−0.006: pushed *away* from the claim, not support); M4 flipped Health_US is +0.002σ —
+significant but negligible.
+
+Reading:
+* **The flip attack works on the early-fusion LLM and not on the late-fusion models.**
+  Model 5's forecast moves 0.46σ toward the lie on average and turns direction toward it in
+  24% of attacked windows (58 toward vs 4 away). Models 3–4 move < 0.02σ in every cell and
+  flip ≤ 1 window.
+* **Economy is the exception for M5** (+0.031σ, n.s.): the fake report leaves Qwen's answer
+  unchanged in 39/70 windows (DSS term exactly 0).
+* **Health_US's large DSS is not an outlier artefact:** 57 windows move toward the lie, 6
+  away; without the 5 largest windows the mean is still 0.66σ. Mechanism (exploratory): under
+  "ILI *above* the baseline" Qwen answers with an earlier, higher lookback value (e.g. a flu-
+  peak 5.17 for t−1 = 1.05); it copies the fake report's edited number in only 6% of windows.
+  Health_US is the **level-flip** variant (the stated value is changed), the others are
+  change-flips — so Health_US vs other domains is also a variant difference.
+* **Exaggeration does not push Model 5 further** (DSS −0.098, Wilcoxon p = 0.10, Holm 1;
+  the bootstrap CI of the *mean* excludes 0 but the median term is 0 in every domain — a few
+  windows move against the claim). No evidence of over-trust of extreme claims; see damage.
+* Late-fusion DSS ≈ 0 is the **expected finding** (CLAUDE.md §4a): the models are moved by
+  text but not by its *direction*. Mechanism below.
+
+**Mechanism check — why Models 3–4 are immune** (`summary_p5_embedding_similarity.csv`,
+`analyze_p5.embedding_similarity`; exploratory, not pre-registered). Cosine similarity of the
+BERT vector of each real report and its fake, test attacked windows, from the embedding cache
+(BERT not loaded). "Standardised" = after the per-dimension z-score with the train-text
+statistics, i.e. exactly the input the M3/M4 heads see. Baselines on the same windows: an
+unrelated report from the same domain (shuffled) and from another domain (cross_domain).
+
+| Pair (pooled, flipped windows, n = 251) | cos raw | cos standardised | head-input distance, relative to a shuffled report |
+|---|---|---|---|
+| real vs **flipped** | **0.9985** (min 0.9933) | **0.968** | **0.20** |
+| real vs exaggerated (n = 250) | 0.9984 | 0.965 | 0.22 |
+| real vs shuffled (same domain) | 0.947 | 0.078 | 1.00 |
+| real vs cross_domain | 0.852 | 0.041 | 2.06 |
+
+Per domain the flipped pair is 0.996–0.999 raw and 0.963–0.975 standardised in all four.
+**Raw cosine alone would not show this**: raw mean-pooled BERT vectors of *any* two reports
+are ≥ 0.95 similar (§7a). In the standardised space the contrast is unambiguous: a different
+report is nearly orthogonal (0.08), while the flipped report is nearly the same point
+(0.97) — reversing the direction moves the heads' input only ~20% as far as swapping the
+report.
+→ **For the paper: Models 3–4 are immune to the flip attack because the frozen, mean-pooled
+BERT encoder is (nearly) direction-blind — it barely distinguishes "rose" from "fell" — not
+because the forecasters are robust.** This is consistent with them still being moved by
+*which* report they get (§9 screening). Scope: this is about our encoder choice (frozen
+`bert-base-uncased`, mean-pooled; §2); a fine-tuned or direction-aware encoder could make the
+same late-fusion heads attackable — untested.
+
+#### 4. Fusion comparison (RQ2, block F) — pooled, per-window DSS_M5 − DSS_Mk
+
+| Comparison | Attack | n | Difference [95% CI] | Holm p |
 |---|---|---|---|---|
-| _(pending)_ | | | | |
+| M5 − M3 | flipped | 246 | **+0.461 [+0.352, +0.576]** | **1.1e-15** |
+| M5 − M4 | flipped | 246 | **+0.454 [+0.345, +0.568]** | **6.9e-11** |
+| M5 − M3 | exaggerated | 246 | −0.103 [−0.194, −0.019] | 1 |
+| M5 − M4 | exaggerated | 246 | −0.100 [−0.190, −0.016] | 1 |
+
+**Pre-registered rule met for `flipped`: F rejects for both late models → "fusion type
+matters" under the flip attack.** Not met for `exaggerated`. **Caveat:** there is one
+early-fusion model, and it is also the only LLM, the only untrained-for-this-task model and
+the only one that reads the text's numbers — fusion type is confounded with all of these.
+Write it as "the early-fusion LLM is vulnerable, the late-fusion BERT heads are not", not as
+a causal claim about fusion.
+
+#### 5. Damage — MSE(fake) − MSE(real) on attacked windows (descriptive)
+
+| Model | Attack | n | MSE real | MSE fake | Damage [95% CI] | Change |
+|---|---|---|---|---|---|---|
+| M3 | flipped | 251 | 0.474 | 0.465 | −0.009 [−0.028, +0.005] | −2% |
+| M4 | flipped | 251 | 0.363 | 0.363 | +0.001 [−0.002, +0.003] | +0% |
+| **M5** | **flipped** | 246 | 1.07 | 2.06 | **+0.988 [+0.631, +1.39]** | **+92%** |
+| M3 | exaggerated | 250 | 0.456 | 0.458 | +0.001 [−0.025, +0.026] | +0% |
+| M4 | exaggerated | 250 | 0.358 | 0.360 | +0.001 [−0.001, +0.004] | +0% |
+| **M5** | **exaggerated** | 246 | 1.03 | 1.58 | **+0.552 [+0.256, +0.915]** | **+54%** |
+
+M5 flipped by domain: Health_US +2.40 [+1.60, +3.35] (+166%); Economy, SocialGood, Traffic
+CIs span 0. M5 exaggerated: Health_US +1.27 (+88%); SocialGood −0.071 (exaggerating helps
+there). **The attack makes Model 5 ~2× worse overall, almost all of it on Health_US.**
+**Surprise:** exaggerated text does not move M5 *in the claimed direction* yet raises its
+error by 54% — it scatters the forecast rather than pushing it.
+
+#### 6. Ablations (outside the Holm family; raw p)
+
+**(a) Excluding 2020 (issue #23)** — `summary_p5_*_no2020.csv`:
+
+| | Full test | Without 2020 |
+|---|---|---|
+| M5 flipped DSS, pooled | +0.457 (n 246) | **+0.437** [+0.325, +0.558] (n 216), p 1.7e-15 |
+| M5 flipped Flip Rate, pooled | 23.6% | **23.1%** (50 / 4), p 3.8e-11 |
+| M5 flipped DSS, SocialGood | +0.371 | +0.180 [+0.102, +0.261] |
+| M5 flipped DSS, Traffic | +0.328 | +0.240 [+0.130, +0.374] |
+| F: M5 − M3 / M5 − M4 (flipped) | +0.461 / +0.454 | +0.444 / +0.433 (p 2.6e-16 / 1.3e-10) |
+| M3 usage gap, Traffic | −0.546 | **−0.591** [−0.884, −0.308] |
+| M5 damage, flipped, pooled | +0.988 (+92%) | +1.14 (+113%) |
+
+The attack result survives without 2020 (2020 roughly doubles the SocialGood effect but is
+not what makes it significant). **Surprise — issue #23's hypothesis is not supported:**
+real text still hurts Model 3 on Traffic without 2020 (−0.59). The harm is not 2020 alone;
+a likely (unchecked) cause is that 2021+ reports state year-over-year changes measured
+against 2020, which are also outside the text head's training range.
+
+**(b) Dense- vs sparse-text domains (issue #9)** — `summary_p5_density.csv`, pooled within each:
+
+| Model | S dense / sparse | DSS flipped dense / sparse | Flip Rate flipped dense / sparse |
+|---|---|---|---|
+| M3 | 0.335 / 0.034 | −0.007 / −0.003 | 0.8% / 0% |
+| M4 | 0.115 / 0.045 | +0.007 / +0.000 | 0.8% / 0% |
+| M5 | 0.282 / 0.460 | **+0.150 / +0.736** | **12.8% / 33.3%** |
+
+M3/M4 are moved ~3–10× less by text in the sparse-text domains — consistent with the
+training-sparsity caveat (their Health_US/SocialGood heads saw text in ~56–61% of train
+periods and early-stopped at epochs 1–7, §7a); **a low Health_US/SocialGood number for M3/M4
+must not be attributed to fusion type.** Model 5 is not trained on these data, so the caveat
+does not apply to it — its sparse > dense pattern instead reflects the Health_US level-flip
+variant and SocialGood's 2020 windows (above). The M3/M4 attack null holds in both groups.
+**Health_US specifically:** M3 is the least text-sensitive cell in the study (0.018σ),
+yet S still rejects; read Health_US for M3/M4 as "text head barely trained", not "late fusion
+ignores text".
+
+#### 7. Caveats to carry into the paper (recorded 2026-10-09)
+
+* **Fusion confound.** Model 5 is the only early-fusion model **and** the only LLM (also the
+  only model not trained on these data, and the only one that reads the reports' numbers).
+  The supported claim is **"the LLM forecaster is vulnerable, the BERT forecasters are not"**
+  — not that fusion type causes the vulnerability. Block F is significant, but it compares
+  models, not fusion types in isolation.
+* **Health_US level-flip edits a stated number as well as the direction** ("ILI was 1.8%,
+  below the baseline of 2.1%" → "2.4%, above …"). Part of Health_US's effect (DSS +0.83,
+  the largest; most of M5's damage) may therefore be **numeric injection** rather than a
+  directional claim. Qwen copies the fake number exactly in only 6% of windows, but a changed
+  number can steer it without being copied. Report Health_US separately from the three
+  change-flip domains (SocialGood, Traffic, Economy), where the current level is kept and
+  only the direction changes.
+* **Flipping steers Model 5; exaggeration scatters it.** Flipped: DSS +0.46, 58 toward vs 4
+  away, MSE +92%. Exaggerated: no directional push (DSS −0.10, Holm 1; median per-window
+  effect 0 in every domain), yet MSE +54% [+26, +92]%. Exaggeration is a damage attack on M5,
+  not a steering attack.
+* **Economy: clean directional text, no Model 5 effect** (DSS +0.031, n.s.; the fake leaves
+  Qwen's answer unchanged in 39/70 windows), although Economy has the clearest directional
+  reports (92%, §6). Plausible explanation (**untested**): Economy reports quote a different
+  series — the goods-*and-services* deficit in $ billions (e.g. "$41.9 billion") — while the
+  target is the goods balance in $ millions (e.g. −58,365), §7b; a claim about a different
+  quantity at a different scale is weaker evidence for the forecast.
+
+#### 8. Notes for P6 (recorded 2026-10-09)
+
+* **`never_trust` (g = 0) is a strong baseline for Model 5.** Pooled, M5 is more accurate
+  with no text than with real text: MSE 1.009 vs 1.143 (292 windows valid in all 5 conditions),
+  driven by Health_US (1.086 vs 1.389). **But no difference is statistically clear:** the CI of
+  MSE(empty) − MSE(real) spans 0 in every domain and pooled (pooled −0.133 [−0.485, +0.266];
+  Health_US −0.302 [−1.099, +0.579]).
+* **Per domain, text helps M5 only in Economy (+0.009) and SocialGood (+0.022)**, both within
+  noise. **In Traffic text hurts on the full test** (1.946 vs 1.919, −0.027) and helps only
+  without 2020 (1.400 vs 1.575, +0.175 [−0.192, +0.581]). So "text helps M5 in Economy,
+  SocialGood and Traffic" is **not** what the test numbers show; the honest statement is
+  "text's value to M5 is small and uncertain everywhere, and negative on Health_US".
+* → P6 must report **per domain**, and compare TextGuard against `never_trust` honestly — on
+  M5, TextGuard beating `always_trust` is not enough; it has to be shown against g = 0, on DSS
+  *and* real-text MSE, with the False Block Rate.
+* **Models 3–4 are not fooled** (DSS < 0.02σ): for them P6 only needs to show that TextGuard
+  does no harm — real-text MSE unchanged and a low False Block Rate.
+
+**P5 exit criterion met:** all three text models are moved by text (S); only the
+early-fusion LLM is manipulated in the lie's direction (A1/A2), significantly more than both
+late-fusion models (F, flipped). → P6 attack target: Model 5 primarily; Models 3–4 kept as the
+"text-moved but direction-blind" contrast.
 
 ### P6 — TextGuard
 | Model | DSS before | DSS after | Flip before | Flip after | MSE(real) before | MSE(real) after | False Block Rate |
@@ -1144,7 +1408,7 @@ different window mask) is **exploratory** and will be labelled so.
 | 6 | MM-TSFlib uses `search` text, we default to `report` — first suspect if P2 baselines don't match | P2 | ⬜ Open |
 | 7 | MM-TSFlib Economy CSV unsorted + positional split ⇒ non-chronological split in their baseline | P2 | ⬜ Open |
 | 8 | Small test sets (~30–60 sequences/domain) → pool DSS across domains as headline, bootstrap CIs in P4 | P4/P5 | 🔵 P4 done: stratified paired bootstrap + `grouped` (pooled headline, per-domain breakdown); apply in P5 |
-| 9 | Health_US: 183/470 train periods lack text vs 97% test coverage — low Usage Gap may be training sparsity, not architecture | P5 | ⬜ Open |
+| 9 | Health_US: 183/470 train periods lack text vs 97% test coverage — low Usage Gap may be training sparsity, not architecture | P5 | ✅ P5b ablation: M3/M4 3–10× less text-sensitive in sparse domains; attack null holds in both groups; caveat stays in the paper (§9 P5.6b) |
 | 10 | COVID-2020 in 3 test sets → dedicated "TextGuard under genuine regime change" False Block Rate analysis | P6 | ⬜ Open |
 | 11 | Timing: `anchor="end"` default + drop 5 real leakers | P1 | ✅ Done — check passes |
 | 12 | SocialGood: 41% off-topic influenza text | P1 | ✅ Filtered (131 dropped, 13 header-stripped) |
@@ -1158,20 +1422,41 @@ different window mask) is **exploratory** and will be labelled so.
 | 20 | MM-TSFlib PatchTST clamps patch_len to pred_len → at h=1 it reads 2 of 8 inputs; Models 4 (and 6) must use `patching="window"` too | P2.3 | ✅ Fixed for Models 2 and 4 |
 | 21 | Repro column far above published MSE (e.g. Traffic DLinear 2.87 vs 0.35) | P2/P8 | ✅ Closed — explained by different test periods and splits; not pursued further — listed as a limitation in the paper |
 | 22 | Lookback 8 < 12-month seasonality: DLinear can't see lag 12 (Traffic val 1.02 vs PatchTST 0.04). Traffic reports state **year-over-year** changes ("−1.6% vs January 2009") — exactly the information an 8-month window lacks. So Traffic is the domain most likely to show **genuine text use**, and the **strongest P5 attack target**. Lookback stays 8 to match the published setup | P5 | ⬜ Open — note when interpreting |
-| 23 | **P5 extra analysis: report Traffic with and without 2020.** Genuine, extreme COVID-era Traffic text hurts Model 3 on test (test MSE 1.04 → 1.60 with text) although text halves val error — the text head never saw year-over-year changes of that size. Same regime-shift theme as #10 | P5 | ⬜ Open |
+| 23 | **P5b result: the COVID explanation is NOT supported.** Real text still hurts M3 on Traffic with every 2020 window removed (usage gap −0.546 full test → −0.591 [−0.884, −0.308] without 2020). The cause of M3's Traffic text harm is open (candidate, unchecked: 2021+ reports state year-over-year changes measured against 2020). Attack results are unchanged without 2020 (§9 P5.6a). Original task: report Traffic with and without 2020. Genuine, extreme COVID-era Traffic text hurts Model 3 on test (test MSE 1.04 → 1.60 with text) although text halves val error — the text head never saw year-over-year changes of that size. Same regime-shift theme as #10 | P5 | ✅ Analysis done — COVID hypothesis rejected; cause open |
 | 24 | Model 5 memorisation leakage: Qwen may have seen these statistics/reports in pretraining; numeric prompt is undated, report text still dated — paper limitation (§7b) | P8 | ⬜ Open |
 | 25 | Same-model circularity: Qwen generates P3 fakes and judges direction in P6 → validate the P6 judge on the human labels from `check_directional`, ideally also on non-Qwen fakes (§7b) | P6 | 🔵 Generation side removed (rule-based fakes, §8); still validate the P6 Qwen judge on the human labels |
 | 26 | Report figures ≠ series values (Economy goods vs goods-and-services; Traffic VMT estimates) — check Qwen errors for copying the report's number (§7b) | P5 | ✅ Checked: real 5.9% vs 4.1% chance; Economy 0%, Traffic 1.2%; Health_US copies are same-series and accurate |
-| 27 | Model 5 unit confusion: 3/80 Traffic real-text answers in billions (report's unit) → scale failures (NaN). Report the rate next to every Model 5 metric; consider it in P5 as a text-channel failure mode | P5 | 🔵 P4 done: `failure_rates` breaks out format failures; report in P5 |
+| 27 | Model 5 unit confusion: 3/80 Traffic real-text answers in billions (report's unit) → scale failures (NaN). Report the rate next to every Model 5 metric; consider it in P5 as a text-channel failure mode | P5 | ✅ P5b: 16 failures (14 test), all Traffic unit slips; not concentrated in fakes; NaN pairing drops 5/52 flipped windows — exploratory rescale shows all recoverable ones move toward the lie (§9 P5.1) |
 | 28 | Qwen run `revision` unrecorded (transformers 5 dropped `_commit_hash`); notebook now queries the Hub. Re-run Model 5 in P3 (attacked texts) will record it | P5a | ✅ P5 run recorded revision 989aa7980e4cf806f80c7fef2b1adb7bc71aa306 (loaded by that commit). P2.4's own snapshot stays unrecorded (paper: same model id; probe shows whether outputs reproduce) |
 | 29 | Model 5 needs a second Colab run on the attacked conditions (shuffled, cross_domain, time_shifted, flipped, exaggerated) — export from `texts/`, `QwenForecaster` must accept the new conditions' text | P5a | ✅ Colab run back: 2215 generated, probe 40/40 → 1236 rows reused from P2.4; 3451 rows, one setup class |
-| 30 | DSS / Flip Rate only over `attacked` windows; report attacked counts (384 flipped / 381 exaggerated of 458 texts) next to every attack metric | P5 | 🔵 P4 done: d = 0 windows excluded, `n_not_attacked` / `coverage` on every attack metric |
+| 30 | DSS / Flip Rate only over `attacked` windows; report attacked counts (384 flipped / 381 exaggerated of 458 texts) next to every attack metric | P5 | ✅ P5b: test coverage 251/299 flipped, 250/299 exaggerated; reported in every attack table |
 
 ---
 
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-09 — P5b: analysis against the pre-registered family → **P5 complete**
+- `src/analyze_p5.py` (+ `figures_p5.py`): test split, seed-mean first, 299 report windows;
+  14 tables `results/summary_p5_*.csv`; figures `paper/figures/p5_dss.*`, `p5_flip_rate.*`
+- `metrics.mcnemar_flip` (A2's exact McNemar was named in §10a but not yet implemented)
+- Holm over exactly 76 (asserted): **24 reject** — S 12/12; A1 7 (5 support); A2 3; F 2/4
+- **Headline:** flip attack moves Model 5 (early-fusion LLM) +0.457σ [0.348, 0.572] toward the
+  lie, Flip Rate 23.6% (58 toward / 4 away), MSE +92%; Models 3–4 < 0.02σ everywhere; F
+  rejects for both late models (flipped). Exaggerated: no directional push, but M5 MSE +54%
+- Mechanism: flipped vs real BERT vectors cos 0.968 standardised (shuffled 0.078) → M3/M4
+  immune because the encoder is near direction-blind, not robust
+- Caveats (fusion confound, Health_US numeric injection, exaggeration scatters, Economy null)
+  and P6 notes (never_trust strong for M5, per-domain reporting) recorded in §9
+- Surprises: M3's Traffic text harm survives without 2020 (#23: COVID explanation not
+  supported); time_shifted beats real in
+  SocialGood for M3/M4 (not leakage — gone without 2020); M5 moved 2.3× more by cross-domain
+  than by real text
+- **Broke:** `w.empty` hit pandas' `DataFrame.empty` property instead of the column (caught by
+  the text-blind assertion) → `w["empty"]`
+- 229 tests passing (4 new)
+- **Next:** P6 — TextGuard (primary target Model 5)
 
 ### 2026-10-09 — P5a: pre-registration, embeddings, Models 1–4 on all conditions, Qwen export
 - §1a corrected: P5a = generate (family, embeddings, M1–4 predictions, Qwen export for all 5

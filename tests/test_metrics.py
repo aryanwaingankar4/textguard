@@ -215,6 +215,21 @@ def test_paired_difference_and_wilcoxon():
     assert M.wilcoxon([1.0, np.nan, 2.0], [0.0, 0.0, np.nan])["n"] == 1
 
 
+def test_mcnemar_flip_counts_discordant_windows():
+    # y_last = 0, lie d = +1. Windows: real down -> fake up (toward), real up -> fake down
+    # (away), real flat -> fake up (toward), real up -> fake up (concordant), not attacked,
+    # fake NaN (dropped by NaN pairing)
+    real = [-1.0, 1.0, 0.0, 1.0, -1.0, -1.0]
+    fake = [1.0, -1.0, 2.0, 3.0, 1.0, np.nan]
+    d = [1, 1, 1, 1, 0, 1]
+    res = M.mcnemar_flip(fake, real, np.zeros(6), d)
+    assert (res["toward"], res["away"], res["n"]) == (2, 1, 4)
+    assert res["toward"] == M.flip_rate(fake, real, np.zeros(6), d).terms[:4].sum()
+    assert res["p"] == pytest.approx(1.0)                          # 2 vs 1: no evidence
+    assert M.mcnemar_flip([1.0] * 12, [-1.0] * 12, np.zeros(12), [1] * 12)["p"] < 0.001
+    assert M.mcnemar_flip([1.0], [1.0], [0.0], [1])["p"] == 1.0    # no discordant window
+
+
 def test_holm_adjustment():
     np.testing.assert_allclose(M.holm([0.01, 0.04, 0.03]), [0.03, 0.06, 0.06])
     np.testing.assert_allclose(M.holm([0.5, 0.9]), [1.0, 1.0])

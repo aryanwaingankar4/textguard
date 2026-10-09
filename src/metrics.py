@@ -318,6 +318,31 @@ def wilcoxon(a, b=None) -> dict:
                 n_nonzero=int(nz.size))
 
 
+def mcnemar_flip(y_pred_fake, y_pred_real, y_last, d, mask=None) -> dict:
+    """Exact McNemar test for Flip Rate (pre-registered block A2, PROJECT_STATUS §10a).
+
+    Each attacked, valid window is a pair (real forecast direction, fake forecast direction).
+    Only *discordant* windows carry evidence:
+
+    * **toward** — sign(ŷ_real − y_last) ≠ d and sign(ŷ_fake − y_last) = d (the
+      ``flip_rate`` numerator: the fake text turned the forecast toward its claim);
+    * **away** — sign(ŷ_real − y_last) = d and sign(ŷ_fake − y_last) ≠ d.
+
+    Under H₀ (fake text is no more likely to turn the direction toward the claim than away
+    from it) toward ~ Binomial(toward + away, ½); two-sided exact p. Why not a test on Flip
+    Rate itself: a flip rate > 0 is guaranteed by noise alone — the question is whether
+    turns *toward* the lie outnumber turns *away* from it. No discordant window → p = 1.
+    """
+    from scipy.stats import binomtest
+    f, r, yl, dd = _arr(y_pred_fake), _arr(y_pred_real), _arr(y_last), _direction(d)
+    use = _mask(mask, f.size) & (dd != 0) & np.isfinite(f) & np.isfinite(r) & np.isfinite(yl)
+    sr, sf = np.sign(r - yl), np.sign(f - yl)
+    toward = int((use & (sr != dd) & (sf == dd)).sum())
+    away = int((use & (sr == dd) & (sf != dd)).sum())
+    p = binomtest(toward, toward + away, 0.5).pvalue if toward + away else 1.0
+    return dict(toward=toward, away=away, n=int(use.sum()), p=float(p))
+
+
 def holm(pvalues) -> np.ndarray:
     """Holm–Bonferroni adjusted p-values for one family of comparisons (same order as input).
 
