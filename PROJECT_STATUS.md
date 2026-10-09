@@ -64,7 +64,7 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 | Metrics | `src/metrics.py` (§9) | code | — |
 | **P5a: Models 1–4 × 7 conditions**, val + test, 3 seeds (41,412 rows) | `results/p5_predictions.csv` (units in `results/p5_units/`) | ❌ (raw) | `python -m src.run_experiments` (resumable; ~15 min CPU incl. MLflow) |
 | **P5a: Qwen inputs** — 986 real/none baseline rows (40 flagged as probes) + 2465 condition rows | `results/qwen/qwen_inputs_p5.csv` | ❌ | `python -m src.models.export_qwen_inputs --p5` |
-| **P5a: Qwen predictions, 5 altered conditions** | `results/qwen/p5_qwen_predictions.csv` + `p5_qwen_run_meta.json` | ⏳ **awaiting Colab** | `notebooks/p5_qwen_conditions.ipynb` (steps below) |
+| **P5a: Qwen predictions, 5 altered conditions** (2215 generated) | `results/qwen/p5_qwen_predictions.csv` + `p5_qwen_run_meta.json`; all 3451 Model 5 rows via `run_experiments.qwen_rows()` | ✅ backed up (`git add -f`) | `notebooks/p5_qwen_conditions.ipynb` (steps below) |
 
 ### What P5a must build
 
@@ -100,11 +100,14 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
   BERT never loaded (all cache hits). Models 1–2 bit-identical across all 7 conditions
   (48 model × domain × seed × split groups). `real` (and Models 3/4 `empty`) reproduce P2's
   saved predictions exactly (max |diff| 0.0). **No metric has been computed.**
-* ⏳ Step 3 — export + notebook ready. **Probe passes** → 2215 new prompts generated, 1236
-  rows (986 real/none + 250 unchanged condition rows) keep P2.4's answers (fingerprints
-  verified identical). **Probe fails** → all 3451 rows regenerated, real and none included,
-  and P2.4's rows are not used. Every row records its `setup`; `qwen_rows()` refuses a table
-  that mixes setup classes (decided with Aryan 2026-10-09, §2). **Waiting for the Colab CSV.**
+* ✅ Step 3 — Colab T4 run 2026-10-09 (23:45–00:00 UTC, 14 min): **probe 40/40 identical to
+  P2.4 → reuse**; 2215 prompts generated, 0 parse failures. Same stack as P2.4 (torch
+  2.11.0+cu130, transformers 5.18.0, T4); revision **989aa7980e4cf806f80c7fef2b1adb7bc71aa306**
+  (issue #28). `qwen_rows()`: **3451 rows (986 real/empty + 2465 conditions), one setup class**
+  (P2.4's, probe-certified): 1236 rows carry P2.4's answer (986 baseline + 151 `real` + 99
+  `none` reuses), 2215 the P5 run's. All fingerprints verified. 16 scale (unit) failures in
+  total, 3 of them the known P2.4 Traffic ones — broken down in P5b, not here.
+* **P5a complete. Next: P5b** (analysis against §10a)
 
 ### Colab run (Model 5, issue #29)
 
@@ -1160,8 +1163,8 @@ different window mask) is **exploratory** and will be labelled so.
 | 25 | Same-model circularity: Qwen generates P3 fakes and judges direction in P6 → validate the P6 judge on the human labels from `check_directional`, ideally also on non-Qwen fakes (§7b) | P6 | 🔵 Generation side removed (rule-based fakes, §8); still validate the P6 Qwen judge on the human labels |
 | 26 | Report figures ≠ series values (Economy goods vs goods-and-services; Traffic VMT estimates) — check Qwen errors for copying the report's number (§7b) | P5 | ✅ Checked: real 5.9% vs 4.1% chance; Economy 0%, Traffic 1.2%; Health_US copies are same-series and accurate |
 | 27 | Model 5 unit confusion: 3/80 Traffic real-text answers in billions (report's unit) → scale failures (NaN). Report the rate next to every Model 5 metric; consider it in P5 as a text-channel failure mode | P5 | 🔵 P4 done: `failure_rates` breaks out format failures; report in P5 |
-| 28 | Qwen run `revision` unrecorded (transformers 5 dropped `_commit_hash`); notebook now queries the Hub. Re-run Model 5 in P3 (attacked texts) will record it | P5a | 🔵 P5 notebook resolves the Hub commit first and loads `revision=` that commit, recorded in `p5_qwen_run_meta.json`; closes when the run is back. P2.4's own snapshot stays unrecorded (paper: same model id; probe shows whether outputs reproduce) |
-| 29 | Model 5 needs a second Colab run on the attacked conditions (shuffled, cross_domain, time_shifted, flipped, exaggerated) — export from `texts/`, `QwenForecaster` must accept the new conditions' text | P5a | 🔵 Export + notebook + loader done; **waiting for the Colab CSV** |
+| 28 | Qwen run `revision` unrecorded (transformers 5 dropped `_commit_hash`); notebook now queries the Hub. Re-run Model 5 in P3 (attacked texts) will record it | P5a | ✅ P5 run recorded revision 989aa7980e4cf806f80c7fef2b1adb7bc71aa306 (loaded by that commit). P2.4's own snapshot stays unrecorded (paper: same model id; probe shows whether outputs reproduce) |
+| 29 | Model 5 needs a second Colab run on the attacked conditions (shuffled, cross_domain, time_shifted, flipped, exaggerated) — export from `texts/`, `QwenForecaster` must accept the new conditions' text | P5a | ✅ Colab run back: 2215 generated, probe 40/40 → 1236 rows reused from P2.4; 3451 rows, one setup class |
 | 30 | DSS / Flip Rate only over `attacked` windows; report attacked counts (384 flipped / 381 exaggerated of 458 texts) next to every attack metric | P5 | 🔵 P4 done: d = 0 windows excluded, `n_not_attacked` / `coverage` on every attack metric |
 
 ---
@@ -1186,7 +1189,9 @@ different window mask) is **exploratory** and will be labelled so.
 - Follow-up (Aryan's review): a failed probe now regenerates real + none too (986 rows),
   not only the conditions; `setup` recorded per row; `qwen_rows()` refuses mixed setups
   (P5 Qwen tests 4 → 8: setup string, probe pass / fail, mixed classes, failed-probe reuse, two-setup file)
-- **Next:** Aryan runs the Colab notebook → `qwen_rows()` → P5b analysis
+- Colab run back: probe 40/40, 2215 generated, 0 parse failures; `qwen_rows()` = 3451 rows,
+  one setup class; predictions + meta backed up with `git add -f` → **P5a complete**
+- **Next:** P5b — analysis against the pre-registered family (§10a)
 
 ### 2026-10-09 — P4: metrics module → **P4 complete**
 - `src/metrics.py`: mse, mae, paired_mse, text_usage_gap, text_sensitivity, text_moves_share,

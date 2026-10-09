@@ -1,0 +1,21 @@
+{
+ "model_id": "Qwen/Qwen2.5-1.5B-Instruct",
+ "revision": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+ "dtype": "float16",
+ "decoding": "greedy",
+ "batch_size": 1,
+ "max_new_tokens": 24,
+ "gpu": "Tesla T4",
+ "torch": "2.11.0+cu130",
+ "transformers": "5.18.0",
+ "inputs": "qwen_inputs_p5.csv",
+ "started": "2026-10-08T23:45:50.420600+00:00",
+ "setup": "Tesla T4 | torch 2.11.0+cu130 | transformers 5.18.0 | Qwen/Qwen2.5-1.5B-Instruct@989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+ "probe_n": 40,
+ "probe_mismatches": 0,
+ "reuse_p2": true,
+ "rows_expected": 2215,
+ "finished": "2026-10-08T23:59:59.692598+00:00",
+ "rows": 2215,
+ "parse_failures": 0
+}
