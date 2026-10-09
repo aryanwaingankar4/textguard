@@ -76,7 +76,7 @@ identical. Full design, family and readings: **§10d — fixed before any R1 out
 3. [x] Export every text the heads need (train + val + test, all conditions) →
        `results/qwen/r1_embed_inputs.csv`; Colab notebook `notebooks/r1_qwen_embeddings.ipynb`
        (P5's pinned revision + the 40-prompt probe). **Colab steps: §7c.**
-4. [ ] ⏸ **Waiting for Aryan's Colab run** → `r1_qwen_embeddings.npz` + `r1_qwen_embed_meta.json` back into
+4. [x] Colab run (2026-10-09, T4, 2 min; probe 40/40, deterministic) → `r1_qwen_embeddings.npz` + `r1_qwen_embed_meta.json` back into
        `results/qwen/`; import into the cache (`python -m src.models.qwen_embeddings import`,
        verifies every fingerprint); back up with `git add -f`.
 5. [ ] Mechanism check for Qwen (val) → reading rule R1-b vs R1-c (§10d) fixed by it.
@@ -279,7 +279,7 @@ Related Work in P8, and re-run the arXiv search then.
 | `src/analyze_p6.py`, `src/figures_p6.py` | P6b | ✅ judge validation → val tuning (freeze file) → test once; Holm family asserted = 20; figures from saved tables (9 tests in `test_analyze_p6.py`) |
 | `src/models/text_encoder.py` (`get_encoder`, `CachedEncoder`) | R1 | ✅ FinBERT (pinned revision) + cache-only Qwen encoder; BERT path unchanged |
 | `src/models/qwen_embeddings.py` | R1 | ✅ export (1994 prompts, all BERT-cache hits) / verified import |
-| `notebooks/r1_qwen_embeddings.ipynb` | R1 | ✅ built (`build_r1_qwen_embeddings_notebook.py`); probe + pinned revision — **awaiting Colab run** |
+| `notebooks/r1_qwen_embeddings.ipynb` | R1 | ✅ run on Colab T4 2026-10-09 (1994 embeddings, 2 min, probe 40/40, P5's setup) |
 | `src/analyze_r1.py` | R1 | ✅ FinBERT embedding + val mechanism check; analysis against §10d to come (9 tests in `test_r1.py`) |
 | `src/auditor.py` | P7 | ⚪ |
 | `app/` (Streamlit) | P7 | ⚪ |
@@ -910,6 +910,13 @@ null prompt) cached in `cache/text_emb/ProsusAI__finbert/`; `classifier.*` weigh
    revision, shape and finiteness, then fills `cache/text_emb/Qwen__Qwen2.5-1.5B-Instruct/`),
    then back up: `git add -f results/qwen/r1_qwen_embeddings.npz results/qwen/r1_qwen_embed_meta.json`.
 8. `python -m src.analyze_r1 mechanism` → adds Qwen to the val mechanism table (§9 R1).
+
+**Qwen run (Colab T4, 2026-10-09)** — `results/qwen/r1_qwen_embed_meta.json` (backed up with
+`git add -f`, with the `.npz`): 1994 embeddings in 2 min, **probe 40/40** and setup string
+identical to P5's (`Tesla T4 | torch 2.11.0+cu130 | transformers 5.18.0 | …@989aa79…`) → same
+setup class as Model 5, certified; first 20 re-embedded bit-identically; tokens median 113, max
+622 (no truncation). **Import:** all 1994 fingerprints, the revision, shape (1994 × 1536,
+float32) and finiteness verified; 1994 cache files written.
 
 ## 8. Attack module and fake-text validation (P3)
 
