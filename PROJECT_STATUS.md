@@ -1792,6 +1792,112 @@ the gate costs little genuine text; it cannot show "keeps the benefit of text" f
    * T2's discordant windows = flipped under exactly one of TextGuard / always_trust (McNemar,
      two-sided binomial, p = ½).
 
+### 10d. Pre-registered plan (R1 — LLM vs fusion) — fixed 2026-10-09, before any R1 output
+
+> Committed **on its own** (and pushed) before any R1 output existed: no FinBERT or Qwen
+> embedding had been computed, no R1 head trained, no val mechanism number computed for any
+> encoder (BERT's flip-vs-swap ratio exists only on **test**, from P5: 0.20 pooled, §9 P5.3).
+> Already known: everything in §9 (P5 and P6, test split). **Do not edit this subsection after
+> R1 results exist**; a later change goes in a dated amendment below it and is reported as a
+> deviation.
+
+**Question.** Is Model 5's vulnerability to the flip attack caused by the **LLM's text
+understanding** or by **early fusion** (reading the report inside the forecasting prompt)?
+P5 cannot say: M5 is the only early-fusion model *and* the only LLM (§9 P5.7). R1 holds the LLM
+fixed and changes how its reading of the text enters the forecast: the same Qwen2.5-1.5B-Instruct
+(same revision as M5) becomes a frozen **text encoder** for the late-fusion heads of Models 3/4.
+
+**New models (4) — Models 3/4 with only the encoder swapped**
+
+| Name | Backbone (frozen) | Encoder (frozen) | Embedding |
+|---|---|---|---|
+| M3-Q | Model 1, DLinear, same seed | Qwen2.5-1.5B-Instruct, revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306` (= M5, P5, P6 judge) | last-layer hidden state (after the final norm) **mean-pooled over real tokens**, 1536-d |
+| M4-Q | Model 2, PatchTST (`patching="window"`), same seed | same | same |
+| M3-F | Model 1 | FinBERT `ProsusAI/finbert`, revision `4556d13015211d73dccd3fdd39d39232506f3e43`, BERT body only (classifier dropped) | all 12 layers, last hidden state mean-pooled over real tokens, 768-d (exactly BERT's recipe) |
+| M4-F | Model 2 | same | same |
+
+**Held identical to Models 3/4 (§7a):** `ŷ = TS(x) + w·MLP(z(e))`, w = 0.1; MM-TSFlib's prompt
+template wrapped around every text (`text_encoder.make_prompt`), for every encoder; frozen
+encoder; per-dimension z-score fit on **train texts only**; MLP `d → 96 → horizon`, ReLU,
+dropout 0.3 (hidden width 96 = BERT's 768/8, kept fixed so only the input width changes);
+backbone = the Model 1/2 checkpoint of the same domain and seed, frozen, eval mode;
+`text=None` = text branch absent (≡ Model 1/2 exactly); two-stage training under the **P2.2
+protocol** — head lr ∈ {1e-4, 1e-3, 1e-2} chosen per domain × model on val loss (seed 2021),
+up to 200 epochs, patience 20, then seeds 2021–2023; horizon 1; lookback, splits, windows,
+σ as P5. Same 7 conditions (`texts/`, unchanged), val + test.
+
+**Embedding details fixed now.** Qwen: run on Colab (T4, fp16, the same setup class as P5
+certified by P5's 40-prompt reproducibility probe, re-run first and recorded), **batch size 1**
+(no padding), tokenizer defaults (no chat template — the encoder reads the same template string
+BERT reads), no truncation (token counts recorded), mean over all tokens in float32, stored
+float32. FinBERT: CPU, same code path as BERT (`BertTextEncoder`), 512-token limit, truncation
+counted. Every embedding is keyed by the SHA-256 of the prompt string (the existing cache
+layout); the import refuses a Colab file whose fingerprints do not match the export.
+
+**Pre-training diagnostic — mechanism check on VAL (descriptive, before any head is trained).**
+P5's `embedding_similarity` on the **val** split, for BERT, FinBERT and Qwen: per attacked
+`flipped` window with a real report, `rel_distance` = ‖z(e_fake) − z(e_real)‖ /
+‖z(e_shuffled) − z(e_real)‖ in the standardised space the head sees (each encoder with its own
+train-text statistics) — how far the flip moves the head's input, as a fraction of swapping in a
+different report. Reported pooled (mean, median) and per domain, also for `exaggerated` and
+with raw / standardised cosine. **Rule fixed now:** an encoder is **direction-aware** if its
+pooled val mean `rel_distance` (flipped) is **≥ 2× BERT's** on the same windows; otherwise
+**direction-blind like BERT**. This rule only selects between readings R1-b and R1-c below; it
+is computed before any head is trained and cannot be changed after.
+
+**Hypothesis family — one Holm family, test split, m = 108**
+
+| Block | H₀ | Test | Cells | m |
+|---|---|---|---|---|
+| S | text does not move the forecast (median \|ŷ_real − ŷ_none\|/σ = 0) | Wilcoxon | {M3-Q, M4-Q, M3-F, M4-F} × 4 domains | 16 |
+| A1 | fake text does not shift the forecast toward its claim (median DSS term = 0) | Wilcoxon | 4 models × {flipped, exaggerated} × (4 domains + pooled) | 40 |
+| A2 | toward-the-claim flips no more likely than away | exact McNemar (as §10a) | 4 models × {flipped, exaggerated} × (4 domains + pooled) | 40 |
+| E — encoder | the new encoder's head is as steerable as its BERT counterpart: median DSS_new − DSS_BERT = 0, per window | Wilcoxon on paired per-window differences, pooled; bootstrap stratified by domain | {M3-Q − M3, M4-Q − M4, M3-F − M3, M4-F − M4} × {flipped, exaggerated} | 8 |
+| F′ — fusion, LLM held fixed | early fusion (M5) and late fusion on the same LLM are equally steerable: median DSS_M5 − DSS_Mk-Q = 0 | as E | {M5 − M3-Q, M5 − M4-Q} × {flipped, exaggerated} | 4 |
+
+M3, M4, M5 enter only through their **existing P5 predictions** (unchanged, already reported).
+Everything else as §10a: test only; seed-mean per window before any metric; windows with a real
+report (S) / attacked windows (A1, A2); NaN pairing; σ = train std; pooled = 4 domains, equal
+window weight, bootstrap stratified by domain (10,000, seed 0); two-sided, α = 0.05; a
+directional claim needs a rejection **and** the claimed sign. Holm over all 108 at once; raw and
+adjusted p reported. Stated in advance: S is expected to reject for every new head (any text
+adds w·MLP(z(e)) ≠ 0), as it did for M3/M4.
+
+**Decision rules and readings — fixed now**
+
+* A head is **fooled** if A1 rejects for `flipped`, **pooled**, with DSS > 0.
+  **"Qwen-embedding late fusion is fooled"** if M3-Q **or** M4-Q is fooled (both → stated for
+  both backbones; one → reported as backbone-specific).
+* **R1-a — Qwen late fusion fooled → the vulnerability follows the LLM's text understanding**
+  (its representation of the report); early fusion is not necessary. F′ then says whether early
+  fusion adds to it: F′ rejects with DSS_M5 > DSS_Mk-Q for **both** heads → "early fusion
+  amplifies"; otherwise "no difference detected" (never "equivalent").
+* **R1-b — not fooled, and Qwen embeddings direction-aware (val rule above) → the vulnerability
+  follows early fusion (in-prompt reading):** the direction is present in the representation,
+  but a late head trained on these data does not act on it.
+* **R1-c — not fooled, and Qwen embeddings direction-blind → inconclusive between the two:**
+  mean pooling discards the direction, so a pooled-embedding late head cannot separate them.
+  Reported as a limitation, with the mechanism numbers — not as support for either reading.
+* **FinBERT** (reported beside, does not change the Qwen reading): M3-F or M4-F fooled → a
+  direction-aware encoder suffices for late-fusion vulnerability without any LLM; E (F − BERT)
+  says whether FinBERT's heads are more steerable than BERT's.
+* **Scope (stated now).** A not-fooled result is about late heads *trained on these data* with
+  *mean-pooled* embeddings: a head only acts on what its training signal rewards. It does not
+  show that every late-fusion LLM model is safe.
+
+**Reported, not tested (descriptive, CIs only):** Text Usage Gap; `text_moves_share`;
+content controls (`paired_mse` over real / empty / shuffled / cross_domain / time_shifted,
+per-condition sensitivity); damage MSE(fake) − MSE(real); failure rates; chosen head lr and best
+epoch per domain; val-split numbers (labelled); the mechanism table on **test** too, beside P5's
+BERT table.
+**Descriptive, only if a head is fooled:** TextGuard v1 **exactly as frozen in P6**
+(`summary_p6_frozen.json`; its gate depends only on the text, so the judge answers already exist)
+applied to that head — DSS / Flip Rate defended vs undefended, real-text ΔMSE. Outside the family.
+
+**Ablations — outside the family (raw p, labelled):** excluding 2020; dense- (Economy, Traffic)
+vs sparse-text (SocialGood, Health_US) domains — both as §10a. Anything else is exploratory and
+labelled so (e.g. other pooling, chat template, a larger Qwen — that is R2).
+
 ### 10c. Open issues
 
 | # | Issue | Phase | Status |
