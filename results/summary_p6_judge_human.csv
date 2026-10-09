@@ -1,0 +1,9 @@
+label_set,question,domain,role,n,accuracy,kappa,none_rate,acc_when_answered,reversed
+main_50,change,Economy,primary,13,0.923077,0.855556,0,1,0
+main_50,change,SocialGood,primary,13,0.615385,0.375,0.384615,1,0
+main_50,change,Traffic,primary,12,1,1,0,1,0
+main_50,change,Health_US,primary,12,0.166667,0.0769231,0,1,0
+main_50,change,pooled,primary,50,0.68,0.537305,0.1,1,0
+main_50,level,Health_US,descriptive (labels are change claims),12,0.166667,0.0909091,0,1,0
+socialgood_recheck_25,change,SocialGood,supplementary,25,0.6,0.446903,0.04,1,0
+socialgood_recheck_25,change,pooled,supplementary,25,0.6,0.446903,0.04,1,0

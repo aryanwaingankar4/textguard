@@ -1,0 +1,33 @@
+{
+  "fixed_on": "val only (Model 5, flipped, pooled)",
+  "n_configs_textguard": 33,
+  "n_configs_clip": 5,
+  "fbr_budget": 0.1,
+  "textguard": {
+    "fraction": 0.25,
+    "tau": 0.0,
+    "window": {
+      "Economy": 3,
+      "SocialGood": 3,
+      "Traffic": 3,
+      "Health_US": 6
+    },
+    "budget_met": false,
+    "val_dss": -0.02056916875771899,
+    "val_flip": 0.11278195488721804,
+    "val_fbr": 0.11320754716981132
+  },
+  "clip": {
+    "k": 0.5,
+    "budget_met": true,
+    "val_dss": 0.1098413787174542,
+    "val_flip": 0.12030075187969924,
+    "val_fbr": 0.06289308176100629
+  },
+  "negative_dss_in_budget": 0,
+  "amendment": "Amendment 2 (commit 3fbce69): fallback tie -> smaller tau, then smaller w; tau = 0.5 exploratory; TextGuard-L (Health_US level claim only) exploratory",
+  "exploratory": {
+    "tau_block": 0.5,
+    "textguard_L": "Health_US: level claim only"
+  }
+}

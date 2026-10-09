@@ -1,0 +1,16 @@
+label_set,question,domain,truth,judge_-1,judge_0,judge_+1
+main_50,change,Economy,-1,5,0,0
+main_50,change,Economy,0,1,0,0
+main_50,change,Economy,1,0,0,7
+main_50,change,SocialGood,-1,2,0,0
+main_50,change,SocialGood,0,5,5,0
+main_50,change,SocialGood,1,0,0,1
+main_50,change,Traffic,-1,7,0,0
+main_50,change,Traffic,1,0,0,5
+main_50,change,Health_US,-1,2,0,0
+main_50,change,Health_US,0,5,0,5
+main_50,level,Health_US,-1,2,0,0
+main_50,level,Health_US,0,4,0,6
+socialgood_recheck_25,change,SocialGood,-1,6,0,0
+socialgood_recheck_25,change,SocialGood,0,9,1,1
+socialgood_recheck_25,change,SocialGood,1,0,0,8

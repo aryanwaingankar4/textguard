@@ -1,0 +1,2 @@
+model,A,B,g,final,warn,expected,ok
+DummyForecaster,116,106,0.1,115,True,"A 116, B 106, g 0.1, final 115, warn",True

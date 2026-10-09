@@ -1,0 +1,31 @@
+variant,set,domain,n,mean,p10,p25,median,p75,share_g1,share_lt_05
+TextGuard,genuine (real),Economy,70,0.837221,0.339737,0.754927,1,1,0.571429,0.142857
+TextGuard,genuine (real),SocialGood,46,0.928979,0.771507,0.889382,1,1,0.695652,0.0217391
+TextGuard,genuine (real),Traffic,53,0.68031,0.00658224,0.226934,1,1,0.54717,0.320755
+TextGuard,genuine (real),Health_US,130,0.826783,0.339064,0.724238,1,1,0.6,0.115385
+TextGuard,flipped (attacked),Economy,70,0.745947,0.290454,0.496995,0.893087,1,0.357143,0.257143
+TextGuard,flipped (attacked),SocialGood,26,0.583224,0.0010827,0.448844,0.623202,0.824041,0.192308,0.269231
+TextGuard,flipped (attacked),Traffic,52,0.632752,0.0269744,0.178803,0.963582,1,0.461538,0.346154
+TextGuard,flipped (attacked),Health_US,103,0.168249,2.30802e-05,0.000271922,0.0112219,0.311022,0.00970874,0.873786
+TextGuard,exaggerated (attacked),Economy,70,0.834149,0.409055,0.724343,1,1,0.571429,0.142857
+TextGuard,exaggerated (attacked),SocialGood,27,0.932241,0.773032,1,1,1,0.814815,0.037037
+TextGuard,exaggerated (attacked),Traffic,50,0.677832,0.00734786,0.243983,1,1,0.54,0.34
+TextGuard,exaggerated (attacked),Health_US,103,0.823765,0.382854,0.704874,1,1,0.61165,0.106796
+TextGuard,genuine (real),pooled,299,0.818986,0.252193,0.736467,1,1,0.598662,0.143813
+TextGuard,flipped (attacked),pooled,251,0.468577,0.000115411,0.0171108,0.442027,0.953863,0.219124,0.52988
+TextGuard,exaggerated (attacked),pooled,250,0.809201,0.229511,0.711223,1,1,0.608,0.156
+TextGuard-L (exploratory),genuine (real),Economy,70,0.837221,0.339737,0.754927,1,1,0.571429,0.142857
+TextGuard-L (exploratory),genuine (real),SocialGood,46,0.928979,0.771507,0.889382,1,1,0.695652,0.0217391
+TextGuard-L (exploratory),genuine (real),Traffic,53,0.68031,0.00658224,0.226934,1,1,0.54717,0.320755
+TextGuard-L (exploratory),genuine (real),Health_US,130,0.999037,1,1,1,1,0.992308,0
+TextGuard-L (exploratory),flipped (attacked),Economy,70,0.745947,0.290454,0.496995,0.893087,1,0.357143,0.257143
+TextGuard-L (exploratory),flipped (attacked),SocialGood,26,0.583224,0.0010827,0.448844,0.623202,0.824041,0.192308,0.269231
+TextGuard-L (exploratory),flipped (attacked),Traffic,52,0.632752,0.0269744,0.178803,0.963582,1,0.461538,0.346154
+TextGuard-L (exploratory),flipped (attacked),Health_US,103,0.27434,2.30802e-05,0.000477763,0.121841,0.470234,0.0582524,0.757282
+TextGuard-L (exploratory),exaggerated (attacked),Economy,70,0.834149,0.409055,0.724343,1,1,0.571429,0.142857
+TextGuard-L (exploratory),exaggerated (attacked),SocialGood,27,0.932241,0.773032,1,1,1,0.814815,0.037037
+TextGuard-L (exploratory),exaggerated (attacked),Traffic,50,0.677832,0.00734786,0.243983,1,1,0.54,0.34
+TextGuard-L (exploratory),exaggerated (attacked),Health_US,103,0.990051,1,1,1,1,0.951456,0
+TextGuard-L (exploratory),genuine (real),pooled,299,0.893879,0.548679,1,1,1,0.769231,0.0936455
+TextGuard-L (exploratory),flipped (attacked),pooled,251,0.512112,0.000467729,0.0583228,0.529763,0.989569,0.239044,0.482072
+TextGuard-L (exploratory),exaggerated (attacked),pooled,250,0.877711,0.431467,0.97757,1,1,0.748,0.112
