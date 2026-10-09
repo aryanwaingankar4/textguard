@@ -198,11 +198,24 @@ final = A + g * (B - A)
 warn  = (g < 0.5)
 ```
 
+**As built in P6a (`src/textguard/`, pre-registered in PROJECT_STATUS §10b):**
+- `slope` = OLS slope per step over the last w values; `trend_str = min(|slope|·(w−1)/σ, 1)`
+  — the fitted movement across the window (this is what reproduces the worked example).
+- **Level branch** (Health_US): the text's above/below-baseline claim vs `sign(y_last − B)`,
+  strength `min(|y_last − B|/σ, 1)`, B = the baseline the text states. A text with several
+  claims gets `g = min` over them.
+- **Judge** = Qwen2.5-1.5B (P5's revision), scored answers; confidence = renormalised answer
+  probability. Not the P3 rules (circular).
+- **Block mode** at threshold τ: `g < τ → final = A`; τ = 0 is the soft gate, τ > 1 is
+  never_trust — the τ sweep is the trade-off curve. B NaN → A; A NaN → NaN.
+
 **Baseline defenses to compare against** (required for the paper):
 - `never_trust`: g = 0 always
 - `always_trust`: g = 1 always
 - `clip`: cap |B − A| at a fixed multiple of sigma
 - **CFA** (Lee et al. 2026) — trained constrained fusion. Code at `seunghan96/cfa`.
+  **P6a decision: not run** (white-box, trained; our attacked model has no fusion layer) —
+  discussed in Related Work instead; see PROJECT_STATUS issue #4.
   This is the strongest baseline and the one reviewers will ask about. If running it is
   too costly, at minimum discuss it in Related Work and justify the omission.
 

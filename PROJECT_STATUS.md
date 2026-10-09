@@ -4,7 +4,7 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** P6 — TextGuard (P5 complete: P5a predictions + P5b analysis)
+**Current phase:** P6a — TextGuard built; **waiting for the Colab judge CSV** (then P6b)
 **Last updated:** 2026-10-09
 
 > 👤 **Solo project.** All work by Aryan.
@@ -22,7 +22,7 @@
 | P3 | Attack module — 6 text conditions | ✅ | ✅ Done |
 | P4 | Metrics module — DSS, Flip Rate, etc. | ✅ | ✅ Done |
 | P5 | Experiment runner — screening + attack | ✅ | ✅ Done (P5a + P5b) |
-| P6 | TextGuard defense | ✅ Core | ⚪ Pending |
+| P6 | TextGuard defense | ✅ Core | 🔵 P6a built, awaiting Colab judge run |
 | P7 | Auditor, demo, extras | ⬜ Optional | ⚪ Pending |
 | P8 | Paper & release | ✅ | ⚪ Pending |
 
@@ -34,19 +34,66 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 
 ## 1a. ▶ START HERE — handoff for the next session (P6)
 
-> Written 2026-10-09 at the end of P5 (P5a + P5b). Replace this section at the end of P6.
+> Written 2026-10-09 during P6a. Replace this section at the end of P6.
+
+**P6 is split:** **P6a** = build TextGuard + export the Qwen direction-judge job (done, below);
+**P6b** = load the judge CSV, tune on **val only** (§10b grid), evaluate on test against the
+**pre-registered plan §10b** (committed alone, `9838239`, before any TextGuard output).
 
 **P5 result in one line:** the rule-based flip attack moves Model 5 (Qwen, early fusion)
 +0.46σ toward the lie and flips its direction in 24% of attacked windows (MSE +92%); Models
-3–4 (late fusion) are moved by text but not by its direction (DSS < 0.02σ). Full tables:
-§9 "P5 results"; raw p / Holm in `results/summary_p5_holm_family.csv`.
+3–4 (late fusion) are moved by text but not by its direction (DSS < 0.02σ). §9 "P5 results".
 
-**P6 starts from:** Model 5 is the primary target; Models 3–4 are the direction-blind
-contrast. Health_US carries most of M5's damage (level-flip); TextGuard's level branch
-(issue #15) matters most there. Tune only on val (P5 used test for reporting only).
-The sections below describe P5a and stay valid as the artifact map.
+### P6a status (2026-10-09)
 
-### What exists and where
+* ✅ Step 0 — P6 evaluation plan pre-registered (§10b) and pushed **alone** (`9838239`).
+* ✅ Step 1 — `src/textguard/`: `trend_detector.py` (change + level evidence), `gate.py`,
+  `baselines.py` (always / never / clip + TextGuard soft / block), `textguard.py` (wraps any
+  `predict(numbers, text)`; is itself a Forecaster), `text_direction.py` (judge protocol,
+  `QwenJudge` served from CSV, `stated_baseline`), `judge_prompt.py`. Issues #15 / #18 done.
+* ✅ **CFA (issue #4): not run** — decided in P6a, before any test result, as §10b requires.
+  `seunghan96/cfa` trains low-rank adapters on intermediate embeddings / the fusion layer of
+  MM-TSFlib-style backbones; it cannot wrap a black-box `predict()`. Our only attacked model
+  (Model 5) is an early-fusion LLM served from precomputed Colab answers — no fusion layer to
+  adapt, no training loop. Running CFA on Models 3–4 would be possible but tests nothing (they
+  are not fooled). → **T5 dropped, Holm family m = 20.** Discuss in Related Work (P8):
+  CFA = trained, white-box, targets irrelevant text; TextGuard = training-free, black-box,
+  targets adversarial text.
+* ✅ Step 2 — judge export: **2490 questions over 1831 distinct texts** (Economy 472,
+  SocialGood 360, Traffic 340, Health_US 659 × 2 [level + change]; includes the 50 + 25
+  human-labelled P1 reports) + P5's 40 probe prompts → `results/qwen/judge_inputs.csv`
+  (gitignored). Notebook `notebooks/p6_direction_judge.ipynb` (`build_p6_judge_notebook.py`).
+* ✅ Step 3 — model-agnostic: worked example on `DummyForecaster` (g = 0.1, final 115,
+  warning; real text g = 1 → 120; DSS 1.4 → 0.5) and on a duck-typed third-party class.
+  259 tests passing (30 new: `test_textguard.py`, `test_judge.py`).
+* ⏳ **Next: run the Colab judge (steps below), then P6b.** Nothing has been tuned or evaluated.
+
+### Colab run — direction judge (P6a)
+
+1. colab.research.google.com → File → Upload notebook → `notebooks/p6_direction_judge.ipynb`.
+2. Runtime → Change runtime type → **T4 GPU**.
+3. Upload `results/qwen/judge_inputs.csv` to `/content` (or `MyDrive/textguard/`).
+4. Runtime → Run all (allow Drive in cell 2). Cell 5 loads the **pinned P5 revision**
+   `989aa79…`; cell 6 prints the probe: `40/40 … SAME SETUP CLASS AS P5` is the expected
+   result; anything else is recorded (the judge still runs on one setup) — report it.
+   2490 questions, est. ~10–20 min. On a disconnect: reconnect, run cells 1–6, then cell 7
+   resumes; a different torch / transformers / GPU makes cell 7 refuse to append (rename the
+   old CSV, Run all again).
+5. Put `p6_judge_predictions.csv` and `p6_judge_run_meta.json` into `results/qwen/`.
+6. Locally: `python -c "from src.textguard.text_direction import load_judgements as l; d = l(); print(len(d), d.probe_ok.iloc[0])"`
+   — verifies every fingerprint, completeness and one setup; expect `2490 True`.
+
+### P6b must (from §10b — do not improvise)
+
+* Gate values per window: real + every condition, val + test, every w in the grid; A / B from
+  `results/p5_predictions.csv` (M3/M4 seed-mean) and `run_experiments.qwen_rows()` (M5).
+* Tune (w, τ) and clip's k on **val, Model 5, flipped, pooled**: FBR ≤ 10%, min DSS.
+* Test: the curve, the operating point, T1–T4 (Holm, m = 20), secondary MSE vs never_trust,
+  M3/M4 no-harm, exaggerated, COVID 2020 FBR, judge accuracy (human labels + known
+  `claimed_direction`), ablations (no-2020, Health_US vs change domains, soft, oracle judge).
+* Save every per-window gate / final to CSV (raw, like predictions).
+
+### What exists and where (P5 artifact map, still valid)
 
 | Artifact | Path | In git? | How to regenerate |
 |---|---|---|---|
@@ -260,10 +307,14 @@ Related Work in P8, and re-run the arXiv search then.
 | `notebooks/p5_qwen_conditions.ipynb` | P5a | ✅ built (`build_p5_qwen_notebook.py`); reproducibility probe, revision pinned — **awaiting Colab run** |
 | `qwen_forecaster.load_all_predictions` | P5a | ✅ P2.4 + P5 conditions, reused rows filled and re-fingerprinted (4 new tests) |
 | `src/analyze_p5.py`, `src/figures_p5.py` | P5b | ✅ screening / attack / fusion / damage / ablations → `results/summary_p5_*.csv`, `paper/figures/p5_*`; Holm family asserted = 76 (3 tests); `metrics.mcnemar_flip` (1 test) |
-| `src/textguard/trend_detector.py` | P6 | ⚪ |
-| `src/textguard/text_direction.py` | P6 | ⚪ |
-| `src/textguard/gate.py` | P6 | ⚪ |
-| `src/textguard/textguard.py` | P6 | ⚪ |
+| `src/textguard/trend_detector.py` | P6a | ✅ change evidence (OLS slope, fitted movement / σ) + level evidence (y_last vs stated baseline) |
+| `src/textguard/judge_prompt.py` | P6a | ✅ judge prompt, single source of truth (pasted into the notebook) |
+| `src/textguard/text_direction.py` | P6a | ✅ `DirectionJudge` protocol, `QwenJudge` (served from the Colab CSV, fingerprints verified), `stated_baseline` |
+| `src/textguard/gate.py` | P6a | ✅ per-claim gate, min over claims |
+| `src/textguard/baselines.py` | P6a | ✅ always / never / clip / TextGuard soft + block; NaN rules (vectorised, for P6b) |
+| `src/textguard/textguard.py` | P6a | ✅ wraps any `predict(numbers, text)`; itself a Forecaster |
+| `src/textguard/export_judge_inputs.py` | P6a | ✅ 2490 questions / 1831 texts + 40 probes |
+| `notebooks/p6_direction_judge.ipynb` | P6a | ✅ built (`build_p6_judge_notebook.py`) — **awaiting Colab run** |
 | `src/auditor.py` | P7 | ⚪ |
 | `app/` (Streamlit) | P7 | ⚪ |
 
@@ -1515,7 +1566,7 @@ the gate costs little genuine text; it cannot show "keeps the benefit of text" f
 | 1 | Does Time-MMD text make directional claims? (≥30% needed) | P1 | ✅ 58% overall (§6) |
 | 2 | Is text guaranteed available *before* its forecast window? | P1 | ✅ Yes, with `anchor="end"` + 5 leakers dropped (§6) |
 | 3 | How does MM-TSFlib actually fuse text? (we assume late) | P2 | ✅ Late additive; text term ≡ 0 at h=1, numeric prior in the text branch (§7a) |
-| 4 | Can CFA (`seunghan96/cfa`) run as a defense baseline? | P6 | ⬜ Open |
+| 4 | Can CFA (`seunghan96/cfa`) run as a defense baseline? | P6 | ✅ Decided in P6a (before any test result): **not run** — trained adapters on internal embeddings / fusion layer; cannot wrap a black-box `predict()`; Model 5 has no fusion layer. T5 dropped, m = 20; Related Work in P8 (§1a) |
 | 5 | Colab VS Code extension unreliable — use colab.research.google.com directly for GPU work (Qwen) in P2; `git clone` the repo inside the notebook | P2 | ⬜ Open |
 | 6 | MM-TSFlib uses `search` text, we default to `report` — first suspect if P2 baselines don't match | P2 | ⬜ Open |
 | 7 | MM-TSFlib Economy CSV unsorted + positional split ⇒ non-chronological split in their baseline | P2 | ⬜ Open |
@@ -1526,10 +1577,10 @@ the gate costs little genuine text; it cannot show "keeps the benefit of text" f
 | 12 | SocialGood: 41% off-topic influenza text | P1 | ✅ Filtered (131 dropped, 13 header-stripped) |
 | 13 | Directional claims concentrated in Economy/Traffic | P3 | ✅ change-flip (Economy, Traffic, SocialGood) + level-flip (Health_US); coverage 84% (§8) |
 | 14 | Swap SocialGood (56% directional, 61% coverage) for Energy (100% directional, but 351/354 reports contain the forecast target; needs lag 2)? | P1→P2 | ⬜ Open — needs decision |
-| 15 | Generalise TextGuard gate to "text claim vs numerical evidence" (change + level branches); update CLAUDE.md §8 | P6 | ⬜ Open |
-| 16 | Direction classifier must be Qwen-based (heuristic only 72% vs humans); validate on the 100 hand labels | P6 | ⬜ Open — P3 no longer needs it: fakes carry their known `claimed_direction`; still needed for TextGuard's judge in P6 |
+| 15 | Generalise TextGuard gate to "text claim vs numerical evidence" (change + level branches); update CLAUDE.md §8 | P6 | ✅ P6a: change + level evidence, g = min over claims; CLAUDE.md §8 updated |
+| 16 | Direction classifier must be Qwen-based (heuristic only 72% vs humans); validate on the 100 hand labels | P6 | 🔵 P6a: Qwen judge built + exported (scored answers, confidence from token probabilities); validation in P6b (50 + 25 labels; Energy's 25 are not one of our domains) |
 | 17 | NaN pairing: drop a sample from both sides if either is NaN; report parse-failure rate per model × condition (§6a) | P4 | ✅ Built into every metric; `failure_rates` per model × condition |
-| 18 | TextGuard: if B is NaN, final = A (§6a) | P6 | ⬜ Open |
+| 18 | TextGuard: if B is NaN, final = A (§6a) | P6 | ✅ P6a: `baselines.mix` (B NaN → A; A NaN → NaN), tested |
 | 19 | **Models 3/4 must reuse the val-tuned protocol** (`train_baselines.LR_GRID`, `TUNED`, `TUNE_SEED`, `patching="window"`) — else a Text Usage Gap mixes text with extra training | P2.3 | ✅ Applied — same `LR_GRID`/`TUNED`/seeds, lr tuned per domain for Models 3/4 |
 | 20 | MM-TSFlib PatchTST clamps patch_len to pred_len → at h=1 it reads 2 of 8 inputs; Models 4 (and 6) must use `patching="window"` too | P2.3 | ✅ Fixed for Models 2 and 4 |
 | 21 | Repro column far above published MSE (e.g. Traffic DLinear 2.87 vs 0.35) | P2/P8 | ✅ Closed — explained by different test periods and splits; not pursued further — listed as a limitation in the paper |
@@ -1548,6 +1599,21 @@ the gate costs little genuine text; it cannot show "keeps the benefit of text" f
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-09 — P6a: TextGuard built, direction-judge job exported (awaiting Colab)
+- **P6 evaluation plan pre-registered (§10b) and pushed alone first** (`9838239`): trade-off
+  primary (M5 flipped: DSS / Flip Rate vs FBR curve + val-chosen operating point), block mode
+  for the τ sweep, one FBR definition for all defences, val-only coarse grid, Holm m = 20
+- `src/textguard/`: change + level evidence, gate (min over claims), defences
+  (always / never / clip / soft / block), `TextGuard` wrapper, judge protocol + `QwenJudge`
+- "Slope" read as the fitted movement across the window (the worked example needs strength 1.0)
+- CFA timeboxed: not run (white-box, trained; Model 5 has no fusion layer) → issue #4
+- Judge: 2490 questions / 1831 texts + 40 probes; notebook pins P5's revision, re-runs the probe
+- Worked example reproduced on `DummyForecaster` with no change to TextGuard
+- **Broke:** the test's fake judge keyed on "increased" in the prompt's instructions → now reads
+  the report block only
+- 259 tests passing (30 new)
+- **Next:** Colab judge run (§1a), then P6b
 
 ### 2026-10-09 — P5b: analysis against the pre-registered family → **P5 complete**
 - `src/analyze_p5.py` (+ `figures_p5.py`): test split, seed-mean first, 299 report windows;
