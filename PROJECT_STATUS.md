@@ -4,7 +4,7 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** P6a — TextGuard built; **waiting for the Colab judge CSV** (then P6b)
+**Current phase:** P6b — tune on val, evaluate on test (P6a complete: TextGuard built, judge run back)
 **Last updated:** 2026-10-09
 
 > 👤 **Solo project.** All work by Aryan.
@@ -22,7 +22,7 @@
 | P3 | Attack module — 6 text conditions | ✅ | ✅ Done |
 | P4 | Metrics module — DSS, Flip Rate, etc. | ✅ | ✅ Done |
 | P5 | Experiment runner — screening + attack | ✅ | ✅ Done (P5a + P5b) |
-| P6 | TextGuard defense | ✅ Core | 🔵 P6a built, awaiting Colab judge run |
+| P6 | TextGuard defense | ✅ Core | 🔵 P6a done (built + judge run); P6b next |
 | P7 | Auditor, demo, extras | ⬜ Optional | ⚪ Pending |
 | P8 | Paper & release | ✅ | ⚪ Pending |
 
@@ -32,66 +32,81 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 
 ---
 
-## 1a. ▶ START HERE — handoff for the next session (P6)
+## 1a. ▶ START HERE — handoff for the next session (P6b)
 
-> Written 2026-10-09 during P6a. Replace this section at the end of P6.
+> Written 2026-10-09 at the end of P6a. Replace this section at the end of P6.
 
-**P6 is split:** **P6a** = build TextGuard + export the Qwen direction-judge job (done, below);
-**P6b** = load the judge CSV, tune on **val only** (§10b grid), evaluate on test against the
-**pre-registered plan §10b** (committed alone, `9838239`, before any TextGuard output).
+**P6 is split:** **P6a** = build TextGuard + run the Qwen direction judge (✅ done);
+**P6b** = tune on **val only**, evaluate on test — **exactly** as pre-registered in **§10b**
+(commit `9838239`, alone, before any TextGuard output) **+ Amendment 1** (`01184db`, before any
+judge output: per-domain FBR, expected higher on Traffic and Economy). Read §10b in full before
+writing code: it fixes every definition, the grid, the selection rule, the Holm family (m = 20,
+T1–T4) and the ablations. Anything not in §10b is exploratory and must be labelled so.
 
 **P5 result in one line:** the rule-based flip attack moves Model 5 (Qwen, early fusion)
 +0.46σ toward the lie and flips its direction in 24% of attacked windows (MSE +92%); Models
 3–4 (late fusion) are moved by text but not by its direction (DSS < 0.02σ). §9 "P5 results".
 
-### P6a status (2026-10-09)
+### P6a — done (2026-10-09)
 
-* ✅ Step 0 — P6 evaluation plan pre-registered (§10b) and pushed **alone** (`9838239`).
-* ✅ Step 1 — `src/textguard/`: `trend_detector.py` (change + level evidence), `gate.py`,
-  `baselines.py` (always / never / clip + TextGuard soft / block), `textguard.py` (wraps any
-  `predict(numbers, text)`; is itself a Forecaster), `text_direction.py` (judge protocol,
-  `QwenJudge` served from CSV, `stated_baseline`), `judge_prompt.py`. Issues #15 / #18 done.
-* ✅ **CFA (issue #4): not run** — decided in P6a, before any test result, as §10b requires.
-  `seunghan96/cfa` trains low-rank adapters on intermediate embeddings / the fusion layer of
-  MM-TSFlib-style backbones; it cannot wrap a black-box `predict()`. Our only attacked model
-  (Model 5) is an early-fusion LLM served from precomputed Colab answers — no fusion layer to
-  adapt, no training loop. Running CFA on Models 3–4 would be possible but tests nothing (they
-  are not fooled). → **T5 dropped, Holm family m = 20.** Discuss in Related Work (P8):
-  CFA = trained, white-box, targets irrelevant text; TextGuard = training-free, black-box,
-  targets adversarial text.
-* ✅ Step 2 — judge export: **2490 questions over 1831 distinct texts** (Economy 472,
-  SocialGood 360, Traffic 340, Health_US 659 × 2 [level + change]; includes the 50 + 25
-  human-labelled P1 reports) + P5's 40 probe prompts → `results/qwen/judge_inputs.csv`
-  (gitignored). Notebook `notebooks/p6_direction_judge.ipynb` (`build_p6_judge_notebook.py`).
-* ✅ Step 3 — model-agnostic: worked example on `DummyForecaster` (g = 0.1, final 115,
-  warning; real text g = 1 → 120; DSS 1.4 → 0.5) and on a duck-typed third-party class.
-  259 tests passing (30 new: `test_textguard.py`, `test_judge.py`).
-* ⏳ **Next: run the Colab judge (steps below), then P6b.** Nothing has been tuned or evaluated.
+* ✅ Pre-registration §10b (`9838239`) + Amendment 1 (`01184db`), each committed alone.
+* ✅ `src/textguard/` built and tested (259 tests): `trend_detector.py`, `gate.py`,
+  `baselines.py`, `textguard.py`, `text_direction.py`, `judge_prompt.py`,
+  `export_judge_inputs.py`. Worked example reproduced on `DummyForecaster` (g = 0.1, final 115,
+  warning) and on a duck-typed third-party class.
+* ✅ CFA (issue #4): **not run** — decided before any test result → T5 dropped, **m = 20**.
+* ✅ **Judge run (Colab T4, 2026-10-09 01:03–01:11 UTC, 8 min):** 2490 answers, **probe 40/40**,
+  setup string **identical** to P5's (`Tesla T4 | torch 2.11.0+cu130 | transformers 5.18.0 |
+  Qwen/Qwen2.5-1.5B-Instruct@989aa7980e4cf806f80c7fef2b1adb7bc71aa306`). All five answer words are
+  single tokens (up 454, down 2923, none 6697, above 48432, below 53177) → one forward pass per
+  question. `load_judgements()` verified locally: 2490 rows, every fingerprint, one setup,
+  `probe_ok` True. Confidence range 0.38–1.00. Backed up with `git add -f`.
+* Answer counts (descriptive only — **no accuracy computed yet**, that is P6b):
 
-### Colab run — direction judge (P6a)
+  | Domain / question | up / above | down / below | none |
+  |---|---|---|---|
+  | Economy change | 222 | 186 | 64 |
+  | SocialGood change | 59 | 179 | 122 |
+  | Traffic change | 176 | 146 | 18 |
+  | Health_US level | 311 | 298 | 50 |
+  | Health_US change | 274 | 333 | 52 |
 
-1. colab.research.google.com → File → Upload notebook → `notebooks/p6_direction_judge.ipynb`.
-2. Runtime → Change runtime type → **T4 GPU**.
-3. Upload `results/qwen/judge_inputs.csv` to `/content` (or `MyDrive/textguard/`).
-4. Runtime → Run all (allow Drive in cell 2). Cell 5 loads the **pinned P5 revision**
-   `989aa79…`; cell 6 prints the probe: `40/40 … SAME SETUP CLASS AS P5` is the expected
-   result; anything else is recorded (the judge still runs on one setup) — report it.
-   2490 questions, est. ~10–20 min. On a disconnect: reconnect, run cells 1–6, then cell 7
-   resumes; a different torch / transformers / GPU makes cell 7 refuse to append (rename the
-   old CSV, Run all again).
-5. Put `p6_judge_predictions.csv` and `p6_judge_run_meta.json` into `results/qwen/`.
-6. Locally: `python -c "from src.textguard.text_direction import load_judgements as l; d = l(); print(len(d), d.probe_ok.iloc[0])"`
-   — verifies every fingerprint, completeness and one setup; expect `2490 True`.
+  (Counts over all distinct exported texts — real, every altered condition and the human-labelled
+  reports — so they are not a class balance of any one condition.)
 
-### P6b must (from §10b — do not improvise)
+### P6b — what to build (suggested: `src/analyze_p6.py` + `src/figures_p6.py`, tests in `tests/test_analyze_p6.py`)
 
-* Gate values per window: real + every condition, val + test, every w in the grid; A / B from
-  `results/p5_predictions.csv` (M3/M4 seed-mean) and `run_experiments.qwen_rows()` (M5).
-* Tune (w, τ) and clip's k on **val, Model 5, flipped, pooled**: FBR ≤ 10%, min DSS.
-* Test: the curve, the operating point, T1–T4 (Holm, m = 20), secondary MSE vs never_trust,
-  M3/M4 no-harm, exaggerated, COVID 2020 FBR, judge accuracy (human labels + known
-  `claimed_direction`), ablations (no-2020, Health_US vs change domains, soft, oracle judge).
-* Save every per-window gate / final to CSV (raw, like predictions).
+**Inputs — all on disk, nothing to re-run:**
+
+| What | Where | Join keys / notes |
+|---|---|---|
+| Judge answers | `load_judgements()` (`results/qwen/p6_judge_predictions.csv` + `p6_judge_run_meta.json` ✅ in git; `results/qwen/judge_inputs.csv` gitignored — regenerate with `python -m src.textguard.export_judge_inputs`, deterministic; the loader re-verifies every fingerprint) | `QwenJudge(domain, data=df)(text)` → `list[Claim]`; key = (domain, question, text.strip()). Economy already mapped deficit → balance (`direction`; `literal` = about the subject, for the human-label check) |
+| Texts per condition | `texts/<condition>.csv` (`src.attacks.common.load`) | domain, split, sample_id; `attacked`, `claimed_direction`, `real_direction`, `variant` |
+| Lookback windows (for the gate) | `results/qwen/qwen_inputs.csv` (`lookback` JSON, raw units; same 493 val + test windows) or `src.data.windows.split_windows` | domain, split, sample_id |
+| Models 3–4 A / B | `results/p5_predictions.csv` (seed-mean first: `metrics.seed_mean`); A = `empty` | model, domain, split, condition, sample_id; `y_true, y_last, train_std, attacked, claimed_direction` |
+| Model 5 A / B | `run_experiments.qwen_rows()` (3451 rows; `none` → `empty` already) | same schema; NaN = parse / scale failure |
+| P5 analysis helpers | `analyze_p5.load_long`, `wide`, `year_mask`, `_cell`, `_groups` | reuse, do not copy |
+| Human labels | `results/summary_directional_sample.csv` (50, `manual` ∈ up/down/none, about the literal subject) + `summary_directional_socialgood_energy.csv` (SocialGood rows only = supplementary 25) | judge text = `fact.strip()`, domain = row's domain, question `change`, compare `literal` |
+
+**Steps, in order:**
+
+1. **Gate table** (raw, save to `results/p6_gates.csv`, gitignored): for every window × condition
+   (real, flipped, exaggerated, + the controls) × split × w ∈ grid: claims (judge), evidence,
+   g. σ = `train_std`. Gate is model-independent. No text → g = 1.
+2. **Defended forecasts** per model: `baselines.textguard / clip / always_trust / never_trust`
+   on A, B. Save per-window finals (`results/p6_defended.csv`, gitignored).
+3. **Tune on val only** (§10b): M5, flipped, pooled; (w, τ) with val FBR ≤ 10% → min val DSS;
+   ties → lower FBR, smaller τ, smaller w. clip k likewise. Record the choice before opening test.
+4. **Test:** curve + operating point (pooled + per domain, Amendment 1), T1–T4 + Holm (assert
+   m = 20), secondary MSE / damage vs never_trust per domain, M3/M4 no-harm, exaggerated, COVID
+   2020 FBR, judge accuracy (human labels; known `claimed_direction` of attacked
+   flipped/exaggerated by domain × variant — Health_US level variant ↔ `level` answer, change
+   variant ↔ `change` answer; none-rate on cross_domain), ablations.
+5. Figures (curve), tables `results/summary_p6_*.csv`, fill the §9 "P6" tables, issue #10.
+
+**Definitions to get right (all in §10b):** FBR = share of **genuine** (real-text, has-report)
+windows with **applied** weight g′ < 0.5; DSS / Flip Rate with **both** forecasts through the
+same defence; block mode = g < τ → A; B NaN → A, A NaN → NaN (failure, reported).
 
 ### What exists and where (P5 artifact map, still valid)
 
@@ -107,6 +122,7 @@ Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 | **P5a: Models 1–4 × 7 conditions**, val + test, 3 seeds (41,412 rows) | `results/p5_predictions.csv` (units in `results/p5_units/`) | ❌ (raw) | `python -m src.run_experiments` (resumable; ~15 min CPU incl. MLflow) |
 | **P5a: Qwen inputs** — 986 real/none baseline rows (40 flagged as probes) + 2465 condition rows | `results/qwen/qwen_inputs_p5.csv` | ❌ | `python -m src.models.export_qwen_inputs --p5` |
 | **P5b: analysis tables + figures** | `results/summary_p5_*.csv` (14), `paper/figures/p5_dss.*`, `p5_flip_rate.*` | ✅ | `python -m src.analyze_p5` (~20 s; `--no-figures`) |
+| **P6a: judge answers** (2490, probe 40/40) | `results/qwen/p6_judge_predictions.csv` + `p6_judge_run_meta.json`; inputs `results/qwen/judge_inputs.csv` | ✅ answers backed up (`git add -f`); inputs ❌ | `notebooks/p6_direction_judge.ipynb` (§1a); inputs: `python -m src.textguard.export_judge_inputs` |
 | **P5a: Qwen predictions, 5 altered conditions** (2215 generated) | `results/qwen/p5_qwen_predictions.csv` + `p5_qwen_run_meta.json`; all 3451 Model 5 rows via `run_experiments.qwen_rows()` | ✅ backed up (`git add -f`) | `notebooks/p5_qwen_conditions.ipynb` (steps below) |
 
 ### What P5a must build
@@ -314,7 +330,7 @@ Related Work in P8, and re-run the arXiv search then.
 | `src/textguard/baselines.py` | P6a | ✅ always / never / clip / TextGuard soft + block; NaN rules (vectorised, for P6b) |
 | `src/textguard/textguard.py` | P6a | ✅ wraps any `predict(numbers, text)`; itself a Forecaster |
 | `src/textguard/export_judge_inputs.py` | P6a | ✅ 2490 questions / 1831 texts + 40 probes |
-| `notebooks/p6_direction_judge.ipynb` | P6a | ✅ built (`build_p6_judge_notebook.py`) — **awaiting Colab run** |
+| `notebooks/p6_direction_judge.ipynb` | P6a | ✅ run on Colab T4 2026-10-09 (2490 answers, 8 min, probe 40/40, P5's exact setup) |
 | `src/auditor.py` | P7 | ⚪ |
 | `app/` (Streamlit) | P7 | ⚪ |
 
@@ -1606,7 +1622,7 @@ the gate costs little genuine text; it cannot show "keeps the benefit of text" f
 | 22 | Lookback 8 < 12-month seasonality: DLinear can't see lag 12 (Traffic val 1.02 vs PatchTST 0.04). Traffic reports state **year-over-year** changes ("−1.6% vs January 2009") — exactly the information an 8-month window lacks. So Traffic is the domain most likely to show **genuine text use**, and the **strongest P5 attack target**. Lookback stays 8 to match the published setup | P5 | ⬜ Open — note when interpreting |
 | 23 | **P5b result: the COVID explanation is NOT supported.** Real text still hurts M3 on Traffic with every 2020 window removed (usage gap −0.546 full test → −0.591 [−0.884, −0.308] without 2020). The cause of M3's Traffic text harm is open (candidate, unchecked: 2021+ reports state year-over-year changes measured against 2020). Attack results are unchanged without 2020 (§9 P5.6a). Original task: report Traffic with and without 2020. Genuine, extreme COVID-era Traffic text hurts Model 3 on test (test MSE 1.04 → 1.60 with text) although text halves val error — the text head never saw year-over-year changes of that size. Same regime-shift theme as #10 | P5 | ✅ Analysis done — COVID hypothesis rejected; cause open |
 | 24 | Model 5 memorisation leakage: Qwen may have seen these statistics/reports in pretraining; numeric prompt is undated, report text still dated — paper limitation (§7b) | P8 | ⬜ Open |
-| 25 | Same-model circularity: Qwen generates P3 fakes and judges direction in P6 → validate the P6 judge on the human labels from `check_directional`, ideally also on non-Qwen fakes (§7b) | P6 | 🔵 Generation side removed (rule-based fakes, §8); still validate the P6 Qwen judge on the human labels |
+| 25 | Same-model circularity: Qwen generates P3 fakes and judges direction in P6 → validate the P6 judge on the human labels from `check_directional`, ideally also on non-Qwen fakes (§7b) | P6 | 🔵 Generation side removed (rule-based fakes, §8); judge run back (P6a) — validate on human labels + known `claimed_direction` in P6b |
 | 26 | Report figures ≠ series values (Economy goods vs goods-and-services; Traffic VMT estimates) — check Qwen errors for copying the report's number (§7b) | P5 | ✅ Checked: real 5.9% vs 4.1% chance; Economy 0%, Traffic 1.2%; Health_US copies are same-series and accurate |
 | 27 | Model 5 unit confusion: 3/80 Traffic real-text answers in billions (report's unit) → scale failures (NaN). Report the rate next to every Model 5 metric; consider it in P5 as a text-channel failure mode | P5 | ✅ P5b: 16 failures (14 test), all Traffic unit slips; not concentrated in fakes; NaN pairing drops 5/52 flipped windows — exploratory rescale shows all recoverable ones move toward the lie (§9 P5.1) |
 | 28 | Qwen run `revision` unrecorded (transformers 5 dropped `_commit_hash`); notebook now queries the Hub. Re-run Model 5 in P3 (attacked texts) will record it | P5a | ✅ P5 run recorded revision 989aa7980e4cf806f80c7fef2b1adb7bc71aa306 (loaded by that commit). P2.4's own snapshot stays unrecorded (paper: same model id; probe shows whether outputs reproduce) |
@@ -1618,6 +1634,16 @@ the gate costs little genuine text; it cannot show "keeps the benefit of text" f
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-09 — P6a: judge run back → **P6a complete**
+- Pre-registration **Amendment 1** committed alone (`01184db`) before any judge output:
+  per-domain FBR; expected higher on Traffic (year-over-year claims vs an 8-month window) and
+  Economy (month-over-month claims about goods + services vs a goods target)
+- Colab T4 judge run: 2490 answers in 8 min, probe 40/40, setup identical to P5's; all answer
+  words single tokens; `load_judgements()` verified locally (fingerprints, completeness, one
+  setup); predictions + meta backed up with `git add -f`
+- No accuracy, gate or defended forecast computed — that is P6b
+- **Next:** P6b (§1a)
 
 ### 2026-10-09 — P6a: TextGuard built, direction-judge job exported (awaiting Colab)
 - **P6 evaluation plan pre-registered (§10b) and pushed alone first** (`9838239`): trade-off

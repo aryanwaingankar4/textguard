@@ -1,0 +1,39 @@
+{
+ "model_id": "Qwen/Qwen2.5-1.5B-Instruct",
+ "revision": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+ "dtype": "float16",
+ "batch_size": 1,
+ "judge": "scored answers (teacher forcing), confidence renormalised over 3",
+ "answer_tokens": {
+  "up": [
+   454
+  ],
+  "down": [
+   2923
+  ],
+  "none": [
+   6697
+  ],
+  "above": [
+   48432
+  ],
+  "below": [
+   53177
+  ]
+ },
+ "max_new_tokens_probe": 24,
+ "max_new_tokens_judge": 4,
+ "gpu": "Tesla T4",
+ "torch": "2.11.0+cu130",
+ "transformers": "5.18.0",
+ "inputs": "judge_inputs.csv",
+ "started": "2026-10-09T01:03:37.185917+00:00",
+ "setup": "Tesla T4 | torch 2.11.0+cu130 | transformers 5.18.0 | Qwen/Qwen2.5-1.5B-Instruct@989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+ "probe_n": 40,
+ "probe_mismatches": 0,
+ "probe_ok": true,
+ "same_setup_string_as_p5": true,
+ "rows_expected": 2490,
+ "finished": "2026-10-09T01:11:20.587732+00:00",
+ "rows": 2490
+}
