@@ -19,9 +19,19 @@ Each text is wrapped in MM-TSFlib's prompt template before encoding, as MM-TSFli
 Truncation: BERT reads at most 512 tokens. Longer prompts are cut (``truncation=True``) and
 counted; ``token_stats`` reports how many texts that affects.
 
-Cache layout: ``cache/text_emb/<model>/<sha256 of the prompt>.npy`` (float32, shape (768,)),
+Cache layout: ``cache/text_emb/<model>/<sha256 of the prompt>.npy`` (float32, shape (dim,)),
 gitignored. Keyed by the exact prompt string, so a changed template or text is a cache miss,
 never a stale hit. BERT is loaded lazily, only on a miss.
+
+**R1 encoders (PROJECT_STATUS §10d).** R1 swaps the encoder of Models 3/4 and keeps everything
+else, so every encoder shares this cache layout and the same prompt template:
+
+* ``ProsusAI/finbert`` — BERT fine-tuned for financial sentiment, i.e. trained to care whether
+  things went up or down. Same architecture and recipe as BERT (``BertTextEncoder``, classifier
+  head dropped by ``AutoModel``), runs on the CPU. Revision pinned.
+* ``Qwen/Qwen2.5-1.5B-Instruct`` — Model 5's own LLM, 1536-d. Needs a GPU, so it is computed on
+  Colab and imported into the cache (``src/models/qwen_embeddings.py``); locally it is a
+  **cache-only** encoder (``CachedEncoder``) that raises on a miss instead of loading Qwen.
 """
 
 from __future__ import annotations
@@ -33,7 +43,15 @@ import numpy as np
 
 MODEL_NAME = "google-bert/bert-base-uncased"  # the id MM-TSFlib loads
 MAX_TOKENS = 512
-EMB_DIM = 768
+EMB_DIM = 768  # BERT's; other encoders: ``EMB_DIMS``
+
+# R1 encoders (§10d). Revisions pinned so "FinBERT" / "Qwen" always mean the same weights.
+FINBERT_NAME = "ProsusAI/finbert"
+FINBERT_REVISION = "4556d13015211d73dccd3fdd39d39232506f3e43"
+QWEN_NAME = "Qwen/Qwen2.5-1.5B-Instruct"
+QWEN_REVISION = "989aa7980e4cf806f80c7fef2b1adb7bc71aa306"  # = Model 5 (P5) and the P6 judge
+EMB_DIMS = {MODEL_NAME: EMB_DIM, FINBERT_NAME: 768, QWEN_NAME: 1536}
+REVISIONS = {MODEL_NAME: None, FINBERT_NAME: FINBERT_REVISION, QWEN_NAME: QWEN_REVISION}
 ROOT = Path(__file__).resolve().parents[2]
 CACHE_DIR = ROOT / "cache" / "text_emb"
 
@@ -53,13 +71,28 @@ def make_prompt(text: str | None) -> str:
     return PROMPT.format(text="" if text is None else text)
 
 
+def cache_dir_for(model_name: str, cache_dir: Path | str = CACHE_DIR) -> Path:
+    return Path(cache_dir) / model_name.replace("/", "__")
+
+
+def prompt_sha(prompt: str) -> str:
+    """The cache key — also the fingerprint the Qwen export/import checks (R1)."""
+    return hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+
+
 class BertTextEncoder:
-    """``encode(texts) -> (N, 768)`` float32, cached on disk. ``None`` encodes the null prompt."""
+    """``encode(texts) -> (N, dim)`` float32, cached on disk. ``None`` encodes the null prompt.
+
+    Any BERT-architecture model works (BERT, FinBERT): ``AutoModel`` loads the encoder body
+    and drops a classification head if the checkpoint has one.
+    """
 
     def __init__(self, model_name: str = MODEL_NAME, cache_dir: Path | str = CACHE_DIR,
-                 batch_size: int = 16):
+                 batch_size: int = 16, revision: str | None = None):
         self.model_name = model_name
-        self.cache_dir = Path(cache_dir) / model_name.replace("/", "__")
+        self.revision = revision if revision is not None else REVISIONS.get(model_name)
+        self.dim = EMB_DIMS.get(model_name, EMB_DIM)
+        self.cache_dir = cache_dir_for(model_name, cache_dir)
         self.batch_size = batch_size
         self._tok = None
         self._bert = None
@@ -69,8 +102,9 @@ class BertTextEncoder:
     def _load(self):
         if self._bert is None:
             from transformers import AutoModel, AutoTokenizer
-            self._tok = AutoTokenizer.from_pretrained(self.model_name)
-            self._bert = AutoModel.from_pretrained(self.model_name).eval()
+            self._tok = AutoTokenizer.from_pretrained(self.model_name, revision=self.revision)
+            self._bert = AutoModel.from_pretrained(self.model_name,
+                                                   revision=self.revision).eval()
             for p in self._bert.parameters():
                 p.requires_grad = False
         return self._tok, self._bert
@@ -94,11 +128,11 @@ class BertTextEncoder:
     # --- cache -----------------------------------------------------------------------
 
     def _path(self, prompt: str) -> Path:
-        return self.cache_dir / f"{hashlib.sha256(prompt.encode('utf-8')).hexdigest()}.npy"
+        return self.cache_dir / f"{prompt_sha(prompt)}.npy"
 
     def encode(self, texts) -> np.ndarray:
         prompts = [make_prompt(t) for t in texts]
-        out = np.empty((len(prompts), EMB_DIM), dtype=np.float32)
+        out = np.empty((len(prompts), self.dim), dtype=np.float32)
         missing: dict[str, list[int]] = {}
         for i, p in enumerate(prompts):
             path = self._path(p)
@@ -134,3 +168,26 @@ class BertTextEncoder:
         """Untruncated token count of each prompt (incl. [CLS]/[SEP])."""
         tok = self.tokenizer
         return np.array([len(tok(make_prompt(t), truncation=False)["input_ids"]) for t in texts])
+
+
+class CachedEncoder(BertTextEncoder):
+    """Cache-only encoder for embeddings computed elsewhere (Qwen on Colab, R1).
+
+    Same cache layout and ``encode`` as ``BertTextEncoder``, but a miss **raises** instead of
+    loading a model: Qwen2.5-1.5B does not run on this laptop, and a silently recomputed
+    embedding from another stack would mix two setups in one experiment.
+    """
+
+    def _embed(self, prompts: list[str]) -> np.ndarray:
+        raise KeyError(f"{len(prompts)} prompt(s) missing from the {self.model_name} cache "
+                       f"({self.cache_dir}); first: {prompts[0][:120]!r}. Run the Colab notebook "
+                       "and `python -m src.models.qwen_embeddings import` (PROJECT_STATUS §7c).")
+
+    def token_counts(self, texts) -> np.ndarray:
+        raise NotImplementedError("token counts for Qwen come from the Colab meta file")
+
+
+def get_encoder(model_name: str = MODEL_NAME, **kw) -> BertTextEncoder:
+    """The encoder for a model id: cache-only for Qwen (computed on Colab), BERT-style otherwise."""
+    cls = CachedEncoder if model_name == QWEN_NAME else BertTextEncoder
+    return cls(model_name, **kw)

@@ -69,13 +69,14 @@ fusion*? M5 confounds the two (§9 P5.7). **Design:** Models 3/4 with frozen BER
 (`ProsusAI/finbert`, a direction/sentiment-aware encoder that runs on CPU); everything else
 identical. Full design, family and readings: **§10d — fixed before any R1 output.**
 
-1. [ ] Pre-registration §10d committed **alone** and pushed.
-2. [ ] Mechanism check on **val**, BERT + FinBERT (FinBERT embedded locally; no training):
-       flip-vs-swap ratio → `results/summary_r1_mechanism_val.csv`.
-3. [ ] Export every text the heads need (train + val + test, all conditions) →
+1. [x] Pre-registration §10d committed **alone** and pushed (`17d2733`).
+2. [x] Mechanism check on **val**, BERT + FinBERT (FinBERT embedded locally; no training):
+       flip-vs-swap ratio → `results/summary_r1_mechanism_val.csv`. **FinBERT direction-aware
+       (3.08× BERT); BERT 0.209** (§9 R1).
+3. [x] Export every text the heads need (train + val + test, all conditions) →
        `results/qwen/r1_embed_inputs.csv`; Colab notebook `notebooks/r1_qwen_embeddings.ipynb`
        (P5's pinned revision + the 40-prompt probe). **Colab steps: §7c.**
-4. [ ] Colab run → `r1_qwen_embeddings.npz` + `r1_qwen_embed_meta.json` back into
+4. [ ] ⏸ **Waiting for Aryan's Colab run** → `r1_qwen_embeddings.npz` + `r1_qwen_embed_meta.json` back into
        `results/qwen/`; import into the cache (`python -m src.models.qwen_embeddings import`,
        verifies every fingerprint); back up with `git add -f`.
 5. [ ] Mechanism check for Qwen (val) → reading rule R1-b vs R1-c (§10d) fixed by it.
@@ -116,7 +117,7 @@ identical. Full design, family and readings: **§10d — fixed before any R1 out
 | Judge inputs (for the P6 loader's fingerprint check) | `python -m src.textguard.export_judge_inputs` | seconds |
 | P6 tables | `python -m src.analyze_p6 judge`, `tune`, `test` (test refuses to run without `summary_p6_frozen.json`) | ~1 min |
 | P6 figures | `python -m src.figures_p6` | seconds |
-| Tests | `python -m pytest -q` (268) | ~45 s |
+| Tests | `python -m pytest -q` (277) | ~45 s |
 
 Model 5 / judge answers: `results/qwen/*_predictions.csv` + `*_run_meta.json` (in git); the
 Colab notebooks in `notebooks/` are only needed to re-generate them.
@@ -276,6 +277,10 @@ Related Work in P8, and re-run the arXiv search then.
 | `src/textguard/export_judge_inputs.py` | P6a | ✅ 2490 questions / 1831 texts + 40 probes |
 | `notebooks/p6_direction_judge.ipynb` | P6a | ✅ run on Colab T4 2026-10-09 (2490 answers, 8 min, probe 40/40, P5's exact setup) |
 | `src/analyze_p6.py`, `src/figures_p6.py` | P6b | ✅ judge validation → val tuning (freeze file) → test once; Holm family asserted = 20; figures from saved tables (9 tests in `test_analyze_p6.py`) |
+| `src/models/text_encoder.py` (`get_encoder`, `CachedEncoder`) | R1 | ✅ FinBERT (pinned revision) + cache-only Qwen encoder; BERT path unchanged |
+| `src/models/qwen_embeddings.py` | R1 | ✅ export (1994 prompts, all BERT-cache hits) / verified import |
+| `notebooks/r1_qwen_embeddings.ipynb` | R1 | ✅ built (`build_r1_qwen_embeddings_notebook.py`); probe + pinned revision — **awaiting Colab run** |
+| `src/analyze_r1.py` | R1 | ✅ FinBERT embedding + val mechanism check; analysis against §10d to come (9 tests in `test_r1.py`) |
 | `src/auditor.py` | P7 | ⚪ |
 | `app/` (Streamlit) | P7 | ⚪ |
 
@@ -862,6 +867,49 @@ the report. Health_US's 6.1% are genuine copies, and harmless: its reports quote
 value of this same series ("ILI was 2.1%"), so those predictions score test MSE 0.029. The
 Economy/Traffic risk (copying a goods-and-services or differently-estimated figure) did not
 materialise (0% / 1.2%). → issue #26 closed.
+
+## 7c. R1 encoders — FinBERT (local) and Qwen embeddings (Colab)
+
+Pre-registration: §10d. Code: `src/models/text_encoder.py` (`get_encoder`: BERT / FinBERT =
+`BertTextEncoder`, Qwen = cache-only `CachedEncoder`), `src/models/qwen_embeddings.py`
+(export / import), `notebooks/build_r1_qwen_embeddings_notebook.py` →
+`notebooks/r1_qwen_embeddings.ipynb`, `src/analyze_r1.py` (FinBERT embedding, val mechanism
+check). Tests: `tests/test_r1.py` (notebook executed with a fake model; import refuses
+missing / extra / non-finite / wrong-revision / conflicting files).
+
+**Export** (`python -m src.models.qwen_embeddings export`, 2026-10-09): **1994 distinct
+prompts** — the MM-TSFlib template around every train / val / test window report and every
+val + test condition text (1993), plus the null prompt (template with no text; the heads never
+use it, P5's similarity function encodes it for windows whose comparison text is missing) —
+and P5's 40 probe prompts → `results/qwen/r1_embed_inputs.csv` (1.2 MB, gitignored). **All
+1994 are BERT-cache hits** — the export is exactly the set Models 3/4 read.
+
+**FinBERT** (`python -m src.analyze_r1 embed-finbert`, CPU, 14 min): the same 1993 texts (+ the
+null prompt) cached in `cache/text_emb/ProsusAI__finbert/`; `classifier.*` weights dropped by
+`AutoModel` as intended.
+
+**Colab steps** (colab.research.google.com directly — issue #5):
+
+1. Locally: `python -m src.models.qwen_embeddings export` (already done; re-run only if
+   `texts/` changed).
+2. Open **colab.research.google.com → File → Upload notebook** →
+   `notebooks/r1_qwen_embeddings.ipynb`.
+3. **Runtime → Change runtime type → T4 GPU** → Save.
+4. Upload `results/qwen/r1_embed_inputs.csv`: Files panel (left) → upload to `/content`
+   (or put it in `MyDrive/textguard/` if you mount Drive — recommended, results then survive
+   a disconnect).
+5. **Runtime → Run all.** Cell 2 asks for Drive permission. Expected: cell 5 prints
+   `probe: 40/40 … SAME SETUP CLASS AS P5 (certified)`; cell 6 embeds 1993 prompts (a few
+   minutes on a T4 — 1994 prompts); cell 7 prints `deterministic re-embedding (20 prompts): True`.
+   If it disconnects: reconnect, re-run cells 1–5, then cell 6 resumes (saves every 200).
+   If the probe is not 40/40: **let it finish anyway** — the mismatch is recorded in the meta
+   file and reported (as in P5/P6); tell Claude before importing.
+6. Cell 8 downloads `r1_qwen_embeddings.npz` (~12 MB) and `r1_qwen_embed_meta.json` → put both
+   in `results/qwen/`.
+7. Locally: `python -m src.models.qwen_embeddings import` (verifies every fingerprint, the
+   revision, shape and finiteness, then fills `cache/text_emb/Qwen__Qwen2.5-1.5B-Instruct/`),
+   then back up: `git add -f results/qwen/r1_qwen_embeddings.npz results/qwen/r1_qwen_embed_meta.json`.
+8. `python -m src.analyze_r1 mechanism` → adds Qwen to the val mechanism table (§9 R1).
 
 ## 8. Attack module and fake-text validation (P3)
 
@@ -1532,6 +1580,32 @@ re-evaluated on this test set** — that would turn the test split into a tuning
   Time-MMD period), **never on this test split.** Its design may use what P6 learned; its
   evaluation may not reuse the data that taught it.
 
+### R1 results — LLM vs fusion (pre-registration §10d)
+
+#### 0. Mechanism check on VAL — before any head is trained (2026-10-09)
+
+`python -m src.analyze_r1 mechanism` → `results/summary_r1_mechanism_val.csv`. P5's
+`embedding_similarity` on **val**, attacked windows with a real report; each encoder
+standardised with its own train-text statistics. `rel_distance` = how far the fake moves the
+head's input as a fraction of swapping in a different (shuffled) report.
+
+| Encoder | Flipped, pooled (n 133): cos std | rel_distance mean (median) | × BERT | §10d rule | Exaggerated (n 131): rel_distance |
+|---|---|---|---|---|---|
+| BERT | 0.953 | 0.209 (0.177) | 1.00 | — (reference) | 0.210 |
+| **FinBERT** | **0.609** | **0.644** (0.597) | **3.08** | **direction-aware** | 0.218 |
+| Qwen2.5-1.5B | — | — | — | ⏸ pending Colab embeddings | — |
+
+Per domain, flipped (BERT → FinBERT): Economy 0.170 → 0.713 · SocialGood 0.158 → 0.649 ·
+Traffic 0.346 → 0.580 · Health_US 0.182 → 0.631. BERT's val value matches its P5 test value
+(0.20). Reading (descriptive, no head trained):
+* **FinBERT's vector does carry the direction** — a flip moves its head input ~⅔ as far as a
+  different report, in every domain; BERT's ~⅕. So R1 tests late fusion on an encoder that can
+  "see" the lie, independently of Qwen.
+* **Neither encoder sees magnitude:** exaggeration moves both ~0.21 (FinBERT is sentiment-
+  trained, so ×3 the change is the same sentiment).
+* Qwen's row decides between readings R1-b and R1-c (§10d) and is filled when the embeddings
+  are imported.
+
 ### P7.6 — FNSPID (optional)
 | Model | DSS before | DSS after | Flip before | Flip after |
 |---|---|---|---|---|
@@ -1938,6 +2012,23 @@ labelled so (e.g. other pooling, chat template, a larger Qwen — that is R2).
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-09 — R1 started: research extensions planned, R1 pre-registered, Qwen embedding job built
+- Research extensions R1–R7 added before P8 (PHASES.md, phase board, §1a, CLAUDE.md §14) with
+  their rules (`cfac4de`)
+- **R1 pre-registered (§10d) and pushed alone** (`17d2733`): M3-Q/M4-Q (Qwen2.5-1.5B embeddings,
+  M5's revision), M3-F/M4-F (FinBERT); val mechanism rule (direction-aware ⇔ ≥ 2× BERT);
+  Holm m = 108; readings R1-a/b/c
+- Encoders generalised (`get_encoder`; BERT path unchanged); FinBERT embedded locally (1993 texts)
+- **Val mechanism check: FinBERT direction-aware (rel_distance 0.644 = 3.08× BERT's 0.209)**;
+  neither encoder sees exaggeration (~0.21)
+- Qwen export (1994 prompts, all BERT-cache hits) + `notebooks/r1_qwen_embeddings.ipynb`
+  (pinned revision, P5 probe, resumable, determinism re-check) + verified import; Colab steps §7c
+- **Broke:** the mechanism check needed the null prompt (template, no text), which the first
+  export lacked → added to the export before any Colab run; `np.load` kept the file open on
+  Windows so `os.replace` failed in the notebook test → context managers
+- No head trained, nothing evaluated (as instructed)
+- **Next:** Aryan runs the Colab notebook (§7c) → import → Qwen mechanism row → train heads
 
 ### 2026-10-09 — P6b: judge validated, tuned on val, test evaluated once → **P6 complete (exit criterion partly met)**
 - Step 1 judge validation: 68% vs human labels (Health_US 17% — change question reads the level

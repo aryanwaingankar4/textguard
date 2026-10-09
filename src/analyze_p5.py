@@ -358,7 +358,7 @@ def damage(w: dict, base_mask=None) -> pd.DataFrame:
 
 # --- mechanism: what the late-fusion text heads actually see ---------------------------------
 
-def embedding_similarity(split: str = "test") -> pd.DataFrame:
+def embedding_similarity(split: str = "test", encoder_name: str | None = None) -> pd.DataFrame:
     """How different is a fake report from the real one *to BERT*? (exploratory, Models 3–4)
 
     Models 3–4 read text only through one mean-pooled BERT vector, z-scored per dimension with
@@ -374,12 +374,15 @@ def embedding_similarity(split: str = "test") -> pd.DataFrame:
     ``rel_distance`` = ‖z_cond − z_real‖ / ‖z_shuffled − z_real‖: how far the condition moves
     the head's input, as a fraction of swapping in a different report. Embeddings come from
     the on-disk cache only; a cache miss raises (BERT must not be loaded here).
+
+    ``encoder_name`` (R1, §10d): any cached encoder — FinBERT, Qwen — with its *own* train-text
+    statistics, as that encoder's heads would see it. Default = BERT, the P5 table.
     """
     from src.data.splits import load_splits
     from src.data.windows import lookback_for, split_windows
     from src.models.late_fusion import _clean, _encoder
     from src.models.text_encoder import MODEL_NAME
-    enc = _encoder(MODEL_NAME)
+    enc = _encoder(encoder_name or MODEL_NAME)
     texts = {c: common.load(c) for c in ("real", "shuffled", "cross_domain") + ATTACKS}
 
     def emb(cond, dom):
@@ -410,7 +413,7 @@ def embedding_similarity(split: str = "test") -> pd.DataFrame:
                                  cos_std=cos(zr, z(e)),
                                  rel_distance=np.linalg.norm(z(e) - zr, axis=1) / d_shuf))
     if enc.is_loaded:
-        raise RuntimeError("BERT was loaded — an embedding was missing from the cache")
+        raise RuntimeError(f"{enc.model_name} was loaded — an embedding was missing from the cache")
     df = pd.DataFrame(rows)
     out = []
     for (a, pair), g in df.groupby(["attack", "pair"], sort=False):

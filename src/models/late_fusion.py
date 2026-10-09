@@ -66,7 +66,7 @@ from torch import nn
 from src.data.windows import Windows
 from src.models.dlinear import DLinearForecaster
 from src.models.patchtst import PatchTSTForecaster
-from src.models.text_encoder import EMB_DIM, MODEL_NAME, BertTextEncoder
+from src.models.text_encoder import EMB_DIM, MODEL_NAME, BertTextEncoder, get_encoder
 
 PROMPT_WEIGHT = 0.1  # MM-TSFlib scripts/week_health.sh (its run.py default is 0.01)
 MLP_DROPOUT = 0.3    # MM-TSFlib MLP(..., dropout_rate=0.3)
@@ -77,7 +77,7 @@ _ENCODERS: dict[str, BertTextEncoder] = {}
 def _encoder(name: str) -> BertTextEncoder:
     """One encoder per process: the cache is on disk, BERT is loaded at most once."""
     if name not in _ENCODERS:
-        _ENCODERS[name] = BertTextEncoder(name)
+        _ENCODERS[name] = get_encoder(name)
     return _ENCODERS[name]
 
 
