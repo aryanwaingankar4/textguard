@@ -78,9 +78,9 @@ hold beyond one 1.5B model and one prompt wording? PHASES.md R2.
        conditions (at least real / empty / flipped / exaggerated; the screening controls if
        the T4 budget allows), the family (S / A1 / A2 per new model, comparisons vs M5) and the
        readings.
-2. [ ] Export (same windows and texts as P5's `export_qwen_inputs --p5`), build a Colab notebook
-       per model with a reproducibility probe and a pinned revision; parse / scale failures
-       recorded as for M5 (§7b); the memorisation caveat (#24) applies to every LLM.
+2. [x] Notebooks built (2026-10-09, §7d): P5's input table reused (no new export); three
+       notebooks (M5 prompt variants, Phi-3.5, Qwen2.5-7B 4-bit), pinned revisions, probe /
+       smoke test, test-first, resumable across sessions; loader `r2_forecasters.load_r2`.
 3. [ ] Colab runs → back up predictions with `git add -f` → analysis against §10e → §9 "R2"
        → results section into `paper/sections/`.
 
@@ -125,7 +125,7 @@ hold beyond one 1.5B model and one prompt wording? PHASES.md R2.
 | P6 tables | `python -m src.analyze_p6 judge`, `tune`, `test` (test refuses to run without `summary_p6_frozen.json`) | ~1 min |
 | P6 figures | `python -m src.figures_p6` | seconds |
 | R1 heads (train → infer → analyse) | `python -m src.models.train_r1`, `python -m src.run_r1`, `python -m src.analyze_r1 test` (Qwen embeddings from the backed-up `.npz` via `python -m src.models.qwen_embeddings import`; FinBERT: `python -m src.analyze_r1 embed-finbert`) | ~25 min + ~15 min + ~2 min CPU |
-| Tests | `python -m pytest -q` (280) | ~45 s |
+| Tests | `python -m pytest -q` (300) | ~50 s |
 
 Model 5 / judge answers: `results/qwen/*_predictions.csv` + `*_run_meta.json` (in git); the
 Colab notebooks in `notebooks/` are only needed to re-generate them.
@@ -927,6 +927,57 @@ identical to P5's (`Tesla T4 | torch 2.11.0+cu130 | transformers 5.18.0 | …@98
 setup class as Model 5, certified; first 20 re-embedded bit-identically; tokens median 113, max
 622 (no truncation). **Import:** all 1994 fingerprints, the revision, shape (1994 × 1536,
 float32) and finiteness verified; 1994 cache files written.
+
+## 7d. R2 forecasters — Qwen2.5-7B, Phi-3.5, M5 prompt variants (Colab)
+
+Pre-registration: §10e (`376382a`). Code: `src/models/r2_prompts.py` (variants p5 / c1 / c2 /
+sk; p5 = M5's prompt byte-for-byte), `notebooks/build_r2_notebooks.py` → three notebooks,
+`src/models/r2_forecasters.py` (`load_run` / `load_r2`: pins, prompt fingerprints, one setup per
+file, complete test split, M5 reuse, off-scale rule), `tests/test_r2.py` (notebook cells
+executed with a fake model: resume, test-first, val optional, probe pass / fail, Phi fallback,
+loader refusals).
+
+**Input:** P5's table `results/qwen/qwen_inputs_p5.csv` (3451 rows = 493 windows × 7 conditions;
+a fresh `export_qwen_inputs --p5` is byte-identical, sha256 `89260e2a…`). No new export.
+**Checked locally before any run:** the `p5` variant reproduces all 3201 stored M5 fingerprints;
+c1 / sk give 627 prompts identical to M5's (the no-report ones), c2 none.
+
+| Notebook | Model @ revision | Precision | Rows to generate | Output (`results/qwen/`) |
+|---|---|---|---|---|
+| `r2_m5_prompts.ipynb` | Qwen2.5-1.5B @ 989aa79 (= M5) | fp16 | ~9,700 (3 variants; ~13,100 if the probe fails) | `r2_m5prompts_fp16_predictions.csv` + `_run_meta.json` |
+| `r2_phi35.ipynb` | Phi-3.5-mini @ 2fe1924 | fp16 (nf4 fallback) | 3451 | `r2_phi35_fp16_*` (or `r2_phi35_nf4_*`) |
+| `r2_qwen7b.ipynb` | Qwen2.5-7B @ a09a354 | 4-bit NF4 | 3451 | `r2_qwen7b_nf4_*` |
+
+Identical prompts inside a run are answered once, so real GPU calls are fewer than rows.
+
+**Colab steps (colab.research.google.com directly — issue #5), per notebook:**
+
+1. Put `results/qwen/qwen_inputs_p5.csv` in **`MyDrive/textguard/`** once (Drive keeps it across
+   sessions; all three notebooks read it from there).
+2. **File → Upload notebook** → the notebook. **Runtime → Change runtime type → T4 GPU**.
+3. **Runtime → Run all.** Allow Drive access (cell 2). Check:
+   * cell 4 prints one flipped prompt per variant;
+   * cell 6: M5 notebook → `probe: 40/40 … SAME SETUP CLASS AS P5`; Phi / 7B → 20 answers that
+     look like numbers and `smoke test: k/20 unparseable` with k small. **Phi only:** if it stops
+     with "PRE-REGISTERED FALLBACK", set `QUANT = "nf4"` in cell 0, **Runtime → Restart session**,
+     Run all. **7B:** if it stops with "Too many unparseable answers", stop and tell Claude;
+   * cell 7 runs **test rows first**, then val, printing progress every 100 rows;
+   * cell 8 prints `TEST COMPLETE | VAL …` and `determinism: 20/20`.
+4. **Disconnects / daily GPU limit:** every 10 rows are already in Drive. Later (even the next
+   day): upload the notebook again if needed, Run all — it resumes. If the quota keeps running out
+   **during val**, set `SPLITS = ["test"]` in cell 0 and Run all: cell 8 then closes the run on the
+   test split (val is optional, §10e).
+5. Cell 9 downloads both files (also in `MyDrive/textguard/`) → put them in `results/qwen/`.
+6. **Runtime → Disconnect and delete runtime** before opening the next notebook (one free GPU).
+7. If cell 5 says the meta file "was written by another setup": do **not** delete anything — tell
+   Claude (one file = one setup; a Colab stack change mid-run needs a decision).
+
+**Order:** `r2_m5_prompts` (central to R2-c / R2-d, fastest per row) → `r2_phi35` → `r2_qwen7b`
+(slowest; most likely to span two sessions).
+
+**Locally afterwards:** `python -c "from src.models.r2_forecasters import load_r2; print(load_r2().groupby(['model','split']).size())"`
+verifies every file; back up with `git add -f results/qwen/r2_*`; then the R2 analysis
+(`src/analyze_r2.py`, written after the CSVs arrive) against §10e.
 
 ## 8. Attack module and fake-text validation (P3)
 
@@ -2354,7 +2405,9 @@ sampling, few-shot prompts, other model sizes).
 - SESOI: DSS 0.05σ, Flip Rate 5 pp, real-text MSE 10%; four Holm families (a 44, b 44, c 58, d 54)
 - Skeptical prompt compared with TextGuard v1 (frozen) on DSS, flips, real-text MSE; memorisation
   check (unexplained exact matches vs a y_{t+1} placebo) for every model
-- No R2 output exists. Next: export + Colab notebooks
+- Notebooks + loader built (§7d); tests run the notebook cells with a fake model (two bugs caught:
+  the prompt module's `VARIANTS` shadowed the run config; raw answers read back as numbers)
+- No R2 output exists. Next: Colab runs (m5 prompts → Phi → 7B), then `analyze_r2`
 
 ### 2026-10-09 — R1: Qwen embeddings back, heads trained, test analysed → **R1 complete**
 - Colab: probe 40/40, P5's setup, deterministic; import verified; backed up (`d50be29`)
