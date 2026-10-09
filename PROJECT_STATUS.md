@@ -1559,6 +1559,25 @@ text. TextGuard's target scenario — a forecaster that both gains from text and
 by it — needs a larger LLM forecaster; that is future work. P6 can show the trade-off and that
 the gate costs little genuine text; it cannot show "keeps the benefit of text" for Model 5.
 
+#### Amendment 1 — 2026-10-09, added before any judge output existed
+
+> Written after P6a was built and the judge job exported (`60f10ee`), **before the Colab judge
+> run**: no judge answer, gate value or defended forecast existed on any split. It adds stated
+> expectations; it changes no definition, grid, selection rule or hypothesis above.
+
+* **FBR is reported per domain** (pooled + Economy, SocialGood, Traffic, Health_US), at the
+  val-chosen operating point and along the curve — not only pooled.
+* **Expected: FBR higher on Traffic.** Traffic reports state **year-over-year** changes
+  ("−1.6% vs January 2009"), but TextGuard's change evidence is the trend over the 8-month
+  lookback, which cannot verify a year-over-year claim (the window never contains lag 12,
+  issue #22). Genuine text can therefore disagree with a seasonal 8-month trend and be gated.
+* **Expected: FBR elevated on Economy too.** Its reports state **month-over-month** changes in a
+  **different series** — the goods-*and-services* deficit — while the target is the goods
+  balance (§7b), so a genuine claim need not match the target's own recent trend.
+* If either expectation holds, it is reported as a **known mismatch between the claim's
+  reference frame and the evidence TextGuard can see**, not explained away; if it does not
+  hold, that is reported too.
+
 ### 10c. Open issues
 
 | # | Issue | Phase | Status |
