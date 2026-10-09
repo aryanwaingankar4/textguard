@@ -4,7 +4,7 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** P8 — paper (P0–P6 complete; P7 optional)
+**Current phase:** R1 — LLM vs fusion (P0–P6 complete; research extensions R1–R7 before P8; P7 optional)
 **Last updated:** 2026-10-09
 
 > 👤 **Solo project.** All work by Aryan.
@@ -23,22 +23,31 @@
 | P4 | Metrics module — DSS, Flip Rate, etc. | ✅ | ✅ Done |
 | P5 | Experiment runner — screening + attack | ✅ | ✅ Done (P5a + P5b) |
 | P6 | TextGuard defense | ✅ Core | ✅ Done — exit criterion **partly met** (§9 P6.8) |
+| **R1** | LLM vs fusion — late-fusion heads on Qwen embeddings (+ FinBERT) | ✅ | 🔵 **In progress** (§1a) |
+| R2 | Generality — Qwen2.5-7B (4-bit), Phi-3.5-mini; prompt variants for M5 | ✅ | ⚪ Pending |
+| R3 | Adaptive attacks on TextGuard v1 | ✅ | ⚪ Pending |
+| R4 | TextGuard v2 — val-developed, tested once on held-out domains | ✅ | ⚪ Pending |
+| R5 | Realistic attacks — other-family LLM fakes + human plausibility study | ✅ | ⚪ Pending |
+| R6 | Drift monitor for fake-report campaigns (RQ4; replaces P7.4) | ✅ | ⚪ Pending |
+| R7 | Reproducibility — reproduce script, pinned env, data/model cards, ethics | ✅ | ⚪ Pending |
 | P7 | Auditor, demo, extras | ⬜ Optional | ⚪ Pending |
-| P8 | Paper & release | ✅ | ⚪ Pending |
+| P8 | Paper & release | ✅ | ⚪ Pending (after R7) |
 
 Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 
-**P0–P6 + P8 = complete paper. P7 is upside.**
+**P0–P6 + P8 = complete paper.** Research extensions R1–R7 run before P8 (decided 2026-10-09,
+PHASES.md "Research extensions"). P7 is upside.
 
 ---
 
-## 1a. ▶ START HERE — handoff for the next session (P8 — paper; P7 optional)
+## 1a. ▶ START HERE — handoff for the next session (R1 — LLM vs fusion)
 
-> Written 2026-10-09 at the end of P6. Replace this section at the end of P8 (or of a P7 item).
+> Written 2026-10-09 when the research extensions were added. Replace this section at the end
+> of R1 (then for R2, …, R7, then P8).
 
-**P0–P6 are complete. P0–P6 + P8 = a complete paper.** Next is **P8** (PHASES.md §8). P7 items
-are optional upside; do them only if wanted, in the order PHASES.md / CLAUDE.md §15 give
-(drop order if momentum runs low: FNSPID → CI → drift monitor → Model 6 → audit report → demo).
+**P0–P6 are complete. Before the paper, research extensions R1–R7 run in order**
+(PHASES.md "Research extensions"; decided by Aryan 2026-10-09), then **P8**. P7 stays optional
+(R6 replaces P7.4, the drift monitor).
 
 ### The results, one line per phase (details and every number in §9)
 
@@ -52,7 +61,67 @@ are optional upside; do them only if wanted, in the order PHASES.md / CLAUDE.md 
   defence. Contribution = the failure decomposition (judge on Health_US, evidence reference
   frame on Traffic/Economy — the latter predicted by Amendment 1). §9 "P6 results", parts 0–10.
 
-### P8 — what to do (PHASES.md §8)
+### R1 — what to do (pre-registration: §10d)
+
+**Question:** is Model 5's vulnerability caused by the LLM's *text understanding* or by *early
+fusion*? M5 confounds the two (§9 P5.7). **Design:** Models 3/4 with frozen BERT replaced by
+(a) Qwen2.5-1.5B-Instruct embeddings — the same model and revision as M5 — and (b) FinBERT
+(`ProsusAI/finbert`, a direction/sentiment-aware encoder that runs on CPU); everything else
+identical. Full design, family and readings: **§10d — fixed before any R1 output.**
+
+1. [ ] Pre-registration §10d committed **alone** and pushed.
+2. [ ] Mechanism check on **val**, BERT + FinBERT (FinBERT embedded locally; no training):
+       flip-vs-swap ratio → `results/summary_r1_mechanism_val.csv`.
+3. [ ] Export every text the heads need (train + val + test, all conditions) →
+       `results/qwen/r1_embed_inputs.csv`; Colab notebook `notebooks/r1_qwen_embeddings.ipynb`
+       (P5's pinned revision + the 40-prompt probe). **Colab steps: §7c.**
+4. [ ] Colab run → `r1_qwen_embeddings.npz` + `r1_qwen_embed_meta.json` back into
+       `results/qwen/`; import into the cache (`python -m src.models.qwen_embeddings import`,
+       verifies every fingerprint); back up with `git add -f`.
+5. [ ] Mechanism check for Qwen (val) → reading rule R1-b vs R1-c (§10d) fixed by it.
+6. [ ] Train the four heads (P2.2 protocol, val-tuned lr, 3 seeds) and run all 7 conditions.
+7. [ ] Analysis against the R1 family (m = 108) → §9 "R1 results"; results section in `paper/`.
+
+**Do not train or evaluate any R1 head before step 4 is done** (Aryan, 2026-10-09).
+
+### Rules for every research extension (R1–R7; also in CLAUDE.md §14 and PHASES.md)
+
+* **Pre-registered and committed alone** (pushed) before any of its test results exist; later
+  changes are dated amendments, reported as deviations.
+* **New models and new attacks may be evaluated on the existing test set; already-reported
+  methods — Models 1–5 and TextGuard v1 at its frozen P6 settings — are never changed** (re-run
+  on new inputs, never re-tuned or redefined).
+* **R4's held-out domains are chosen and frozen before any model output exists on them**; their
+  data checks (directional %, timing) are allowed before freezing.
+* **Write each extension's results section into `paper/` as it finishes.**
+* **Null results are reported, not dropped.**
+
+### Rules a fresh session must not break
+
+* **Never re-evaluate a modified TextGuard (or any new defence setting) on this test split.**
+  Improvements (future work, §9 P6.10) need fresh data — FNSPID (P7.6) or a later period.
+* No result goes into the paper before it exists in §9 / `results/`. Pooled = headline only
+  where §9 says so; for P6, **per domain is primary**.
+* DSS ≈ 0 on Models 3–4 is a finding, not a failure (CLAUDE.md §4a). Do not claim the
+  screening (Sridhar et al.) or "first plug-in fusion control" (CFA) as ours (CLAUDE.md §17).
+* Ethics: generated fakes are research-only; label them in every released file.
+
+### Regenerate everything (nothing needs a GPU — Qwen answers are backed up in git)
+
+| What | Command | Time |
+|---|---|---|
+| Texts (7 conditions) | `python -m src.attacks.generate` | seconds |
+| Models 1–4 predictions | `python -m src.models.train_baselines`, then `python -m src.run_experiments` | ~1 h + ~15 min CPU |
+| P5 tables + figures | `python -m src.analyze_p5` | ~20 s |
+| Judge inputs (for the P6 loader's fingerprint check) | `python -m src.textguard.export_judge_inputs` | seconds |
+| P6 tables | `python -m src.analyze_p6 judge`, `tune`, `test` (test refuses to run without `summary_p6_frozen.json`) | ~1 min |
+| P6 figures | `python -m src.figures_p6` | seconds |
+| Tests | `python -m pytest -q` (268) | ~45 s |
+
+Model 5 / judge answers: `results/qwen/*_predictions.csv` + `*_run_meta.json` (in git); the
+Colab notebooks in `notebooks/` are only needed to re-generate them.
+
+### P8 — what to do after R7 (PHASES.md §8; kept from the P6 handoff)
 
 1. **Related Work first** — from CLAUDE.md §4a / §16, one "how we differ" sentence per
    competing paper. **Re-run the arXiv search before finalising** (CLAUDE.md: the field
@@ -82,31 +151,7 @@ are optional upside; do them only if wanted, in the order PHASES.md / CLAUDE.md 
    `predict(numbers, text)`, results, licence), MIT licence, fake-text benchmark labelled
    research-only (CLAUDE.md §14 ethics), tag, **arXiv as soon as the draft is solid**, venue.
 7. **Course deliverables** (§8.4): PPT with real numbers, report, viva prep (worked example).
-
-### Rules a fresh session must not break
-
-* **Never re-evaluate a modified TextGuard (or any new defence setting) on this test split.**
-  Improvements (future work, §9 P6.10) need fresh data — FNSPID (P7.6) or a later period.
-* No result goes into the paper before it exists in §9 / `results/`. Pooled = headline only
-  where §9 says so; for P6, **per domain is primary**.
-* DSS ≈ 0 on Models 3–4 is a finding, not a failure (CLAUDE.md §4a). Do not claim the
-  screening (Sridhar et al.) or "first plug-in fusion control" (CFA) as ours (CLAUDE.md §17).
-* Ethics: generated fakes are research-only; label them in every released file.
-
-### Regenerate everything (nothing needs a GPU — Qwen answers are backed up in git)
-
-| What | Command | Time |
-|---|---|---|
-| Texts (7 conditions) | `python -m src.attacks.generate` | seconds |
-| Models 1–4 predictions | `python -m src.models.train_baselines`, then `python -m src.run_experiments` | ~1 h + ~15 min CPU |
-| P5 tables + figures | `python -m src.analyze_p5` | ~20 s |
-| Judge inputs (for the P6 loader's fingerprint check) | `python -m src.textguard.export_judge_inputs` | seconds |
-| P6 tables | `python -m src.analyze_p6 judge`, `tune`, `test` (test refuses to run without `summary_p6_frozen.json`) | ~1 min |
-| P6 figures | `python -m src.figures_p6` | seconds |
-| Tests | `python -m pytest -q` (268) | ~45 s |
-
-Model 5 / judge answers: `results/qwen/*_predictions.csv` + `*_run_meta.json` (in git); the
-Colab notebooks in `notebooks/` are only needed to re-generate them.
+8. **R1–R7 results** go in from their own `paper/` sections (written as each finishes) and §9.
 
 ---
 
@@ -118,6 +163,7 @@ Colab notebooks in `notebooks/` are only needed to re-generate them.
 | Category | Cybersecurity, SDG 16 |
 | Team | **Solo — Aryan only** |
 | Pacing | **Phase-gated, no deadlines** |
+| Research extensions | **R1–R7 before P8** (decided 2026-10-09): each pre-registered and committed alone before its test results; new models / attacks may use the existing test set; Models 1–5 and TextGuard v1 never changed; R4 held-out domains frozen before any output on them; results section into `paper/` as each finishes; nulls reported (§1a) |
 | Framing | **Attack + defense paper** |
 | Novelty claim | Semantic directional text attack + DSS + training-free defense |
 | Primary dataset | Time-MMD |

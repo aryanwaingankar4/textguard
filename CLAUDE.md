@@ -51,7 +51,7 @@ and a deployable defense.
 - **RQ2 (P5.3)** — Does fusion type (early / late) determine vulnerability?
 - **RQ3 (P6)** — Can TextGuard reduce manipulation without losing the benefit of genuine
   text, and does it beat trained alternatives (CFA) and architectural ones (PA-RNet)?
-- **RQ4 (P7.4, optional)** — Can embedding-drift monitoring detect a sustained fake-text
+- **RQ4 (R6; was P7.4)** — Can embedding-drift monitoring detect a sustained fake-text
   campaign?
 
 ---
@@ -338,6 +338,17 @@ textguard/
   two independent classes taking any object with `predict(numbers, text)`. Do not hardcode
   it to our models.
 - **Never tune on the test split.**
+- **Research extensions R1–R7 run before P8** (decided 2026-10-09; PHASES.md "Research
+  extensions", PROJECT_STATUS §1a). Rules for every extension:
+  - **pre-registered and committed alone** (pushed) before any of its test results exist;
+    later changes are dated amendments, reported as deviations;
+  - **new models and new attacks may be evaluated on the existing test set; already-reported
+    methods (Models 1–5, TextGuard v1 at its frozen P6 settings) are never changed** —
+    re-run on new inputs, never re-tuned or redefined;
+  - **R4's held-out domains are chosen and frozen before any model output exists on them**
+    (their data checks — directional %, timing — are allowed);
+  - **write each extension's results section into `paper/` as it finishes**;
+  - **null results are reported, not dropped.**
 - **Write docstrings explaining *why*, not just what** — Aryan must be able to explain
   every module in the viva, alone.
 - **Prefer small, runnable increments** over large refactors.

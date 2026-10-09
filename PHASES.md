@@ -18,6 +18,9 @@ P0 Setup ─► P1 Data ─► P2 Models ─► P3 Attacks ─► P4 Metrics
                                                       ▼
                                                P6 TextGuard
                                                       │
+                                                      ▼
+              R1 ─► R2 ─► R3 ─► R4 ─► R5 ─► R6 ─► R7   (research extensions)
+                                                      │
                                     ┌─────────────────┴─────────────┐
                                     ▼                               ▼
                              P7 Auditor + Demo                 P8 Paper
@@ -33,10 +36,12 @@ P0 Setup ─► P1 Data ─► P2 Models ─► P3 Attacks ─► P4 Metrics
 | P4 | Metrics module — MSE, Text Usage Gap, DSS, Flip Rate | ✅ |
 | P5 | Experiment runner — run everything, save raw predictions | ✅ |
 | P6 | TextGuard — trend detector, gate, defense wrapper | ✅ **Core** |
+| R1–R7 | Research extensions — see "Research extensions" below | ✅ (decided 2026-10-09) |
 | P7 | Auditor, audit report, Streamlit demo, drift monitor | ⬜ Optional |
 | P8 | Paper and release | ✅ |
 
-**P0–P6 + P8 = complete paper.** P7 is upside.
+**P0–P6 + P8 = complete paper.** R1–R7 run before P8 (decided 2026-10-09); P7 is upside.
+R6 covers P7.4 (drift monitor) — do not build it twice.
 
 ---
 
@@ -274,6 +279,74 @@ and works on a model outside our five.
 
 ---
 
+# Research extensions — R1–R7 (before P8, decided 2026-10-09)
+
+P0–P6 answer the core questions; R1–R7 close the gaps P5/P6 left open (PROJECT_STATUS §9:
+fusion confound, one small LLM, a non-adaptive attacker, TextGuard v1's known failure modes,
+rule-written fakes only, no drift monitor, reproducibility). Done in this order; each one is
+its own phase: pre-register → commit → build → run → results → paper section → commit & push.
+
+### Rules for every extension (also in PROJECT_STATUS §1a and CLAUDE.md §14)
+
+- **Pre-registered and committed alone** (its own commit, pushed) before any of its test
+  results exist. Changes after that are dated amendments, reported as deviations.
+- **New models and new attacks may be evaluated on the existing test set.**
+  **Already-reported methods (Models 1–5, TextGuard v1 at its frozen P6 settings) are never
+  changed** — they may be re-run on new inputs, never re-tuned or redefined.
+- **R4's held-out domains are chosen and frozen before any model output exists on them.**
+  Their data checks (directional %, timing) are allowed before freezing.
+- **Each extension's results section is written into `paper/` as it finishes** — not left to P8.
+- **Null results are reported, not dropped.**
+
+### R1 — LLM vs fusion: late-fusion heads on Qwen embeddings (+ FinBERT)
+Model 5 is the only early-fusion model **and** the only LLM (PROJECT_STATUS §9 P5.7), so P5
+cannot say which one makes it vulnerable.
+- [ ] Pre-register (PROJECT_STATUS §10d), commit alone
+- [ ] Mechanism check on **val** first: flip-vs-swap ratio (P5's embedding similarity) for
+      BERT, FinBERT and Qwen embeddings — how direction-aware each encoder is, before training
+- [ ] Qwen2.5-1.5B-Instruct embeddings (P5's pinned revision) on Colab; FinBERT
+      (`ProsusAI/finbert`) on CPU
+- [ ] Models 3/4 with the encoder swapped, everything else identical (frozen M1/M2 backbone,
+      two-stage, train-only standardisation, P2.2 protocol, 3 seeds); all 7 conditions
+- [ ] Analysis against the R1 family; results section in `paper/`
+
+### R2 — generality: other LLM forecasters and prompt wording
+- [ ] Qwen2.5-7B-Instruct (4-bit on a T4) and Phi-3.5-mini-instruct as early-fusion forecasters
+- [ ] 2–3 prompt-wording variants for Model 5 (Model 5's own prompt stays as reported)
+- [ ] Same conditions and metrics as P5; pre-registered family
+
+### R3 — adaptive attacks on TextGuard v1
+Attackers who know the defence. TextGuard v1 is run exactly as frozen in P6.
+- [ ] Trend-consistent lies (claim direction agrees with the lookback trend, so the gate passes it)
+- [ ] Forward-looking lies ("will reverse next period" — a claim about the future, not the past)
+- [ ] Magnitude lies (right direction, wrong size)
+- [ ] DSS / Flip Rate / damage undefended vs TextGuard v1 vs clip; pre-registered family
+
+### R4 — TextGuard v2
+- [ ] Level/change-aware judge; longer history for year-over-year claims; a magnitude cap
+      (borrowed from clip, which beat v1 on exaggeration)
+- [ ] **Developed on VAL only.** Held-out Time-MMD domains (Energy, Health_AFR, Climate if
+      feasible) chosen and frozen before any model output exists on them
+- [ ] Tested **once** on the held-out domains: v2 and v1 both, and v2 also against R3's
+      adaptive attacks
+
+### R5 — realistic attacks
+- [ ] Fluent fakes written by an LLM from a **different family** than Qwen
+- [ ] Small human plausibility study (real vs rule-written vs LLM-written fakes)
+
+### R6 — drift monitor for sustained fake-report campaigns (RQ4; replaces P7.4)
+- [ ] Embedding centroid + per-batch distance, threshold from historical variation (val)
+- [ ] Detection delay and false-alarm rate on streams seeded with fake reports
+
+### R7 — reproducibility
+- [ ] One-command reproduce script; pinned environment
+- [ ] Data card, model card, ethics statement
+
+**✅ Exit (each R):** pre-registration commit precedes its results; results in PROJECT_STATUS §9
+and in `paper/`; nulls reported. **➡️ Commit & push after each.**
+
+---
+
 # Phase 7 — Auditor, Demo & Extras (optional)
 
 Independent items. Do as many as you want, in this order. Commit & push after each.
@@ -389,6 +462,7 @@ P3: flipped text generator
 P4: DSS and flip rate metrics
 P5: screening results for models 1-5
 P6: textguard gate implementation
+R1: pre-register LLM-vs-fusion heads
 P7: streamlit demo
 P8: paper draft
 ```
