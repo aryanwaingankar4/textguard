@@ -1396,7 +1396,119 @@ labelled as ablations; they can qualify the main results but never replace them)
 Anything not listed above (other conditions as attacks, other splits, other subgroups, a
 different window mask) is **exploratory** and will be labelled so.
 
-### 10b. Open issues
+### 10b. Pre-registered evaluation plan (P6) — fixed 2026-10-09, before any TextGuard output
+
+> Committed **on its own**, before TextGuard, its gate or its direction judge had produced a
+> single output on any split (val or test). **Do not edit this subsection after P6 results
+> exist**; a later change goes in a dated amendment below it and is reported as a deviation.
+> Already known when writing it: everything in §9 (P5, test split), including Model 5's
+> real-vs-none MSE per domain. Nothing about judge answers, gate values or defended forecasts.
+
+**Framing (§9 part 8).** Text's accuracy value for Model 5 is **not established** in our data
+(MSE(empty) − MSE(real) has a CI spanning 0 in every domain and pooled). So the primary claim
+is the **trade-off** — how much manipulation TextGuard removes for how much genuine text it
+blocks — not accuracy.
+
+**Definitions (fixed now; the code in `src/textguard/` must match them)**
+
+* **Direction judge** = Qwen2.5-1.5B-Instruct, revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`,
+  same Colab setup class as P5 (the 40-prompt reproducibility probe is re-run and recorded).
+  **Not** the P3 rules (rules judging rule-written fakes would be circular). Per (domain, text)
+  it answers fixed questions: a **change** question about the domain's subject (Economy: the
+  U.S. trade deficit; Traffic: travel vs the same month a year earlier; SocialGood: the
+  unemployment rate; Health_US: the ILI percentage) → up / down / none; Health_US also a
+  **level** question → above / below / none the national baseline. Answer = the most likely
+  of the three allowed answers (sequence probability given the prompt); **confidence c** =
+  its probability renormalised over the three (∈ [⅓, 1]). Mapped to the series direction
+  locally (Economy: deficit up = balance −1). The judge prompt is frozen at the P6a commit;
+  it has no tunable knob.
+* **Change evidence:** OLS slope β over the last w lookback values; direction sign(β);
+  strength s = min(|β|·(w − 1)/σ, 1) — the fitted movement across the window in σ units.
+  (This is how "slope" in CLAUDE.md §8 is read; it reproduces the worked example:
+  100…112, σ 10 → 12/10 → s = 1.0. A per-step slope would give 0.4 and g = 0.64, not 0.1.)
+* **Level evidence** (Health_US; only when the text states a baseline number B — read by a
+  regex, a number not a direction — and the level answer is not none): direction
+  sign(y_last − B), strength min(|y_last − B|/σ, 1). Valid because Health_US's series is the
+  ILI percentage the reports state (stated value vs t−1: corr 0.98, checked 2026-10-09).
+* **Gate** per branch: 1 if the text's claim is 0, the evidence direction is 0, or they
+  agree; else 1 − c·s. **g = min over the branches present** (a text that claims nothing → 1).
+* **TextGuard final.** Soft (CLAUDE.md §8): A + g·(B − A), warning if g < τ.
+  **Block mode at threshold τ:** applied weight g′ = 0 if g < τ (warning ⇒ fall back to A),
+  else g; final = A + g′·(B − A). τ = 0 is the soft gate; τ > 1 is never_trust. **Why block
+  mode:** with the soft final, τ only switches the warning flag and never changes a forecast,
+  so a τ sweep would trace no trade-off. B NaN → final = A; A NaN → NaN (counted as a failure).
+* **Baselines:** always_trust (g′ = 1 = undefended); never_trust (g′ = 0); clip:
+  final = A + clamp(B − A, ±k·σ), applied weight min(1, k·σ/|B − A|) (1 when B = A).
+* **False Block Rate — one definition for every defence:** share of **genuine** texts (test
+  windows with a real report) whose applied weight g′ < 0.5 (`metrics.false_block_rate`).
+  never_trust = 100%, always_trust = 0%. TextGuard's g does not depend on the forecaster, so
+  its FBR is the same for Models 3, 4, 5; clip's does.
+* **DSS / Flip Rate under a defence:** both forecasts pass through the same defence:
+  d·(final_fake − final_real)/σ, Flip Rate on (final_real, final_fake) — how far the deployed
+  system's output moves when the true report is replaced by the lie (as in the PHASES worked
+  example). never_trust ⇒ exactly 0.
+* Models 3–4: A and B seed-averaged first (for fixed g the final is linear in A, B, so this
+  equals the seed mean of finals). Windows, σ, y_last, NaN pairing, bootstrap (10,000, seed 0,
+  stratified by domain) as §10a.
+
+**Tuning — val split only, coarse grid (val is small)**
+
+* Grid: window fraction f ∈ {¼, ½, 1} of the lookback L, w = max(3, round(f·L)) → monthly
+  w ∈ {3, 4, 8}, weekly (Health_US) w ∈ {6, 12, 24}; τ ∈ {0, 0.1, …, 1.0}. 33 configs.
+* Rule: Model 5, `flipped`, val, pooled — among configs with **val FBR ≤ 10%**, the lowest val
+  DSS; ties → lower FBR, then smaller τ, then smaller w. If none meets 10%: the lowest-FBR
+  config, reported as "budget not met".
+* clip: k ∈ {0.05, 0.1, 0.25, 0.5, 1.0}, same rule. The FBR budget is the same for both.
+* The chosen settings are applied unchanged to Models 3–4 (no per-model tuning).
+
+**Reported on test**
+
+* **PRIMARY — Model 5, `flipped`:** (a) the curve (FBR, DSS) and (FBR, Flip Rate) for
+  TextGuard at the val-chosen w over every τ, clip over every k, and the two endpoints
+  always_trust (FBR 0%) and never_trust (100%); (b) the val-chosen operating point: DSS, Flip
+  Rate, FBR with CIs. Pooled (headline) + per domain.
+* **SECONDARY — Model 5 real-text MSE and damage** (MSE(fake) − MSE(real)) under every
+  defence, against never_trust, **per domain**, reported whichever way it falls.
+* **Models 3–4 — "no harm" only:** real-text MSE TextGuard vs undefended (ΔMSE with CI) and
+  FBR; their DSS shown for completeness.
+* **`exaggerated`:** the same tables, descriptive. Expected weak: the fake claims the *same*
+  direction as the real report, so the gate sees what it sees for real text.
+* **COVID regime change (issue #10):** FBR and the gate distribution on genuine test texts in
+  2020 windows (Economy, SocialGood, Traffic) vs non-2020 windows.
+* **Judge accuracy:** (i) vs the 50 human labels from P1 (`summary_directional_sample.csv`;
+  the change answer about the literal subject vs `manual`; accuracy, Cohen's κ, confusion
+  matrix), plus the 25 filtered-SocialGood re-check labels as supplementary; (ii) vs P3's
+  **known** `claimed_direction` on every attacked `flipped` / `exaggerated` text (val + test),
+  by domain × variant; (iii) share answered none on `cross_domain` texts; coverage = share of
+  genuine texts with a non-none claim. The judge is not tuned, so (ii) may use test texts.
+* **Model-agnostic:** `DummyForecaster`, worked example (g = 0.1, final 115, warning).
+
+**Hypothesis family — one Holm family, test, Model 5, `flipped`, val-chosen operating point**
+
+| Block | H₀ | Test | Cells | m |
+|---|---|---|---|---|
+| T1 | DSS(TextGuard) = DSS(always_trust) | Wilcoxon on per-window DSS-term differences | pooled + 4 domains | 5 |
+| T2 | TextGuard and always_trust flip equally often | exact McNemar on windows flipped under exactly one | pooled + 4 domains | 5 |
+| T3 | DSS(TextGuard) = DSS(clip, val-chosen k) | Wilcoxon | pooled + 4 domains | 5 |
+| T4 | real-text squared error, TextGuard = never_trust | Wilcoxon | pooled + 4 domains | 5 |
+| T5 | DSS(TextGuard) = DSS(CFA) — **only if CFA runs**; decided in P6a, before any test result | Wilcoxon | pooled + 4 domains | 5 |
+
+m = 20 (25 with CFA). Two-sided, α = 0.05; a directional claim needs a rejection **and** the
+claimed sign. T4 non-rejection is reported as "no difference detected", never as equivalence.
+FBR and the M3/M4 "no harm" numbers are descriptive (CIs), outside the family.
+
+**Ablations — outside the family (raw p, labelled):** excluding 2020; Health_US (level-flip,
+level branch) vs the three change-flip domains; soft gate (τ = 0); **oracle judge** (P3's
+known directions instead of Qwen's — an upper bound on what judge errors cost; uses the rules,
+so never a headline). Anything else is exploratory.
+
+**Limitation recorded in advance.** In our data the model that benefits from text (Model 3,
+Economy) is not attackable, and the attackable model (Model 5) does not measurably benefit from
+text. TextGuard's target scenario — a forecaster that both gains from text and can be steered
+by it — needs a larger LLM forecaster; that is future work. P6 can show the trade-off and that
+the gate costs little genuine text; it cannot show "keeps the benefit of text" for Model 5.
+
+### 10c. Open issues
 
 | # | Issue | Phase | Status |
 |---|---|---|---|
