@@ -1594,6 +1594,47 @@ the gate costs little genuine text; it cannot show "keeps the benefit of text" f
   reference frame and the evidence TextGuard can see**, not explained away; if it does not
   hold, that is reported too.
 
+#### Amendment 2 — 2026-10-09, after val tuning, before any test computation
+
+> Written after P6b Step 1 (judge validation: judge answers on val + test *texts* vs human
+> labels and P3's known directions — no forecast involved) and Step 2 (the val grid,
+> `results/summary_p6_val_grid.csv`). **No test gate value, defended forecast or test metric
+> existed.** Committed alone. It changes no definition, grid, FBR budget or hypothesis above;
+> it resolves a tie the fallback rule leaves open and declares one exploratory variant.
+
+1. **Val outcome — budget not met (TextGuard).** All 33 TextGuard configs exceed the 10% val
+   FBR budget; the lowest is **11.3%** (pooled, Model 5, `flipped`). The pre-registered
+   fallback ("the lowest-FBR config, reported as budget not met") applies. Clip **met** the
+   budget: k = 0.5, val FBR 6.3%, val DSS 0.110. The budget is not changed.
+2. **Tie in the fallback, resolved by the explicit tie-breaks.** Six configs share the lowest
+   FBR (f = ¼, τ ∈ {0, 0.1, …, 0.5}: for τ ≤ 0.5 the blocked set is the g < 0.5 set either
+   way). The fallback names no tie-break; the main rule's explicit ones are applied — smaller
+   τ, then smaller w → **τ = 0, f = ¼ (w = 3 monthly, 6 weekly Health_US): the soft gate of
+   CLAUDE.md §8.** Not used: "lowest signed DSS" — every val TextGuard DSS is negative, and
+   adding a DSS criterion after seeing val would be a new selection rule. **τ = 0.5** (same
+   val FBR; val DSS −0.053 / Flip 6.8% vs −0.021 / 11.3% at τ = 0) is reported as an
+   **exploratory** point. T1–T4 are tested at τ = 0, f = ¼. Soft gate ⇒ applied weight g′ = g,
+   so its FBR is the share of genuine texts with g < 0.5 (definition unchanged).
+3. **Exploratory variant "TextGuard-L"** — Health_US's gate uses the **level** claim only (the
+   change claim is dropped); Economy, SocialGood, Traffic unchanged; same frozen f, τ (the
+   level branch uses no window). **Justification, from Step 1 only:** on Health_US the judge's
+   *change* question reads the report's *level* claim as a change claim ("ILI was 0.9%, below
+   the national baseline" → "down", c = 0.98): it agrees with the P1 human labels on 2 of 12
+   Health_US reports (17%) — the 10 reports humans labelled "no change claim" all get a
+   direction — so the change branch tests claims the reports do not make. **Disclosure:**
+   declared after the val grid was also seen (val Health_US FBR 13.6% at the frozen config).
+   **Reported:** test, Model 5, `flipped`: DSS, Flip Rate, FBR (pooled + per domain) at the
+   frozen operating point and along the τ curve, plus real-text MSE; raw p only, **outside
+   the Holm family**, labelled exploratory; it never replaces the main TextGuard result.
+4. **Wording of §10b made explicit (fixed now, before test):**
+   * "none" = the raw model with P5's NaN pairing (no fallback); `always_trust` = g′ = 1 through
+     the defences' NaN rule (B NaN → A). They differ only on Model 5's Traffic unit-slip
+     windows.
+   * T4 and the secondary real-text MSE use **every test window with a real report**; damage
+     (MSE(fake) − MSE(real)) uses the attacked windows.
+   * T2's discordant windows = flipped under exactly one of TextGuard / always_trust (McNemar,
+     two-sided binomial, p = ½).
+
 ### 10c. Open issues
 
 | # | Issue | Phase | Status |
