@@ -45,9 +45,13 @@ TEXT_BLIND = ("DLinear", "PatchTST")
 TEXT_MODELS = ("DLinear+BERT", "PatchTST+BERT", "Qwen2.5-1.5B")
 MODELS = TEXT_BLIND + TEXT_MODELS
 SHORT = {"DLinear": "M1", "PatchTST": "M2", "DLinear+BERT": "M3", "PatchTST+BERT": "M4",
-         "Qwen2.5-1.5B": "M5"}
+         "Qwen2.5-1.5B": "M5",
+         # R1 heads (PROJECT_STATUS §10d) — analysed by src/analyze_r1.py, not here
+         "DLinear+Qwen": "M3-Q", "PatchTST+Qwen": "M4-Q",
+         "DLinear+FinBERT": "M3-F", "PatchTST+FinBERT": "M4-F"}
 FUSION = {"DLinear": "none", "PatchTST": "none", "DLinear+BERT": "late",
-          "PatchTST+BERT": "late", "Qwen2.5-1.5B": "early"}
+          "PatchTST+BERT": "late", "Qwen2.5-1.5B": "early", "DLinear+Qwen": "late",
+          "PatchTST+Qwen": "late", "DLinear+FinBERT": "late", "PatchTST+FinBERT": "late"}
 CONTROLS = ("shuffled", "cross_domain", "time_shifted")
 ATTACKS = ("flipped", "exaggerated")
 SCREEN_CONDITIONS = ("real", "empty") + CONTROLS
@@ -86,14 +90,14 @@ def window_index(split: str = "test") -> pd.DataFrame:
     return r.sort_values(["_d", "sample_id"]).drop(columns="_d").reset_index(drop=True)
 
 
-def wide(long: pd.DataFrame, split: str = "test") -> dict[str, pd.DataFrame]:
+def wide(long: pd.DataFrame, split: str = "test", models=MODELS) -> dict[str, pd.DataFrame]:
     """One frame per model, rows aligned to ``window_index``: a prediction column per
     condition plus y_true, y_last, sigma (train std), has_text (real report present) and
     the attack direction d_<attack> (P3's ``claimed_direction``; 0 = not attacked)."""
     idx = window_index(split)
     keys = ["domain", "sample_id"]
     out = {}
-    for model in MODELS:
+    for model in models:
         m = long[long.model == model]
         preds = m.pivot(index=keys, columns="condition", values="y_pred")
         base = m[m.condition == "real"].set_index(keys)[["y_true", "y_last", "train_std"]]
@@ -107,12 +111,12 @@ def wide(long: pd.DataFrame, split: str = "test") -> dict[str, pd.DataFrame]:
             raise ValueError(f"{model}: conditions {missing} or windows missing from the "
                              "predictions")
         out[model] = w
-    ref = out[MODELS[0]]
+    ref = out[models[0]]
     for model, w in out.items():   # every model must describe the same windows
         for c in ("y_true", "y_last", "sigma", "d_flipped", "d_exaggerated"):
             if not np.allclose(w[c], ref[c]):
-                raise ValueError(f"{model}: {c} differs from {MODELS[0]} — misaligned windows")
-    for model in TEXT_BLIND:       # Models 1–2: asserted, not tested (§10a)
+                raise ValueError(f"{model}: {c} differs from {models[0]} — misaligned windows")
+    for model in (m for m in TEXT_BLIND if m in out):  # Models 1–2: asserted, not tested (§10a)
         w = out[model]
         if not M.is_text_blind(w.real, w["empty"], *(w[c] for c in CONTROLS + ATTACKS)):
             raise ValueError(f"{model} is not text-blind")
@@ -223,7 +227,7 @@ def nan_pairing_windows(w5: pd.DataFrame) -> pd.DataFrame:
 
 # --- 2. screening ----------------------------------------------------------------------------
 
-def screening(w: dict, base_mask=None, groups=GROUPS_MAIN) -> pd.DataFrame:
+def screening(w: dict, base_mask=None, groups=GROUPS_MAIN, models=TEXT_MODELS) -> pd.DataFrame:
     """Does text move the forecast, and does *relevant, timely* text beat the controls?
 
     quantity:
@@ -239,7 +243,7 @@ def screening(w: dict, base_mask=None, groups=GROUPS_MAIN) -> pd.DataFrame:
       text beating timely text).
     """
     rows = []
-    for model in TEXT_MODELS:
+    for model in models:
         x = w[model]
         mask = x.has_text.to_numpy() if base_mask is None else x.has_text.to_numpy() & base_mask
         dom = x.domain.to_numpy()
@@ -287,7 +291,7 @@ def attack(w: dict, base_mask=None, groups=GROUPS_MAIN, models=MODELS) -> pd.Dat
             for g, sel in _groups(x, groups):
                 c_dss, c_fr = _cell(dss.terms, dom, sel), _cell(fr.terms, dom, sel)
                 mc = M.mcnemar_flip(x[a], x.real, x.y_last, d, mask & sel)
-                tested = model in TEXT_MODELS
+                tested = model not in TEXT_BLIND
                 rows.append(dict(
                     model=model, short=SHORT[model], fusion=FUSION[model], condition=a,
                     domain=g, n_text=int((mask & sel).sum()),
@@ -333,11 +337,11 @@ def fusion(w: dict, base_mask=None) -> pd.DataFrame:
 
 # --- 5. damage -------------------------------------------------------------------------------
 
-def damage(w: dict, base_mask=None) -> pd.DataFrame:
+def damage(w: dict, base_mask=None, models=MODELS) -> pd.DataFrame:
     """MSE(fake) − MSE(real) on attacked windows (paired, same windows): how much *worse*
     the forecasts get under attack, not only that they move. Descriptive (CIs only)."""
     rows = []
-    for model in MODELS:
+    for model in models:
         x = w[model]
         dom = x.domain.to_numpy()
         for a in ATTACKS:

@@ -53,6 +53,12 @@ Usage Gap. With a frozen backbone, ``A = predict(x, None)`` *is* the numbers-onl
 measures the text and nothing else, and TextGuard's ``A + g·(B − A)`` interpolates between
 the numbers-only forecast and the text-informed one. On val (seed 2021) the frozen variant
 also beat the joint one with real text in all 8 domain × model cells (PROJECT_STATUS §7a).
+
+**R1 heads (PROJECT_STATUS §10d).** The same class with only the frozen encoder swapped:
+Qwen2.5-1.5B-Instruct embeddings (Model 5's own LLM, 1536-d) or FinBERT (768-d). The MLP's
+hidden width stays 96 (BERT's 768/8) for every encoder, so only the input width changes;
+everything else — frozen backbone, train-only scaler, two-stage P2.2 training, ``text=None``
+— is identical. That isolates *how the LLM's reading of the text enters the forecast*.
 """
 
 from __future__ import annotations
@@ -66,10 +72,12 @@ from torch import nn
 from src.data.windows import Windows
 from src.models.dlinear import DLinearForecaster
 from src.models.patchtst import PatchTSTForecaster
-from src.models.text_encoder import EMB_DIM, MODEL_NAME, BertTextEncoder, get_encoder
+from src.models.text_encoder import (EMB_DIM, EMB_DIMS, FINBERT_NAME, MODEL_NAME, QWEN_NAME,
+                                     BertTextEncoder, get_encoder)
 
 PROMPT_WEIGHT = 0.1  # MM-TSFlib scripts/week_health.sh (its run.py default is 0.01)
 MLP_DROPOUT = 0.3    # MM-TSFlib MLP(..., dropout_rate=0.3)
+MLP_HIDDEN = EMB_DIM // 8  # 96, MM-TSFlib's 768 -> 96; fixed for every encoder (R1)
 
 _ENCODERS: dict[str, BertTextEncoder] = {}
 
@@ -99,11 +107,12 @@ class EmbeddingScaler(nn.Module):
     """Per-dimension z-score of text embeddings. Buffers, so it is saved and restored with
     the checkpoint; fit on the train split only, never on val/test texts."""
 
-    def __init__(self, mean: np.ndarray | None = None, std: np.ndarray | None = None):
+    def __init__(self, mean: np.ndarray | None = None, std: np.ndarray | None = None,
+                 dim: int = EMB_DIM):
         super().__init__()
-        self.register_buffer("mean", torch.zeros(EMB_DIM) if mean is None
+        self.register_buffer("mean", torch.zeros(dim) if mean is None
                              else torch.as_tensor(mean, dtype=torch.float32))
-        self.register_buffer("std", torch.ones(EMB_DIM) if std is None
+        self.register_buffer("std", torch.ones(dim) if std is None
                              else torch.as_tensor(std, dtype=torch.float32))
 
     def forward(self, e: torch.Tensor) -> torch.Tensor:
@@ -118,15 +127,17 @@ class LateFusionMixin:
     """
 
     uses_text = True
+    default_encoder = MODEL_NAME
 
     def __init__(self, seq_len: int, horizon: int = 1, prompt_weight: float = PROMPT_WEIGHT,
-                 encoder_name: str = MODEL_NAME, backbone_ckpt: str | Path | None = None,
+                 encoder_name: str | None = None, backbone_ckpt: str | Path | None = None,
                  **kw):
         super().__init__(seq_len=seq_len, horizon=horizon, **kw)
         if not 0.0 < prompt_weight <= 1.0:
             raise ValueError("prompt_weight must be in (0, 1]")
         self.prompt_weight = prompt_weight
-        self.encoder_name = encoder_name
+        self.encoder_name = encoder_name or self.default_encoder
+        self.emb_dim = EMB_DIMS[self.encoder_name]
         self.backbone_ckpt = None if backbone_ckpt is None else str(backbone_ckpt)
         self.mlp: nn.Module | None = None
         self.emb_scaler: EmbeddingScaler | None = None
@@ -171,9 +182,9 @@ class LateFusionMixin:
             self.net.load_state_dict(self._backbone_state)
         for p in self.net.parameters():
             p.requires_grad = False
-        self.emb_scaler = EmbeddingScaler(*(self._emb_stats or (None, None)))
-        self.mlp = nn.Sequential(nn.Linear(EMB_DIM, EMB_DIM // 8), nn.ReLU(),
-                                 nn.Dropout(MLP_DROPOUT), nn.Linear(EMB_DIM // 8, self.horizon))
+        self.emb_scaler = EmbeddingScaler(*(self._emb_stats or (None, None)), dim=self.emb_dim)
+        self.mlp = nn.Sequential(nn.Linear(self.emb_dim, MLP_HIDDEN), nn.ReLU(),
+                                 nn.Dropout(MLP_DROPOUT), nn.Linear(MLP_HIDDEN, self.horizon))
         return [torch.optim.Adam(self.mlp.parameters(), lr=self.lr)]
 
     def _modules(self):
@@ -187,7 +198,7 @@ class LateFusionMixin:
         (x,) = super()._inputs(w)
         texts = [None] * len(x) if w.text is None else [_clean(t) for t in w.text]
         has = torch.tensor([t is not None for t in texts])
-        e = torch.zeros(len(x), EMB_DIM)
+        e = torch.zeros(len(x), self.emb_dim)
         if has.any():
             e[has] = torch.as_tensor(_encoder(self.encoder_name).encode(
                 [t for t in texts if t is not None]))
@@ -214,3 +225,29 @@ class DLinearBertForecaster(LateFusionMixin, DLinearForecaster):
 class PatchTSTBertForecaster(LateFusionMixin, PatchTSTForecaster):
     """Model 4 — frozen Model 2 (PatchTST, ``patching="window"``) + frozen-BERT text head."""
     name = "PatchTST+BERT"
+
+
+# --- R1 heads (PROJECT_STATUS §10d): Models 3/4 with only the frozen encoder swapped ----------
+
+class DLinearQwenForecaster(DLinearBertForecaster):
+    """M3-Q — frozen Model 1 + head on frozen Qwen2.5-1.5B-Instruct embeddings (Model 5's LLM)."""
+    name = "DLinear+Qwen"
+    default_encoder = QWEN_NAME
+
+
+class PatchTSTQwenForecaster(PatchTSTBertForecaster):
+    """M4-Q — frozen Model 2 + head on frozen Qwen2.5-1.5B-Instruct embeddings."""
+    name = "PatchTST+Qwen"
+    default_encoder = QWEN_NAME
+
+
+class DLinearFinBertForecaster(DLinearBertForecaster):
+    """M3-F — frozen Model 1 + head on frozen FinBERT embeddings (direction-aware encoder)."""
+    name = "DLinear+FinBERT"
+    default_encoder = FINBERT_NAME
+
+
+class PatchTSTFinBertForecaster(PatchTSTBertForecaster):
+    """M4-F — frozen Model 2 + head on frozen FinBERT embeddings."""
+    name = "PatchTST+FinBERT"
+    default_encoder = FINBERT_NAME

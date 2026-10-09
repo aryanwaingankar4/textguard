@@ -1,0 +1,19 @@
+{
+ "path": "R1-a",
+ "reading": "Qwen-embedding late fusion is fooled -> the vulnerability follows the LLM's text understanding; early fusion is not necessary. F' rejects for both heads with DSS_M5 > DSS_Q: early fusion amplifies.",
+ "fooled": {
+  "M3-Q": false,
+  "M4-Q": true,
+  "M3-F": true,
+  "M4-F": true
+ },
+ "qwen_heads_fooled": [
+  "M4-Q"
+ ],
+ "qwen_direction_aware_val": false,
+ "early_fusion_amplifies": true,
+ "finbert_heads_fooled": [
+  "M3-F",
+  "M4-F"
+ ]
+}

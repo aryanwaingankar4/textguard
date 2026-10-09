@@ -1,0 +1,109 @@
+block,model,condition,domain,stat,estimate,p_raw,p_holm,reject,supports_claim
+S,DLinear+Qwen,real,Economy,sensitivity,0.14116,3.55947e-13,3.3815e-11,True,True
+S,DLinear+Qwen,real,SocialGood,sensitivity,0.0851045,2.84217e-14,2.87059e-12,True,True
+S,DLinear+Qwen,real,Traffic,sensitivity,0.642114,2.38648e-10,2.10011e-08,True,True
+S,DLinear+Qwen,real,Health_US,sensitivity,0.0231312,4.45968e-23,4.81646e-21,True,True
+S,PatchTST+Qwen,real,Economy,sensitivity,0.078317,3.55947e-13,3.3815e-11,True,True
+S,PatchTST+Qwen,real,SocialGood,sensitivity,0.0108525,2.84217e-14,2.87059e-12,True,True
+S,PatchTST+Qwen,real,Traffic,sensitivity,0.158508,2.38648e-10,2.10011e-08,True,True
+S,PatchTST+Qwen,real,Health_US,sensitivity,0.0723866,4.45968e-23,4.81646e-21,True,True
+S,DLinear+FinBERT,real,Economy,sensitivity,0.10984,3.55947e-13,3.3815e-11,True,True
+S,DLinear+FinBERT,real,SocialGood,sensitivity,0.0740161,2.84217e-14,2.87059e-12,True,True
+S,DLinear+FinBERT,real,Traffic,sensitivity,0.417196,2.38648e-10,2.10011e-08,True,True
+S,DLinear+FinBERT,real,Health_US,sensitivity,0.0144262,4.45968e-23,4.81646e-21,True,True
+S,PatchTST+FinBERT,real,Economy,sensitivity,0.0538604,3.55947e-13,3.3815e-11,True,True
+S,PatchTST+FinBERT,real,SocialGood,sensitivity,0.0618113,2.84217e-14,2.87059e-12,True,True
+S,PatchTST+FinBERT,real,Traffic,sensitivity,0.109907,2.38648e-10,2.10011e-08,True,True
+S,PatchTST+FinBERT,real,Health_US,sensitivity,0.0281542,4.45968e-23,4.81646e-21,True,True
+A1,DLinear+Qwen,flipped,Economy,dss,0.00481919,0.347589,1,False,False
+A1,DLinear+Qwen,flipped,SocialGood,dss,-0.00474494,0.0668832,1,False,False
+A1,DLinear+Qwen,flipped,Traffic,dss,0.0346681,0.00849091,0.551909,False,False
+A1,DLinear+Qwen,flipped,Health_US,dss,-0.000449801,0.0170703,1,False,False
+A1,DLinear+Qwen,flipped,pooled,dss,0.00785015,0.383206,1,False,False
+A1,DLinear+Qwen,exaggerated,Economy,dss,0.0097568,0.0469428,1,False,False
+A1,DLinear+Qwen,exaggerated,SocialGood,dss,-0.00555346,0.915314,1,False,False
+A1,DLinear+Qwen,exaggerated,Traffic,dss,-0.000378017,0.984734,1,False,False
+A1,DLinear+Qwen,exaggerated,Health_US,dss,0.00130688,1.53954e-05,0.00120084,True,True
+A1,DLinear+Qwen,exaggerated,pooled,dss,0.00259496,0.00690996,0.456057,False,False
+A1,PatchTST+Qwen,flipped,Economy,dss,0.0116804,1.21707e-05,0.000961489,True,True
+A1,PatchTST+Qwen,flipped,SocialGood,dss,0.000431386,0.745393,1,False,False
+A1,PatchTST+Qwen,flipped,Traffic,dss,0.00685267,0.88415,1,False,False
+A1,PatchTST+Qwen,flipped,Health_US,dss,0.00677238,4.44984e-05,0.00333738,True,True
+A1,PatchTST+Qwen,flipped,pooled,dss,0.00750094,2.21994e-07,1.82035e-05,True,True
+A1,PatchTST+Qwen,exaggerated,Economy,dss,0.00327155,0.0869403,1,False,False
+A1,PatchTST+Qwen,exaggerated,SocialGood,dss,-0.00108718,0.0772258,1,False,False
+A1,PatchTST+Qwen,exaggerated,Traffic,dss,0.00472408,0.0567387,1,False,False
+A1,PatchTST+Qwen,exaggerated,Health_US,dss,0.00353139,0.00560371,0.381052,False,False
+A1,PatchTST+Qwen,exaggerated,pooled,dss,0.00319836,0.000137058,0.0101423,True,True
+A1,DLinear+FinBERT,flipped,Economy,dss,0.138408,1.3419e-12,1.22113e-10,True,True
+A1,DLinear+FinBERT,flipped,SocialGood,dss,0.0698135,7.53999e-06,0.000603199,True,True
+A1,DLinear+FinBERT,flipped,Traffic,dss,-0.0256675,0.0885693,1,False,False
+A1,DLinear+FinBERT,flipped,Health_US,dss,0.0213186,2.665e-18,2.7183e-16,True,True
+A1,DLinear+FinBERT,flipped,pooled,dss,0.0492621,6.1441e-19,6.32842e-17,True,True
+A1,DLinear+FinBERT,exaggerated,Economy,dss,0.0105796,0.0475953,1,False,False
+A1,DLinear+FinBERT,exaggerated,SocialGood,dss,-0.0138711,0.000142783,0.0104232,True,False
+A1,DLinear+FinBERT,exaggerated,Traffic,dss,0.0208802,0.687682,1,False,False
+A1,DLinear+FinBERT,exaggerated,Health_US,dss,-0.00163563,2.85447e-05,0.00219794,True,False
+A1,DLinear+FinBERT,exaggerated,pooled,dss,0.00496637,0.0919888,1,False,False
+A1,PatchTST+FinBERT,flipped,Economy,dss,0.063774,9.43512e-12,8.49161e-10,True,True
+A1,PatchTST+FinBERT,flipped,SocialGood,dss,-0.0377598,2.08616e-06,0.000168979,True,False
+A1,PatchTST+FinBERT,flipped,Traffic,dss,0.0942347,6.00624e-08,4.98518e-06,True,True
+A1,PatchTST+FinBERT,flipped,Health_US,dss,0.00233461,0.00481045,0.331921,False,False
+A1,PatchTST+FinBERT,flipped,pooled,dss,0.0343549,1.11994e-13,1.07514e-11,True,True
+A1,PatchTST+FinBERT,exaggerated,Economy,dss,0.00335966,0.179247,1,False,False
+A1,PatchTST+FinBERT,exaggerated,SocialGood,dss,0.00640359,0.0731402,1,False,False
+A1,PatchTST+FinBERT,exaggerated,Traffic,dss,0.00128614,0.431911,1,False,False
+A1,PatchTST+FinBERT,exaggerated,Health_US,dss,0.000473607,0.0767311,1,False,False
+A1,PatchTST+FinBERT,exaggerated,pooled,dss,0.00208465,0.0062337,0.417658,False,False
+A2,DLinear+Qwen,flipped,Economy,flip_rate,0.0142857,1,1,False,False
+A2,DLinear+Qwen,flipped,SocialGood,flip_rate,0,1,1,False,False
+A2,DLinear+Qwen,flipped,Traffic,flip_rate,0,1,1,False,False
+A2,DLinear+Qwen,flipped,Health_US,flip_rate,0,1,1,False,False
+A2,DLinear+Qwen,flipped,pooled,flip_rate,0.00398406,1,1,False,False
+A2,DLinear+Qwen,exaggerated,Economy,flip_rate,0,1,1,False,False
+A2,DLinear+Qwen,exaggerated,SocialGood,flip_rate,0,1,1,False,False
+A2,DLinear+Qwen,exaggerated,Traffic,flip_rate,0,1,1,False,False
+A2,DLinear+Qwen,exaggerated,Health_US,flip_rate,0.00970874,1,1,False,False
+A2,DLinear+Qwen,exaggerated,pooled,flip_rate,0.004,1,1,False,False
+A2,PatchTST+Qwen,flipped,Economy,flip_rate,0.0142857,1,1,False,False
+A2,PatchTST+Qwen,flipped,SocialGood,flip_rate,0.0384615,1,1,False,False
+A2,PatchTST+Qwen,flipped,Traffic,flip_rate,0,1,1,False,False
+A2,PatchTST+Qwen,flipped,Health_US,flip_rate,0.00970874,1,1,False,False
+A2,PatchTST+Qwen,flipped,pooled,flip_rate,0.0119522,1,1,False,False
+A2,PatchTST+Qwen,exaggerated,Economy,flip_rate,0.0285714,0.5,1,False,False
+A2,PatchTST+Qwen,exaggerated,SocialGood,flip_rate,0,1,1,False,False
+A2,PatchTST+Qwen,exaggerated,Traffic,flip_rate,0,1,1,False,False
+A2,PatchTST+Qwen,exaggerated,Health_US,flip_rate,0.0291262,0.625,1,False,False
+A2,PatchTST+Qwen,exaggerated,pooled,flip_rate,0.02,0.453125,1,False,False
+A2,DLinear+FinBERT,flipped,Economy,flip_rate,0.171429,0.000488281,0.0351562,True,True
+A2,DLinear+FinBERT,flipped,SocialGood,flip_rate,0.115385,0.25,1,False,False
+A2,DLinear+FinBERT,flipped,Traffic,flip_rate,0.0192308,1,1,False,False
+A2,DLinear+FinBERT,flipped,Health_US,flip_rate,0.0291262,0.25,1,False,False
+A2,DLinear+FinBERT,flipped,pooled,flip_rate,0.0756972,4.00543e-05,0.00304413,True,True
+A2,DLinear+FinBERT,exaggerated,Economy,flip_rate,0.0428571,0.25,1,False,False
+A2,DLinear+FinBERT,exaggerated,SocialGood,flip_rate,0,1,1,False,False
+A2,DLinear+FinBERT,exaggerated,Traffic,flip_rate,0.02,1,1,False,False
+A2,DLinear+FinBERT,exaggerated,Health_US,flip_rate,0,1,1,False,False
+A2,DLinear+FinBERT,exaggerated,pooled,flip_rate,0.016,0.375,1,False,False
+A2,PatchTST+FinBERT,flipped,Economy,flip_rate,0.0857143,0.03125,1,False,False
+A2,PatchTST+FinBERT,flipped,SocialGood,flip_rate,0,0.5,1,False,False
+A2,PatchTST+FinBERT,flipped,Traffic,flip_rate,0.0384615,0.5,1,False,False
+A2,PatchTST+FinBERT,flipped,Health_US,flip_rate,0,1,1,False,False
+A2,PatchTST+FinBERT,flipped,pooled,flip_rate,0.0318725,0.109375,1,False,False
+A2,PatchTST+FinBERT,exaggerated,Economy,flip_rate,0,1,1,False,False
+A2,PatchTST+FinBERT,exaggerated,SocialGood,flip_rate,0,1,1,False,False
+A2,PatchTST+FinBERT,exaggerated,Traffic,flip_rate,0,1,1,False,False
+A2,PatchTST+FinBERT,exaggerated,Health_US,flip_rate,0,1,1,False,False
+A2,PatchTST+FinBERT,exaggerated,pooled,flip_rate,0,1,1,False,False
+E,M3-Q - M3,flipped,pooled,dss_diff,0.0124653,0.0247586,1,False,False
+E,M3-Q - M3,exaggerated,pooled,dss_diff,-0.00143958,0.601023,1,False,False
+E,M4-Q - M4,flipped,pooled,dss_diff,0.0042951,0.00405356,0.283749,False,False
+E,M4-Q - M4,exaggerated,pooled,dss_diff,0.00155527,0.152504,1,False,False
+E,M3-F - M3,flipped,pooled,dss_diff,0.0538772,1.06411e-22,1.10667e-20,True,True
+E,M3-F - M3,exaggerated,pooled,dss_diff,0.000931822,0.32071,1,False,False
+E,M4-F - M4,flipped,pooled,dss_diff,0.0311491,3.5924e-10,3.01761e-08,True,True
+E,M4-F - M4,exaggerated,pooled,dss_diff,0.000441548,0.99756,1,False,False
+F',M5 - M3-Q,flipped,pooled,dss_diff,0.450555,5.47391e-14,5.30969e-12,True,True
+F',M5 - M3-Q,exaggerated,pooled,dss_diff,-0.100376,0.0310278,1,False,False
+F',M5 - M4-Q,flipped,pooled,dss_diff,0.449571,8.95738e-11,7.97207e-09,True,True
+F',M5 - M4-Q,exaggerated,pooled,dss_diff,-0.101093,0.00332111,0.235799,False,False

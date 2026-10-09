@@ -297,18 +297,22 @@ its own phase: pre-register → commit → build → run → results → paper s
   Their data checks (directional %, timing) are allowed before freezing.
 - **Each extension's results section is written into `paper/` as it finishes** — not left to P8.
 - **Null results are reported, not dropped.**
+- **From R2 on, every pre-registration defines a smallest effect size of interest (SESOI)** for
+  each decision rule — significance alone is not enough (R1 lesson).
 
 ### R1 — LLM vs fusion: late-fusion heads on Qwen embeddings (+ FinBERT)
 Model 5 is the only early-fusion model **and** the only LLM (PROJECT_STATUS §9 P5.7), so P5
 cannot say which one makes it vulnerable.
-- [ ] Pre-register (PROJECT_STATUS §10d), commit alone
-- [ ] Mechanism check on **val** first: flip-vs-swap ratio (P5's embedding similarity) for
+- [x] Pre-register (PROJECT_STATUS §10d), commit alone
+- [x] Mechanism check on **val** first: flip-vs-swap ratio (P5's embedding similarity) for
       BERT, FinBERT and Qwen embeddings — how direction-aware each encoder is, before training
-- [ ] Qwen2.5-1.5B-Instruct embeddings (P5's pinned revision) on Colab; FinBERT
+- [x] Qwen2.5-1.5B-Instruct embeddings (P5's pinned revision) on Colab; FinBERT
       (`ProsusAI/finbert`) on CPU
-- [ ] Models 3/4 with the encoder swapped, everything else identical (frozen M1/M2 backbone,
+- [x] Models 3/4 with the encoder swapped, everything else identical (frozen M1/M2 backbone,
       two-stage, train-only standardisation, P2.2 protocol, 3 seeds); all 7 conditions
-- [ ] Analysis against the R1 family; results section in `paper/`
+- [x] Analysis against the R1 family; results section in `paper/`
+- **✅ R1 done (2026-10-09):** pre-registered reading R1-a; in-prompt reading carries ~98% of
+  the manipulation; a direction-aware encoder (FinBERT) makes late heads attackable
 
 ### R2 — generality: other LLM forecasters and prompt wording
 - [ ] Qwen2.5-7B-Instruct (4-bit on a T4) and Phi-3.5-mini-instruct as early-fusion forecasters
@@ -329,6 +333,8 @@ Attackers who know the defence. TextGuard v1 is run exactly as frozen in P6.
       feasible) chosen and frozen before any model output exists on them
 - [ ] Tested **once** on the held-out domains: v2 and v1 both, and v2 also against R3's
       adaptive attacks
+- [ ] v2 also evaluated on R1's **FinBERT heads** (M3-F, M4-F) — v1 did not reduce M3-F's DSS
+      (+0.049 → +0.053)
 
 ### R5 — realistic attacks
 - [ ] Fluent fakes written by an LLM from a **different family** than Qwen

@@ -126,13 +126,16 @@ def protocol(model: str, domain: str, condition: str, seeds=SEEDS) -> dict:
                 texts=_texts_fingerprint(condition, domain))
 
 
-def unit_paths(model: str, domain: str, condition: str) -> dict[str, Path]:
+def unit_paths(model: str, domain: str, condition: str, unit_dir: Path | None = None
+               ) -> dict[str, Path]:
+    d = unit_dir or UNIT_DIR
     stem = f"{model}_{domain}_{condition}"
-    return {"preds": UNIT_DIR / f"{stem}.csv", "done": UNIT_DIR / f"{stem}.done.json"}
+    return {"preds": d / f"{stem}.csv", "done": d / f"{stem}.done.json"}
 
 
-def unit_done(model: str, domain: str, condition: str, proto: dict) -> bool:
-    paths = unit_paths(model, domain, condition)
+def unit_done(model: str, domain: str, condition: str, proto: dict,
+              unit_dir: Path | None = None) -> bool:
+    paths = unit_paths(model, domain, condition, unit_dir)
     if not (paths["done"].exists() and paths["preds"].exists()):
         return False
     saved = json.loads(paths["done"].read_text())
@@ -185,13 +188,18 @@ def run_unit(model: str, domain: str, condition: str, windows: dict, train_std: 
 
 
 def run(models=MODELS, domains=DOMAINS, conditions=CONDITIONS, seeds=SEEDS,
-        use_mlflow: bool = True, fresh: bool = False) -> pd.DataFrame:
-    """Run every unfinished unit, then collect and check all finished units."""
-    if fresh and UNIT_DIR.exists():
-        shutil.rmtree(UNIT_DIR)
+        use_mlflow: bool = True, fresh: bool = False, unit_dir: Path | None = None,
+        predictions: Path | None = None, experiment: str = "p5_experiments") -> pd.DataFrame:
+    """Run every unfinished unit, then collect and check all finished units.
+
+    ``unit_dir`` / ``predictions`` / ``experiment``: R1 (``src/run_r1.py``) runs its heads into
+    its own folder and table, so P5's ``p5_predictions.csv`` never changes."""
+    unit_dir = unit_dir or UNIT_DIR
+    if fresh and unit_dir.exists():
+        shutil.rmtree(unit_dir)
     if use_mlflow:
         import mlflow
-        mlflow.set_experiment("p5_experiments")
+        mlflow.set_experiment(experiment)
     for domain in domains:
         splits = load_splits(domain)
         train_values = splits.train["value"].to_numpy(float)
@@ -200,15 +208,15 @@ def run(models=MODELS, domains=DOMAINS, conditions=CONDITIONS, seeds=SEEDS,
         for model in models:
             for condition in conditions:
                 proto = protocol(model, domain, condition, seeds)
-                if unit_done(model, domain, condition, proto):
+                if unit_done(model, domain, condition, proto, unit_dir):
                     print(f"{domain:<10} {model:<13} {condition:<12} already done, skipped",
                           flush=True)
                     continue
                 preds = run_unit(model, domain, condition, windows, std, mean, seeds,
                                  use_mlflow)
                 bert = any(e.is_loaded for e in _ENCODERS.values())
-                paths = unit_paths(model, domain, condition)
-                UNIT_DIR.mkdir(parents=True, exist_ok=True)
+                paths = unit_paths(model, domain, condition, unit_dir)
+                unit_dir.mkdir(parents=True, exist_ok=True)
                 _atomic_write(paths["preds"], lambda f: preds.to_csv(f, index=False))
                 _atomic_write(paths["done"],  # marker last: a crash never looks finished
                               lambda f: f.write_text(json.dumps(proto, indent=1)))
@@ -218,17 +226,18 @@ def run(models=MODELS, domains=DOMAINS, conditions=CONDITIONS, seeds=SEEDS,
                 unload_encoders()  # free BERT if a cache miss loaded it
                 del preds
                 gc.collect()
-    return collect()
+    return collect(unit_dir, predictions)
 
 
-def collect() -> pd.DataFrame:
-    stems = sorted(d.name.removesuffix(".done.json") for d in UNIT_DIR.glob("*.done.json"))
+def collect(unit_dir: Path | None = None, predictions: Path | None = None) -> pd.DataFrame:
+    unit_dir, predictions = unit_dir or UNIT_DIR, predictions or PREDICTIONS
+    stems = sorted(d.name.removesuffix(".done.json") for d in unit_dir.glob("*.done.json"))
     if not stems:
-        raise RuntimeError(f"no finished units in {UNIT_DIR}")
-    preds = pd.concat([pd.read_csv(UNIT_DIR / f"{s}.csv", dtype={"sample_id": str})
+        raise RuntimeError(f"no finished units in {unit_dir}")
+    preds = pd.concat([pd.read_csv(unit_dir / f"{s}.csv", dtype={"sample_id": str})
                        for s in stems], ignore_index=True)
-    preds.to_csv(PREDICTIONS, index=False)
-    print(f"collected {len(stems)} units, {len(preds)} rows -> {PREDICTIONS}", flush=True)
+    preds.to_csv(predictions, index=False)
+    print(f"collected {len(stems)} units, {len(preds)} rows -> {predictions}", flush=True)
     return preds
 
 
@@ -270,7 +279,8 @@ def check_against_p2(preds: pd.DataFrame, p2_path: Path = P2_PREDICTIONS) -> pd.
     return out
 
 
-def check_embedding_scalers(domains=DOMAINS, seeds=SEEDS) -> pd.DataFrame:
+def check_embedding_scalers(domains=DOMAINS, seeds=SEEDS,
+                            models=("DLinear+BERT", "PatchTST+BERT")) -> pd.DataFrame:
     """Every Model 3/4 checkpoint's ``EmbeddingScaler`` must equal the mean/std of the
     **train** windows' texts recomputed now — proof that attacked text never refit it
     (embeddings come from the cache; BERT is not loaded)."""
@@ -279,7 +289,7 @@ def check_embedding_scalers(domains=DOMAINS, seeds=SEEDS) -> pd.DataFrame:
     for domain in domains:
         w = split_windows(load_splits(domain), lookback_for(domain), horizon=1)["train"]
         real = [t for t in (_clean(t) for t in w.text) if t is not None]
-        for model in ("DLinear+BERT", "PatchTST+BERT"):
+        for model in models:
             for seed in seeds:
                 m = MODEL_CLASSES[model].load(checkpoint(model, domain, seed))
                 e = _encoder(m.encoder_name).encode(real)

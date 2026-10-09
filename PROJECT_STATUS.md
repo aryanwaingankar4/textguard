@@ -4,7 +4,7 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** R1 — LLM vs fusion (P0–P6 complete; research extensions R1–R7 before P8; P7 optional)
+**Current phase:** R2 — generality (P0–P6 and R1 complete; research extensions R2–R7 before P8; P7 optional)
 **Last updated:** 2026-10-09
 
 > 👤 **Solo project.** All work by Aryan.
@@ -23,8 +23,8 @@
 | P4 | Metrics module — DSS, Flip Rate, etc. | ✅ | ✅ Done |
 | P5 | Experiment runner — screening + attack | ✅ | ✅ Done (P5a + P5b) |
 | P6 | TextGuard defense | ✅ Core | ✅ Done — exit criterion **partly met** (§9 P6.8) |
-| **R1** | LLM vs fusion — late-fusion heads on Qwen embeddings (+ FinBERT) | ✅ | 🔵 **In progress** (§1a) |
-| R2 | Generality — Qwen2.5-7B (4-bit), Phi-3.5-mini; prompt variants for M5 | ✅ | ⚪ Pending |
+| R1 | LLM vs fusion — late-fusion heads on Qwen embeddings (+ FinBERT) | ✅ | ✅ Done — pre-registered reading R1-a (§9 R1) |
+| **R2** | Generality — Qwen2.5-7B (4-bit), Phi-3.5-mini; prompt variants for M5 | ✅ | 🔵 **Next** — pre-register first (§1a) |
 | R3 | Adaptive attacks on TextGuard v1 | ✅ | ⚪ Pending |
 | R4 | TextGuard v2 — val-developed, tested once on held-out domains | ✅ | ⚪ Pending |
 | R5 | Realistic attacks — other-family LLM fakes + human plausibility study | ✅ | ⚪ Pending |
@@ -40,14 +40,12 @@ PHASES.md "Research extensions"). P7 is upside.
 
 ---
 
-## 1a. ▶ START HERE — handoff for the next session (R1 — LLM vs fusion)
+## 1a. ▶ START HERE — handoff for the next session (R2 — generality)
 
-> Written 2026-10-09 when the research extensions were added. Replace this section at the end
-> of R1 (then for R2, …, R7, then P8).
+> Written 2026-10-09 at the end of R1. Replace this section at the end of R2 (then R3, …, R7, P8).
 
-**P0–P6 are complete. Before the paper, research extensions R1–R7 run in order**
-(PHASES.md "Research extensions"; decided by Aryan 2026-10-09), then **P8**. P7 stays optional
-(R6 replaces P7.4, the drift monitor).
+**P0–P6 and R1 are complete.** Research extensions R2–R7 run next, in order (PHASES.md
+"Research extensions"), then **P8**. P7 stays optional (R6 replaces P7.4).
 
 ### The results, one line per phase (details and every number in §9)
 
@@ -58,32 +56,37 @@ PHASES.md "Research extensions"). P7 is upside.
 * **P6 (defence) — COMPLETE, exit criterion partly met:** TextGuard (soft gate, w 3/6) cuts M5
   pooled DSS +0.451 → −0.042 (sig. vs always_trust and clip) but FBR 14.4% > the 10% budget,
   flip reduction n.s., clip better on accuracy / FBR / exaggeration — a trade-off, no dominant
-  defence. Contribution = the failure decomposition (judge on Health_US, evidence reference
-  frame on Traffic/Economy — the latter predicted by Amendment 1). §9 "P6 results", parts 0–10.
+  defence. Contribution = the failure decomposition. §9 "P6 results", parts 0–10.
+* **R1 (LLM vs fusion) — COMPLETE:** pre-registered outcome **R1-a** ("early fusion
+  amplifies"), stated beside the precise interpretation: mean-pooled Qwen embeddings are
+  direction-blind (val 1.02× BERT), so R1 compares in-prompt reading with a pooled
+  representation — same LLM, moving the report into a pooled embedding removes **~98%** of the
+  manipulation. **FinBERT: late fusion is not immune by design** — a direction-aware encoder makes
+  the same heads attackable (M3-F +0.049σ, 19 toward / 1 away), ~10× less than M5. §9 "R1".
+  Paper draft: `paper/sections/r1_llm_vs_fusion.tex`.
 
-### R1 — what to do (pre-registration: §10d)
+### R2 — what to do (generality)
 
-**Question:** is Model 5's vulnerability caused by the LLM's *text understanding* or by *early
-fusion*? M5 confounds the two (§9 P5.7). **Design:** Models 3/4 with frozen BERT replaced by
-(a) Qwen2.5-1.5B-Instruct embeddings — the same model and revision as M5 — and (b) FinBERT
-(`ProsusAI/finbert`, a direction/sentiment-aware encoder that runs on CPU); everything else
-identical. Full design, family and readings: **§10d — fixed before any R1 output.**
+**Question:** do the P5 findings (an early-fusion LLM forecaster is steered by flipped reports)
+hold beyond one 1.5B model and one prompt wording? PHASES.md R2.
 
-1. [x] Pre-registration §10d committed **alone** and pushed (`17d2733`).
-2. [x] Mechanism check on **val**, BERT + FinBERT (FinBERT embedded locally; no training):
-       flip-vs-swap ratio → `results/summary_r1_mechanism_val.csv`. **FinBERT direction-aware
-       (3.08× BERT); BERT 0.209** (§9 R1).
-3. [x] Export every text the heads need (train + val + test, all conditions) →
-       `results/qwen/r1_embed_inputs.csv`; Colab notebook `notebooks/r1_qwen_embeddings.ipynb`
-       (P5's pinned revision + the 40-prompt probe). **Colab steps: §7c.**
-4. [x] Colab run (2026-10-09, T4, 2 min; probe 40/40, deterministic) → `r1_qwen_embeddings.npz` + `r1_qwen_embed_meta.json` back into
-       `results/qwen/`; import into the cache (`python -m src.models.qwen_embeddings import`,
-       verifies every fingerprint); back up with `git add -f`.
-5. [ ] Mechanism check for Qwen (val) → reading rule R1-b vs R1-c (§10d) fixed by it.
-6. [ ] Train the four heads (P2.2 protocol, val-tuned lr, 3 seeds) and run all 7 conditions.
-7. [ ] Analysis against the R1 family (m = 108) → §9 "R1 results"; results section in `paper/`.
+1. [ ] **Pre-register R2 (§10e) and commit it alone**, before any R2 output — **with a SESOI**
+       for every decision rule (new rule, below). Decide there: models and pinned revisions
+       (Qwen2.5-7B-Instruct 4-bit on a T4; Phi-3.5-mini-instruct, fp16 fits a T4), the 2–3
+       prompt-wording variants for M5 (Model 5's own prompt stays exactly as reported), the
+       conditions (at least real / empty / flipped / exaggerated; the screening controls if
+       the T4 budget allows), the family (S / A1 / A2 per new model, comparisons vs M5) and the
+       readings.
+2. [ ] Export (same windows and texts as P5's `export_qwen_inputs --p5`), build a Colab notebook
+       per model with a reproducibility probe and a pinned revision; parse / scale failures
+       recorded as for M5 (§7b); the memorisation caveat (#24) applies to every LLM.
+3. [ ] Colab runs → back up predictions with `git add -f` → analysis against §10e → §9 "R2"
+       → results section into `paper/sections/`.
 
-**Do not train or evaluate any R1 head before step 4 is done** (Aryan, 2026-10-09).
+**Open notes carried from R1:**
+* **R4 must also test TextGuard v2 on the FinBERT heads** — v1 did not reduce M3-F's DSS
+  (+0.049 → +0.053). Record it in R4's pre-registration.
+* R1's heads and embeddings are backed up / regenerable (table below); R2 does not change them.
 
 ### Rules for every research extension (R1–R7; also in CLAUDE.md §14 and PHASES.md)
 
@@ -96,6 +99,9 @@ identical. Full design, family and readings: **§10d — fixed before any R1 out
   data checks (directional %, timing) are allowed before freezing.
 * **Write each extension's results section into `paper/` as it finishes.**
 * **Null results are reported, not dropped.**
+* **From R2 on, every pre-registration defines a smallest effect size of interest (SESOI)** for
+  each decision rule — a claim like "fooled" needs significance **and** an estimate ≥ the SESOI.
+  Lesson from R1: §10d had none, so a +0.0075σ shift (1/60 of M5) counted as "fooled".
 
 ### Rules a fresh session must not break
 
@@ -117,7 +123,8 @@ identical. Full design, family and readings: **§10d — fixed before any R1 out
 | Judge inputs (for the P6 loader's fingerprint check) | `python -m src.textguard.export_judge_inputs` | seconds |
 | P6 tables | `python -m src.analyze_p6 judge`, `tune`, `test` (test refuses to run without `summary_p6_frozen.json`) | ~1 min |
 | P6 figures | `python -m src.figures_p6` | seconds |
-| Tests | `python -m pytest -q` (277) | ~45 s |
+| R1 heads (train → infer → analyse) | `python -m src.models.train_r1`, `python -m src.run_r1`, `python -m src.analyze_r1 test` (Qwen embeddings from the backed-up `.npz` via `python -m src.models.qwen_embeddings import`; FinBERT: `python -m src.analyze_r1 embed-finbert`) | ~25 min + ~15 min + ~2 min CPU |
+| Tests | `python -m pytest -q` (280) | ~45 s |
 
 Model 5 / judge answers: `results/qwen/*_predictions.csv` + `*_run_meta.json` (in git); the
 Colab notebooks in `notebooks/` are only needed to re-generate them.
@@ -280,7 +287,9 @@ Related Work in P8, and re-run the arXiv search then.
 | `src/models/text_encoder.py` (`get_encoder`, `CachedEncoder`) | R1 | ✅ FinBERT (pinned revision) + cache-only Qwen encoder; BERT path unchanged |
 | `src/models/qwen_embeddings.py` | R1 | ✅ export (1994 prompts, all BERT-cache hits) / verified import |
 | `notebooks/r1_qwen_embeddings.ipynb` | R1 | ✅ run on Colab T4 2026-10-09 (1994 embeddings, 2 min, probe 40/40, P5's setup) |
-| `src/analyze_r1.py` | R1 | ✅ FinBERT embedding + val mechanism check; analysis against §10d to come (9 tests in `test_r1.py`) |
+| `src/models/late_fusion.py` R1 heads | R1 | ✅ `DLinear/PatchTST + Qwen/FinBERT`: only the encoder differs (MLP hidden 96 fixed); M3/M4 predictions unchanged (≤ 6e-8 relative) |
+| `src/models/train_r1.py`, `src/run_r1.py` | R1 | ✅ P2.2 protocol + P5a runner into their own unit folders (`results/r1_*`), P2/P5 tables untouched; text=None check |
+| `src/analyze_r1.py` | R1 | ✅ FinBERT embedding, val mechanism, test analysis (Holm m = 108 asserted), mechanical §10d reading, TextGuard v1 on fooled heads (12 tests in `test_r1.py`) |
 | `src/auditor.py` | P7 | ⚪ |
 | `app/` (Streamlit) | P7 | ⚪ |
 
@@ -1610,8 +1619,127 @@ Traffic 0.346 → 0.580 · Health_US 0.182 → 0.631. BERT's val value matches i
   "see" the lie, independently of Qwen.
 * **Neither encoder sees magnitude:** exaggeration moves both ~0.21 (FinBERT is sentiment-
   trained, so ×3 the change is the same sentiment).
-* Qwen's row decides between readings R1-b and R1-c (§10d) and is filled when the embeddings
-  are imported.
+* **Qwen (added 2026-10-09 after import): flipped 0.213 (median 0.165), 1.02× BERT →
+  direction-blind** by the §10d rule (cos std 0.948; exaggerated 0.183). Per domain 0.166–0.374,
+  tracking BERT in every domain. → **R1-b is ruled out before any head was trained**; the test
+  result selects between R1-a (fooled) and R1-c (not fooled).
+
+#### 1. Training (P2.2 protocol) and integrity checks
+
+`python -m src.models.train_r1` → `results/summary_r1_lr_tuning.csv`, `summary_r1_train.csv`;
+`python -m src.run_r1` → `results/r1_predictions.csv` (gitignored).
+* **text=None ≡ Model 1/2:** DLinear heads bit-identical on all 1479 rows per head; PatchTST
+  heads to float32 precision (max relative 2.4e-7) — as M4 in P2.3.
+* Inference: 41,412 rows, **0 NaN**; all 48 embedding scalers = train-text statistics (|diff| 0);
+  real/empty identical to the training-time predictions.
+* Models 3/4 after the code change: identical to P5 within float32 (≤ 6e-8 relative); all 14
+  `summary_p5_*.csv` regenerate byte-identically.
+* Chosen head lr (M3-Q / M4-Q / M3-F / M4-F): Economy 1e-2 / 1e-3 / 1e-3 / 1e-2 · SocialGood
+  1e-2 / 1e-4 / 1e-2 / 1e-2 · Traffic 1e-2 all · Health_US 1e-4 / 1e-3 / 1e-4 / 1e-4. Best epochs
+  1–11 except Traffic (5–60): as for BERT, little learnable text signal outside Traffic/Economy.
+* Val (real vs None): Traffic M3-Q 0.123 vs 1.021 (M3-BERT 0.585) — Qwen embeddings carry
+  Traffic's year-over-year information best; test 1.131 vs 1.043 (text still hurts on test, as
+  for M3, issue #23).
+
+#### 2. Test results against the R1 family (§10d) — `python -m src.analyze_r1 test`
+
+`results/summary_r1_*.csv` (screening, attack, encoder, fusion, holm_family, damage, failures,
+*_no2020, density, mechanism_test, textguard_v1) + `summary_r1_reading.json`. Test split,
+seed-mean per window, 299 report windows, 251 / 250 attacked (flipped / exaggerated).
+**Holm m = 108 (asserted): 37 reject** — S 16/16, A1 15 (12 support the claim), A2 2/2,
+E 2/2, F′ 2/2.
+
+**Flip attack, pooled** (M3/M4/M5 = P5, unchanged):
+
+| Model | Encoder | DSS [95% CI] | Holm p | Flip Rate | toward / away | A2 Holm p |
+|---|---|---|---|---|---|---|
+| M3 | BERT | −0.005 [−0.010, +0.002] | (P5) | 0.4% | 1 / 5 | (P5) |
+| M4 | BERT | +0.003 [+0.001, +0.006] | (P5) | 0.4% | 1 / 0 | (P5) |
+| M3-Q | Qwen pooled | +0.008 [+0.002, +0.014] | 1 | 0.4% | 1 / 1 | 1 |
+| **M4-Q** | Qwen pooled | **+0.0075 [+0.004, +0.011]** | **1.8e-5** | 1.2% | 3 / 2 | 1 |
+| **M3-F** | FinBERT | **+0.049 [+0.040, +0.059]** | **6e-17** | **7.6%** | **19 / 1** | **0.003** |
+| **M4-F** | FinBERT | **+0.034 [+0.028, +0.041]** | **1e-11** | 3.2% | 8 / 2 | 1 |
+| M5 | Qwen in prompt | +0.457 [+0.348, +0.572] | (P5) | 23.6% | 58 / 4 | (P5) |
+
+Per domain, flipped DSS (σ): M3-F Economy **+0.138**, SocialGood **+0.070**, Traffic −0.026
+(n.s.), Health_US **+0.021** · M4-F Economy **+0.064**, Traffic **+0.094**, SocialGood
+**−0.038** (pushed away, sig.), Health_US +0.002 · M4-Q Economy **+0.012**, Health_US **+0.007**
+· M3-Q nothing significant. Exaggerated: |DSS| ≤ 0.005 pooled for every head (M4-Q +0.003
+rejects — negligible).
+
+**E — encoder vs its BERT twin (pooled, per-window DSS difference):** M3-F − M3 **+0.054
+[+0.043, +0.064], Holm 1e-20**; M4-F − M4 **+0.031 [+0.025, +0.037], Holm 3e-8**; M3-Q − M3
++0.012 (Holm 1); M4-Q − M4 +0.004 [+0.001, +0.008] (Holm 0.28). Exaggerated: none.
+**F′ — M5 vs the Qwen heads:** M5 − M3-Q **+0.451 [+0.342, +0.565], Holm 5e-12**; M5 − M4-Q
+**+0.450 [+0.340, +0.564], Holm 8e-9**. Exaggerated: −0.10 both (Holm 1, 0.24).
+
+**Screening (descriptive beyond S):** sensitivity pooled M3-Q 0.170, M4-Q 0.080, M3-F 0.117,
+M4-F 0.054 (BERT: M3 0.158, M4 0.074); Traffic largest (M3-Q 0.642). Usage gap MSE(empty) −
+MSE(real), pooled: M3-Q −0.006, M4-Q +0.004, M3-F **−0.059** (text hurts, Traffic), M4-F −0.005.
+**Damage** (MSE fake − real, attacked windows): every CI spans 0 except M4-Q exaggerated
+(+0.004, +1.2%) — the attack moves the FinBERT heads without measurably hurting accuracy.
+**Failures:** 0 / 41,412.
+**Mechanism on test** (descriptive, beside P5's BERT table): BERT 0.203, FinBERT 0.653, Qwen
+0.223 (flipped); exaggerated 0.222 / 0.213 / 0.196.
+
+**Ablations (raw p, outside the family):** without 2020 — M3-F +0.045, M4-F +0.027, M4-Q
++0.0085 (all p < 1e-4), M3-Q +0.003 (n.s.); E: M3-F − M3 +0.053, M4-F − M4 +0.024, M4-Q − M4
++0.005; F′ +0.435 / +0.429. Dense vs sparse: M3-F +0.069 / +0.031, M4-F +0.077 / −0.006,
+M4-Q +0.010 / +0.006, M3-Q +0.018 / −0.001.
+
+**TextGuard v1, frozen P6 settings, on the fooled heads (pre-registered descriptive):**
+pooled flipped DSS M4-Q +0.0075 → **−0.001**; M4-F +0.034 → **+0.025**; M3-F +0.049 →
+**+0.053 (not reduced)**; FBR 14.4% (the gate depends only on the text — same as P6). Real-text
+ΔMSE vs undefended: M3-F −0.035, M4-F −0.001, M4-Q −0.001. clip (k 0.5) changes nothing
+except M3-F (+0.054, ΔMSE −0.022).
+
+#### 3. Reading — pre-registered, then what the numbers say
+
+* **Pre-registered outcome (mechanical, `summary_r1_reading.json`): R1-a** — M4-Q is "fooled"
+  (A1 pooled flipped rejects, +), and F′ rejects for both Qwen heads with DSS_M5 > DSS_Q →
+  "the vulnerability follows the LLM's text understanding; **early fusion amplifies**".
+  Reported as specified; not amended.
+* **Caveat that must travel with it:** §10d fixed no minimum effect size. The rule fires on
+  **+0.0075σ**, ~1/60 of M5's +0.457σ, with a non-significant Flip Rate (3 toward / 2 away),
+  not distinguishable from M4's BERT twin (E Holm 0.28); M3-Q is not fooled. And the val
+  mechanism shows the mean-pooled Qwen vector is as direction-blind as BERT (1.02×), so the
+  Qwen heads could hardly act on direction.
+* **What the numbers say:** holding the LLM fixed, moving its reading of the report from the
+  prompt into a mean-pooled embedding + late head removes **~98%** of the directional
+  manipulation (F′ +0.45σ, both heads). The vulnerability is carried by **in-prompt reading**,
+  not by the model's pooled representation — narrower than R1-a's wording "follows the LLM's
+  understanding". Paper: report R1-a as the pre-registered outcome and this as the
+  interpretation, side by side (draft does so).
+* **FinBERT — late fusion is not immune by design.** When the embedding carries direction
+  (3.08× BERT on val), late heads trained only for accuracy **do** follow it: both FinBERT
+  heads are fooled, significantly more than their BERT twins (E), M3-F flips 19 forecasts
+  toward the lie vs 1 away. Still ~10× smaller than M5 in σ. **Exploratory** (not
+  pre-registered): relative to each model's own text sensitivity, FinBERT heads redirect 42%
+  (M3-F) / 64% (M4-F) of their text movement toward the lie vs 5–9% (Qwen heads) and 118% (M5)
+  — the small absolute effects partly reflect the heads' small text budget (w = 0.1).
+* **P5 caveat updated:** "Models 3–4 are immune because frozen mean-pooled BERT is
+  direction-blind" now has a positive control — swap in a direction-aware encoder and the same
+  late heads become steerable.
+
+#### 4. Final wording (approved by Aryan 2026-10-09; §10d not amended)
+
+* **Pre-registered outcome: R1-a**, reported as specified, with the interpretation stated
+  beside it: **mean-pooled Qwen embeddings are direction-blind (val 1.02× BERT), so R1 compares
+  in-prompt reading vs a pooled representation. Same LLM: moving the report from the prompt
+  into a pooled embedding removes ~98% of the manipulation** (M5 +0.457σ vs Qwen heads
+  +0.008σ; 1 − 0.0075/0.457 = 98.4%).
+* **Headline FinBERT finding: late fusion is not immune by design.** P5's BERT models were
+  immune because the encoder is direction-blind; a direction-aware encoder makes the same heads
+  attackable (M3-F DSS +0.049σ, 19 toward / 1 away), ~10× less than M5.
+* **Pre-registration lesson:** §10d set no smallest effect size of interest, so a +0.0075σ
+  shift triggered "fooled". **From R2 on, every pre-registration defines one** (rule in §1a,
+  CLAUDE.md §14, PHASES.md).
+* **TextGuard v1 did not reduce M3-F's DSS (+0.049 → +0.053) → R4: v2 must also be tested on
+  the FinBERT heads.**
+* Paper: `paper/sections/r1_llm_vs_fusion.tex` (draft); `paper/references.bib` started with
+  Araci (2019), FinBERT, arXiv:1908.10063 — verified against the arXiv record (author per arXiv:
+  Dogu Araci; the ProsusAI model card cites the same paper). `sec:textguard` left for P8 (the P6
+  section is not written yet).
 
 ### P7.6 — FNSPID (optional)
 | Model | DSS before | DSS after | Flip before | Flip after |
@@ -2019,6 +2147,25 @@ labelled so (e.g. other pooling, chat template, a larger Qwen — that is R2).
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-09 — R1: Qwen embeddings back, heads trained, test analysed → **R1 complete**
+- Colab: probe 40/40, P5's setup, deterministic; import verified; backed up (`d50be29`)
+- Val mechanism: **Qwen pooled embedding direction-blind (1.02× BERT)** → R1-b out
+- Four heads trained under the P2.2 protocol; text=None ≡ M1/M2 (DLinear bit-identical,
+  PatchTST ≤ 2.4e-7); inference 41,412 rows, 0 NaN; P5 tables regenerate byte-identically
+- Test, Holm m = 108: 37 reject. M4-Q +0.0075σ (fooled by the rule), M3-Q not; **M3-F +0.049,
+  M4-F +0.034σ (both fooled, > BERT twins)**; F′ +0.45σ both
+- **Pre-registered reading R1-a + "early fusion amplifies"**, with the caveat that the rule had
+  no minimum effect size (M4-Q = 1/60 of M5); substantive: in-prompt reading carries ~98% of
+  the vulnerability; FinBERT shows late fusion is steerable once the encoder sees direction
+- TextGuard v1 (frozen) on fooled heads: removes M4-Q's, trims M4-F's, not M3-F's shift
+- Draft `paper/sections/r1_llm_vs_fusion.tex`; 280 tests pass (3 new)
+- **Broke:** heredoc quoting in a multi-file edit → scratch scripts; console cp1252 could not
+  print τ → `PYTHONIOENCODING=utf-8` (files were already written)
+- Reviewed by Aryan: framing approved (R1-a as pre-registered + in-prompt interpretation beside
+  it; §10d not amended); added the FinBERT headline, the SESOI lesson (rule from R2 on) and the R4
+  note (v2 also on the FinBERT heads); bib started (FinBERT, verified on arXiv)
+- **R1 closed.** §1a rewritten for **R2**
 
 ### 2026-10-09 — R1 started: research extensions planned, R1 pre-registered, Qwen embedding job built
 - Research extensions R1–R7 added before P8 (PHASES.md, phase board, §1a, CLAUDE.md §14) with

@@ -191,3 +191,46 @@ def test_import_refuses_mismatched_files(tmp_path):
     np.savez(tmp_path / "diff.npz", sha=z["sha"], emb=z["emb"] + 1, n_tokens=z["n_tokens"])
     with pytest.raises(ValueError, match="different values"):
         import_embeddings(tmp_path / "diff.npz", meta, inp, cache_dir=tmp_path / "c4")
+
+
+# --- R1 heads: only the encoder differs; text=None is the backbone exactly ---------------------
+
+@pytest.mark.parametrize("encoder_dim", [1536, 768])
+def test_r1_heads_load_and_reproduce_the_backbone_without_text(tmp_path, monkeypatch, encoder_dim):
+    from tests.test_late_fusion import _data, needs_mmtsflib  # noqa: F401
+    from src.models import _mmtsflib
+    if not _mmtsflib.available():
+        pytest.skip("MM-TSFlib not cloned")
+    from src.models import late_fusion as lf
+    from src.models.dlinear import DLinearForecaster
+    from src.models.patchtst import PatchTSTForecaster
+
+    class Enc:
+        def encode(self, texts):
+            return np.stack([np.random.default_rng(int(prompt_sha(make_prompt(t))[:8], 16))
+                             .normal(size=encoder_dim) for t in texts]).astype(np.float32)
+    monkeypatch.setattr(lf, "_encoder", lambda name: Enc())
+    heads = ({1536: (lf.DLinearQwenForecaster, lf.PatchTSTQwenForecaster),
+              768: (lf.DLinearFinBertForecaster, lf.PatchTSTFinBertForecaster)}[encoder_dim])
+    s, w = _data()
+    for base_cls, cls in zip((DLinearForecaster, PatchTSTForecaster), heads):
+        ckpt = tmp_path / f"{base_cls.name}.pt"
+        base = base_cls(8, 1, seed=2021, epochs=2).fit(w["train"], w["val"], s.train["value"],
+                                                        checkpoint=ckpt)
+        m = cls(8, 1, seed=2021, epochs=2, backbone_ckpt=ckpt)
+        assert m.encoder_name == (QWEN_NAME if encoder_dim == 1536 else FINBERT_NAME)
+        assert m.emb_dim == encoder_dim
+        m.fit(w["train"], w["val"], s.train["value"], checkpoint=tmp_path / "head.pt")
+        assert m.mlp[0].in_features == encoder_dim and m.mlp[0].out_features == 96
+        X = w["test"].X
+        assert np.array_equal(m.predict_windows(X, None), base.predict_windows(X, None))
+        again = cls.load(tmp_path / "head.pt")
+        assert again.encoder_name == m.encoder_name
+        assert np.allclose(again.predict_windows(X, w["test"].text),
+                           m.predict_windows(X, w["test"].text))
+
+
+def test_r1_family_has_exactly_108_tests():
+    from src.analyze_r1 import FAMILY_SIZE, R1_HEADS
+    assert sum(FAMILY_SIZE.values()) == 108 and len(R1_HEADS) == 4
+    assert FAMILY_SIZE == {"S": 4 * 4, "A1": 4 * 2 * 5, "A2": 4 * 2 * 5, "E": 4 * 2, "F'": 2 * 2}

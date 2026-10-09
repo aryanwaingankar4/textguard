@@ -74,7 +74,9 @@ import pandas as pd
 from src.data.splits import load_splits
 from src.data.windows import DOMAIN_FREQ, PUBLISHED_HORIZON, lookback_for, split_windows
 from src.models.dlinear import DLinearForecaster
-from src.models.late_fusion import (DLinearBertForecaster, PatchTSTBertForecaster,
+from src.models.late_fusion import (DLinearBertForecaster, DLinearFinBertForecaster,
+                                     DLinearQwenForecaster, PatchTSTBertForecaster,
+                                     PatchTSTFinBertForecaster, PatchTSTQwenForecaster,
                                      unload_encoders)
 from src.models.patchtst import PatchTSTForecaster
 from src.models.persistence import PersistenceForecaster
@@ -106,7 +108,15 @@ PUBLISHED_UNI_MSE = {
 
 MODEL_CLASSES = {"DLinear": DLinearForecaster, "PatchTST": PatchTSTForecaster,
                  "DLinear+BERT": DLinearBertForecaster, "PatchTST+BERT": PatchTSTBertForecaster}
-TEXT_MODELS = ("DLinear+BERT", "PatchTST+BERT")  # main config only: no published h=1 text numbers
+P2_MODELS = ("Persistence", *MODEL_CLASSES)  # what this runner trains by default (P2)
+# R1 heads (PROJECT_STATUS §10d): trained by ``src/models/train_r1.py`` with this runner's
+# protocol and units, into their own unit folder — never mixed into P2's tables
+R1_CLASSES = {"DLinear+Qwen": DLinearQwenForecaster, "PatchTST+Qwen": PatchTSTQwenForecaster,
+              "DLinear+FinBERT": DLinearFinBertForecaster,
+              "PatchTST+FinBERT": PatchTSTFinBertForecaster}
+MODEL_CLASSES.update(R1_CLASSES)
+# main config only: no published h=1 text numbers
+TEXT_MODELS = ("DLinear+BERT", "PatchTST+BERT", *R1_CLASSES)
 
 
 def make_model(name: str, config: str, seq_len: int, horizon: int, seed: int,
@@ -120,7 +130,7 @@ def make_model(name: str, config: str, seq_len: int, horizon: int, seed: int,
 
 
 def backbone_ckpt(name: str, domain: str | None, config: str, seed: int) -> Path:
-    return CHECKPOINTS / name.removesuffix("+BERT") / str(domain) / f"{config}_seed{seed}.pt"
+    return CHECKPOINTS / name.split("+")[0] / str(domain) / f"{config}_seed{seed}.pt"
 
 
 def best_val(model) -> float:
@@ -186,16 +196,19 @@ def protocol(name: str, config: str, seq_len: int, horizon: int, seeds=SEEDS) ->
     return p
 
 
-def unit_paths(config: str, domain: str, name: str) -> dict[str, Path]:
+def unit_paths(config: str, domain: str, name: str, unit_dir: Path | None = None
+               ) -> dict[str, Path]:
+    d = unit_dir or UNIT_DIR
     stem = f"{config}_{domain}_{name}"
-    return {"preds": UNIT_DIR / f"{stem}.csv",
-            "tuning": UNIT_DIR / f"{stem}_tuning.csv",
-            "done": UNIT_DIR / f"{stem}.done.json"}
+    return {"preds": d / f"{stem}.csv",
+            "tuning": d / f"{stem}_tuning.csv",
+            "done": d / f"{stem}.done.json"}
 
 
-def unit_done(config: str, domain: str, name: str, proto: dict) -> bool:
+def unit_done(config: str, domain: str, name: str, proto: dict,
+              unit_dir: Path | None = None) -> bool:
     """True if the unit finished under ``proto``. Raises if it finished under another one."""
-    paths = unit_paths(config, domain, name)
+    paths = unit_paths(config, domain, name, unit_dir)
     if not (paths["done"].exists() and paths["preds"].exists()):
         return False
     saved = json.loads(paths["done"].read_text())
@@ -214,11 +227,12 @@ def _atomic_write(path: Path, write) -> None:
 
 
 def save_unit(config: str, domain: str, name: str, proto: dict,
-              preds: pd.DataFrame, tuning: pd.DataFrame | None) -> None:
+              preds: pd.DataFrame, tuning: pd.DataFrame | None,
+              unit_dir: Path | None = None) -> None:
     """Write the unit's files. The ``.done.json`` marker goes last, so a crash mid-save
     leaves an unfinished unit (re-run next time), never a half-written one that looks done."""
-    paths = unit_paths(config, domain, name)
-    UNIT_DIR.mkdir(parents=True, exist_ok=True)
+    paths = unit_paths(config, domain, name, unit_dir)
+    paths["done"].parent.mkdir(parents=True, exist_ok=True)
     _atomic_write(paths["preds"], lambda f: preds.to_csv(f, index=False))
     if tuning is not None:
         _atomic_write(paths["tuning"], lambda f: tuning.to_csv(f, index=False))
@@ -292,7 +306,7 @@ def run_unit(config, domain, name, w, train_values, seq_len, horizon, seeds, use
 
 
 def run(domains=DOMAINS, seeds=SEEDS, configs=("main", "repro"), use_mlflow=True,
-        fresh=False, models=("Persistence", *MODEL_CLASSES)):
+        fresh=False, models=P2_MODELS):
     """Run every unit not already saved, then collect all saved units.
 
     Returns (raw-predictions frame, lr-tuning frame) over every finished unit.
@@ -372,7 +386,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--no-mlflow", action="store_true")
     ap.add_argument("--domains", nargs="+", default=DOMAINS)
-    ap.add_argument("--models", nargs="+", default=["Persistence", *MODEL_CLASSES])
+    ap.add_argument("--models", nargs="+", default=list(P2_MODELS))
     ap.add_argument("--fresh", action="store_true",
                     help="discard saved units and retrain everything")
     args = ap.parse_args()

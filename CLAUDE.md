@@ -348,7 +348,9 @@ textguard/
   - **R4's held-out domains are chosen and frozen before any model output exists on them**
     (their data checks — directional %, timing — are allowed);
   - **write each extension's results section into `paper/` as it finishes**;
-  - **null results are reported, not dropped.**
+  - **null results are reported, not dropped;**
+  - **from R2 on, every pre-registration defines a smallest effect size of interest** for each
+    decision rule (lesson from R1: no SESOI, so a +0.0075σ shift counted as "fooled").
 - **Write docstrings explaining *why*, not just what** — Aryan must be able to explain
   every module in the viva, alone.
 - **Prefer small, runnable increments** over large refactors.

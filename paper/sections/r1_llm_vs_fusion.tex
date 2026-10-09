@@ -1,0 +1,140 @@
+% R1 — LLM vs fusion. DRAFT (2026-10-09). Every number is from results/summary_r1_*.csv
+% (python -m src.analyze_r1 test) or summary_r1_mechanism_val.csv; pre-registration:
+% PROJECT_STATUS §10d, commit 17d2733 (before any R1 output). Needs: booktabs;
+% references.bib (araci2019finbert). TODO P8: sec:textguard is the P6 TextGuard section,
+% not written yet.
+
+\subsection{Is the vulnerability in the LLM or in early fusion?}
+\label{sec:r1}
+
+In our main experiments the only vulnerable forecaster (Model~5, Qwen2.5-1.5B-Instruct) is
+also the only early-fusion model, so fusion type and ``is an LLM'' are confounded. We separate
+them by holding the LLM fixed and changing how its reading of the report enters the forecast:
+the \emph{same} Qwen2.5-1.5B-Instruct snapshot used as Model~5 becomes a frozen text encoder
+(last-layer hidden states, mean-pooled) for the late-fusion heads of Models~3/4. Everything
+else is identical to Models~3/4: frozen DLinear/PatchTST backbones, a text head
+$\hat y = \mathrm{TS}(x) + 0.1\cdot\mathrm{MLP}(z(e))$ trained in a second stage, train-only
+standardisation, learning rate chosen on validation, three seeds. As a second, CPU-friendly
+encoder we use FinBERT~\cite{araci2019finbert}, a BERT fine-tuned for financial sentiment, i.e.\
+trained to care whether quantities went up or down. This gives four new heads:
+M3-Q/M4-Q (Qwen) and M3-F/M4-F (FinBERT). Without text every head reproduces its backbone
+exactly (DLinear bit-identical; PatchTST to float32 precision), so the text effect is isolated.
+The design, a 108-test Holm family and three readings (R1-a/b/c) were pre-registered before any
+embedding was computed.
+
+\paragraph{Mechanism check (validation, before training).}
+For each encoder we measure how far a flipped report moves the head's (standardised) input,
+relative to swapping in an unrelated report from the same domain. A pre-registered rule calls
+an encoder \emph{direction-aware} if this ratio is at least twice BERT's.
+Table~\ref{tab:r1-mech} shows that mean-pooled Qwen embeddings are as direction-blind as BERT
+($1.02\times$), whereas FinBERT's vector moves three times as far under a flip. No encoder
+registers exaggeration. The test split gives the same picture (BERT 0.203, FinBERT 0.653,
+Qwen 0.223).
+
+\begin{table}[t]
+\centering\small
+\caption{Validation mechanism check: distance the fake report moves the head's input, as a
+fraction of swapping in a different report (pooled over domains; flipped $n{=}133$,
+exaggerated $n{=}131$).}
+\label{tab:r1-mech}
+\begin{tabular}{lcccc}
+\toprule
+Encoder & flipped & $\times$ BERT & direction-aware? & exaggerated \\
+\midrule
+BERT (Models 3/4) & 0.209 & 1.00 & -- & 0.210 \\
+FinBERT & \textbf{0.644} & \textbf{3.08} & yes & 0.218 \\
+Qwen2.5-1.5B (= Model 5) & 0.213 & 1.02 & no & 0.183 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Attack results (test).}
+All four heads are moved by text (16/16 screening tests reject). Table~\ref{tab:r1-attack}
+reports the flip attack. When Model~5's own LLM is moved from the prompt into a late-fusion
+embedding, its directional vulnerability almost vanishes. The Qwen heads move $+0.008\sigma$
+toward the lie, against $+0.457\sigma$ for Model~5 on the same windows. The pre-registered
+early-vs-late contrast ($F'$) is $+0.45\sigma$ for both heads (Holm $p<10^{-6}$). The FinBERT
+heads, whose embeddings do carry direction, are steered significantly more than their BERT
+counterparts (encoder contrast $+0.054\sigma$ and $+0.031\sigma$, Holm $p<10^{-6}$), and M3-F
+turns 19 forecasts toward the lie against 1 away (Flip Rate 7.6\%, Holm $p=0.003$). This is
+still an order of magnitude below Model~5. No head's error rises measurably under attack
+(damage CIs include 0). Exaggeration moves no head appreciably ($|\mathrm{DSS}|\le0.005\sigma$
+pooled).
+
+\begin{table}[t]
+\centering\small
+\caption{Flip attack on the test split, pooled over the four domains (251 attacked windows;
+Model~5: 246 after NaN pairing). DSS in $\sigma$ units with 95\% stratified bootstrap CIs;
+Holm over the pre-registered R1 family ($m{=}108$). M3/M4/M5: P5 predictions, unchanged.}
+\label{tab:r1-attack}
+\begin{tabular}{llcccc}
+\toprule
+Model & Encoder & DSS [95\% CI] & Holm $p$ & Flip Rate & toward/away \\
+\midrule
+M3 & BERT & $-0.005$ [$-0.010$, $+0.002$] & (P5) & 0.4\% & 1/5 \\
+M4 & BERT & $+0.003$ [$+0.001$, $+0.006$] & (P5) & 0.4\% & 1/0 \\
+M3-Q & Qwen (pooled) & $+0.008$ [$+0.002$, $+0.014$] & 1.00 & 0.4\% & 1/1 \\
+M4-Q & Qwen (pooled) & $+0.008$ [$+0.004$, $+0.011$] & $2\cdot10^{-5}$ & 1.2\% & 3/2 \\
+M3-F & FinBERT & $+0.049$ [$+0.040$, $+0.059$] & $<10^{-6}$ & 7.6\% & 19/1 \\
+M4-F & FinBERT & $+0.034$ [$+0.028$, $+0.041$] & $<10^{-6}$ & 3.2\% & 8/2 \\
+\midrule
+M5 & Qwen (in prompt) & $+0.457$ [$+0.348$, $+0.572$] & (P5) & 23.6\% & 58/4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Pre-registered reading.}
+Our rule calls a head \emph{fooled} if its pooled flip DSS is significantly positive after
+Holm. M4-Q meets it, so the pre-registered outcome is \textbf{R1-a}: a late head on the LLM's
+representation is steered, and because $F'$ rejects for both Qwen heads, \emph{early fusion
+amplifies} the effect. We report this outcome as specified, without amending the rule. The
+interpretation needs to be stated precisely, though. The mechanism check shows that mean-pooled
+Qwen embeddings are direction-blind (validation ratio $1.02\times$ BERT's). R1 therefore compares
+\emph{in-prompt reading} with a \emph{pooled representation} of the same LLM. It does not compare
+two ways of exploiting an understanding the representation retains. With the LLM held fixed,
+moving the report from the prompt into a pooled embedding removes about 98\% of the manipulation
+(Model~5 $+0.457\sigma$ vs the Qwen heads $+0.008\sigma$; $F'$ $+0.45\sigma$ for both heads).
+\emph{What makes Model~5 manipulable is reading the report inside the prompt.} The shift that
+triggers ``fooled'' for M4-Q ($+0.0075\sigma$, about $1/60$ of Model~5's) is not distinguishable
+from its BERT twin (encoder contrast $+0.004\sigma$, Holm $p=0.28$), and its Flip Rate is not
+significant (3 toward / 2 away). M3-Q is not fooled.
+
+\paragraph{Late fusion is not immune by design.}
+In our main experiments the BERT-based Models~3--4 were immune to the flip attack, and the
+mechanism check explains why: the frozen, mean-pooled BERT encoder barely distinguishes a report
+from its flipped version. FinBERT is the positive control for that explanation. Its embedding
+does encode direction ($3.08\times$ BERT's), and the same late-fusion heads, trained only for
+accuracy, become attackable. Both FinBERT heads are fooled and are steered significantly more
+than their BERT twins (encoder contrast $+0.054\sigma$ and $+0.031\sigma$, Holm $p<10^{-6}$).
+M3-F moves $+0.049\sigma$ toward the lie and turns 19 forecasts toward it against 1 away (Flip
+Rate 7.6\%, Holm $p=0.003$). This is about $10\times$ less than Model~5. Each FinBERT head is
+steered in two of the three change-flip domains (M3-F: Economy, SocialGood; M4-F: Economy,
+Traffic). The only significant push \emph{away} from the lie is M4-F on SocialGood
+($-0.038\sigma$). Late-fusion immunity is therefore a property of the encoder, not of the fusion
+architecture.
+
+\paragraph{A lesson for pre-registration.}
+The R1 plan fixed tests, family and decision rules but no smallest effect size of interest. As a
+result, a statistically clear but negligible shift ($+0.0075\sigma$) satisfied ``fooled''. We
+report the rule's outcome and the magnitudes side by side. Every subsequent pre-registration in
+this work states a smallest effect size of interest alongside each decision rule.
+
+\paragraph{Ablations and defence (outside the family).}
+Excluding 2020 leaves every conclusion unchanged (M3-F $+0.045$, M4-F $+0.027$, M4-Q
+$+0.009\sigma$; $F'$ $+0.43\sigma$ for both heads). The FinBERT effect is concentrated in the
+dense-text domains (Economy, Traffic: M3-F $+0.069$, M4-F $+0.077\sigma$). As pre-registered for
+fooled heads, we applied TextGuard~v1 exactly as frozen in Section~\ref{sec:textguard}. It
+removes M4-Q's small shift ($+0.008\to-0.001\sigma$) and reduces M4-F's
+($+0.034\to+0.025\sigma$), but not M3-F's ($+0.049\to+0.053\sigma$), at the same 14.4\% False
+Block Rate as for Model~5. A defence that only works on the LLM it was developed against is not
+enough. Any revised gate must also be evaluated on direction-aware late-fusion heads such as
+M3-F.
+
+\paragraph{Limitations.}
+One pooling (mean over all tokens) and one LLM size are tested. A different readout (last token,
+a probe trained on direction) could carry more direction, and larger LLMs are studied in R2. The
+late heads are trained for accuracy on small datasets and are scaled by the fusion weight
+$w=0.1$, which bounds how far text can move them. Exploratory (not pre-registered): relative to
+how far real text moves each model (pooled sensitivity), the FinBERT heads redirect 42\% (M3-F)
+and 64\% (M4-F) of that movement toward the lie, against 5--9\% for the Qwen heads and 118\% for
+Model~5. The small absolute effects therefore partly reflect the heads' small text budget.

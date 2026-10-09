@@ -49,3 +49,5 @@ Thumbs.db
 /results/p5_units/
 # cached text embeddings (recomputable; never commit)
 /cache/
+/results/r1_train_units/
+/results/r1_units/

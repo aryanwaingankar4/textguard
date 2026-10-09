@@ -1,0 +1,25 @@
+model,short,fusion,domain,quantity,condition,value,n,ci_low,ci_high,n_nan,p_raw,block,n_text,n_attacked,coverage,dss,dss_ci_low,dss_ci_high,dss_p_raw,flip_rate,flip_ci_low,flip_ci_high,toward,away,flip_p_raw
+DLinear+Qwen,M3-Q,late,dense (Economy+Traffic),sensitivity,real,0.357018,123,0.303788,0.413128,0,6.32525e-22,S,,,,,,,,,,,,,
+DLinear+Qwen,M3-Q,late,sparse (SocialGood+Health_US),sensitivity,real,0.0393288,176,0.0325599,0.0469659,0,1.23932e-30,S,,,,,,,,,,,,,
+PatchTST+Qwen,M4-Q,late,dense (Economy+Traffic),sensitivity,real,0.112871,123,0.0976087,0.128038,0,6.32525e-22,S,,,,,,,,,,,,,
+PatchTST+Qwen,M4-Q,late,sparse (SocialGood+Health_US),sensitivity,real,0.0563039,176,0.0503224,0.0625907,0,1.23932e-30,S,,,,,,,,,,,,,
+DLinear+FinBERT,M3-F,late,dense (Economy+Traffic),sensitivity,real,0.242278,123,0.20655,0.279286,0,6.32525e-22,S,,,,,,,,,,,,,
+DLinear+FinBERT,M3-F,late,sparse (SocialGood+Health_US),sensitivity,real,0.0300008,176,0.0259348,0.0343394,0,1.23932e-30,S,,,,,,,,,,,,,
+PatchTST+FinBERT,M4-F,late,dense (Economy+Traffic),sensitivity,real,0.0780105,123,0.0656411,0.0912582,0,6.32525e-22,S,,,,,,,,,,,,,
+PatchTST+FinBERT,M4-F,late,sparse (SocialGood+Health_US),sensitivity,real,0.0369509,176,0.0328547,0.0411213,0,1.23932e-30,S,,,,,,,,,,,,,
+DLinear+Qwen,M3-Q,late,dense (Economy+Traffic),,flipped,,122,,,0,,A,123,122,0.99187,0.0175417,0.00478328,0.029922,0.00821404,0.00819672,0,0.0245902,1,1,1
+DLinear+Qwen,M3-Q,late,sparse (SocialGood+Health_US),,flipped,,129,,,0,,A,176,129,0.732955,-0.00131549,-0.00244416,-0.000191858,0.00430541,0,0,0,0,0,1
+DLinear+Qwen,M3-Q,late,dense (Economy+Traffic),,exaggerated,,120,,,0,,A,123,120,0.97561,0.00553396,-0.00457502,0.0154305,0.151995,0,0,0,0,1,1
+DLinear+Qwen,M3-Q,late,sparse (SocialGood+Health_US),,exaggerated,,130,,,0,,A,176,130,0.738636,-0.000117959,-0.00204336,0.00164188,0.00022733,0.00769231,0,0.0230769,1,0,1
+PatchTST+Qwen,M4-Q,late,dense (Economy+Traffic),,flipped,,122,,,0,,A,123,122,0.99187,0.00962267,0.00433637,0.0151924,0.00208751,0.00819672,0,0.0245902,1,0,1
+PatchTST+Qwen,M4-Q,late,sparse (SocialGood+Health_US),,flipped,,129,,,0,,A,176,129,0.732955,0.00549435,0.000550828,0.00999879,7.57611e-06,0.0155039,0,0.0387597,2,2,1
+PatchTST+Qwen,M4-Q,late,dense (Economy+Traffic),,exaggerated,,120,,,0,,A,123,120,0.97561,0.00387677,0.000613536,0.00704814,0.00974288,0.0166667,0,0.0416667,2,0,0.5
+PatchTST+Qwen,M4-Q,late,sparse (SocialGood+Health_US),,exaggerated,,130,,,0,,A,176,130,0.738636,0.00257215,-4.86476e-05,0.00507862,0.00352972,0.0230769,0,0.0538462,3,2,1
+DLinear+FinBERT,M3-F,late,dense (Economy+Traffic),,flipped,,122,,,0,,A,123,122,0.99187,0.0684739,0.0494107,0.0880642,1.0929e-07,0.106557,0.057377,0.163934,13,1,0.00183105
+DLinear+FinBERT,M3-F,late,sparse (SocialGood+Health_US),,flipped,,129,,,0,,A,176,129,0.732955,0.0310928,0.0259182,0.0363609,4.92122e-21,0.0465116,0.0155039,0.0852713,6,0,0.03125
+DLinear+FinBERT,M3-F,late,dense (Economy+Traffic),,exaggerated,,120,,,0,,A,123,120,0.97561,0.0148715,-0.00542177,0.0354713,0.224307,0.0333333,0.00833333,0.0666667,4,1,0.375
+DLinear+FinBERT,M3-F,late,sparse (SocialGood+Health_US),,exaggerated,,130,,,0,,A,176,130,0.738636,-0.00417684,-0.0056119,-0.00282107,4.65116e-08,0,0,0,0,0,1
+PatchTST+FinBERT,M4-F,late,dense (Economy+Traffic),,flipped,,122,,,0,,A,123,122,0.99187,0.0767572,0.0648054,0.0889481,2.39793e-18,0.0655738,0.0245902,0.114754,8,0,0.0078125
+PatchTST+FinBERT,M4-F,late,sparse (SocialGood+Health_US),,flipped,,129,,,0,,A,176,129,0.732955,-0.00574644,-0.00834591,-0.00308711,0.418054,0,0,0,0,2,0.5
+PatchTST+FinBERT,M4-F,late,dense (Economy+Traffic),,exaggerated,,120,,,0,,A,123,120,0.97561,0.00249569,-0.00123376,0.00600103,0.126811,0,0,0,0,0,1
+PatchTST+FinBERT,M4-F,late,sparse (SocialGood+Health_US),,exaggerated,,130,,,0,,A,176,130,0.738636,0.00170522,0.000390503,0.00304493,0.0253157,0,0,0,0,1,1
