@@ -24,7 +24,7 @@
 | P5 | Experiment runner — screening + attack | ✅ | ✅ Done (P5a + P5b) |
 | P6 | TextGuard defense | ✅ Core | ✅ Done — exit criterion **partly met** (§9 P6.8) |
 | R1 | LLM vs fusion — late-fusion heads on Qwen embeddings (+ FinBERT) | ✅ | ✅ Done — pre-registered reading R1-a (§9 R1) |
-| **R2** | Generality — Qwen2.5-7B (4-bit), Phi-3.5-mini; prompt variants for M5 | ✅ | 🔵 **In progress** — pre-registered (§10e); Colab runs next |
+| **R2** | Generality — Qwen2.5-7B (4-bit), Phi-3.5-mini; prompt variants for M5 | ✅ | 🔵 **In progress** — pre-registered (§10e); M5 prompts run back (1/3), Phi + 7B next |
 | R3 | Adaptive attacks on TextGuard v1 | ✅ | ⚪ Pending |
 | R4 | TextGuard v2 — val-developed, tested once on held-out domains | ✅ | ⚪ Pending |
 | R5 | Realistic attacks — other-family LLM fakes + human plausibility study | ✅ | ⚪ Pending |
@@ -974,6 +974,19 @@ Identical prompts inside a run are answered once, so real GPU calls are fewer th
 
 **Order:** `r2_m5_prompts` (central to R2-c / R2-d, fastest per row) → `r2_phi35` → `r2_qwen7b`
 (slowest; most likely to span two sessions).
+
+**Run 1 — `r2_m5_prompts` (Colab T4, 2026-10-09 → 10), backed up with `git add -f`:**
+`r2_m5prompts_fp16_run_meta.json`: two sessions (the laptop shut down after cell 7 had saved all
+9,099 rows; the notebook was re-run on 2026-10-10 to finish cells 8–9, and cell 7 had nothing
+left to do). **Same setup string both sessions** (`Tesla T4 | torch 2.11.0+cu130 | transformers
+5.18.0 | fp16 | …@989aa79`, = P5's stack); **probe 40/40 both sessions** → same setup class as
+M5, reuse certified; test and val complete; **determinism 20/20**; 0 parse failures.
+`load_r2` verification: pins, all 9,099 fingerprints, one setup per file, no duplicates; 3 models
+× (2282 test + 1169 val) rows; **627 rows each for c1 / sk filled from M5** (the no-report
+prompts, byte-identical to M5's), c2 none. The filled rows carry P2.4's setup (`…@None` — P2.4
+did not record the revision, issue #28); the probe compares against P2.4's raw answers, so
+40/40 certifies them directly, as in P5. **Scale (unit) failures** (NaN by the P2.4 rule, counts
+only, not analysed): c1 13 (Traffic 12, Economy 1), c2 2, sk 8 — Traffic again (issue #27).
 
 **Locally afterwards:** `python -c "from src.models.r2_forecasters import load_r2; print(load_r2().groupby(['model','split']).size())"`
 verifies every file; back up with `git add -f results/qwen/r2_*`; then the R2 analysis
@@ -2398,6 +2411,12 @@ sampling, few-shot prompts, other model sizes).
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-10 — R2: M5 prompt-variant run back, verified, backed up
+- Colab run in two sessions (laptop shutdown after cell 7; re-run for cells 8–9): same setup,
+  probe 40/40, determinism 20/20, test + val complete, 0 parse failures (§7d)
+- `load_r2` passes; 627 c1 / sk rows reused from M5; 23 Traffic-dominated unit slips (NaN)
+- Not analysed (by plan: analysis after all three runs). Next: `r2_phi35`, then `r2_qwen7b`
 
 ### 2026-10-09 — R2 started: pre-registered (§10e), committed alone
 - Five early-fusion forecasters: Qwen2.5-7B-Instruct 4-bit (Q7), Phi-3.5-mini fp16 (P35), and
