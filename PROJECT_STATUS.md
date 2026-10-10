@@ -106,7 +106,8 @@ Health_US; P6's judge prompt and revision) — never re-tuned (rule below).
        checks pass** (§8 "R3"); 15 review pairs in `texts/r3_review_pairs.md` (**by-eye review by
        Aryan pending** — two items flagged there, §8 "R3"); one input CSV
        `results/qwen/r3_inputs.csv` (sha256 `136a1416…`); **three Kaggle notebooks** (§7e).
-   * [ ] **Kaggle runs** (§7e steps): `r3_m5_kaggle`, `r3_judge_kaggle`, `r3_qwen7b_kaggle` → download
+   * [ ] **Kaggle runs** (§7e steps): `r3_m5_kaggle` ✅ (verified, backed up — §7e run 1),
+         `r3_judge_kaggle` ⬜, `r3_qwen7b_kaggle` ⬜ → download
          the six output files into `results/qwen/` → verify → back up with `git add -f`.
    * [ ] FinBERT heads (CPU, local): FinBERT-embed the new texts, R1 runner on `a2_forward` /
          `a3_magnitude` (A1 = P3 `flipped` texts — R1 already has those predictions). Needs
@@ -1146,6 +1147,18 @@ comparison stays inside one software setup (§10f). Expected time on a T4: judge
 7. A **failed** version: read the last log lines. Smoke-test stop ("Too many unparseable"), a
    non-T4 GPU, or an input-sha error → tell Claude, change nothing. A plain crash / timeout →
    Save & Run All again (starts fresh).
+
+**Run 1 — `r3_m5_kaggle` (Kaggle T4, 2026-10-10 21:25–21:50 UTC, 24 min), backed up with `git add -f`:**
+`r3_m5_fp16_kaggle_run_meta.json`: setup `Tesla T4 | torch 2.11.0+cu128 | transformers 5.16.1 | fp16 |
+Qwen/Qwen2.5-1.5B-Instruct@989aa79… | kaggle`; input sha256 `136a1416…` (= the export); 1 visible
+GPU. **Probe 40/40** identical to P2.4 — the Kaggle stack reproduces P5's answers (recorded only;
+nothing depends on it). Test + val complete, **determinism 20/20, 0 parse failures**.
+Verified locally (no metric computed): 6409 rows = expected (p5 3451, sk 2958; test 4238), no
+duplicates, one setup, every prompt fingerprint recomputed from the inputs with today's prompt
+modules, y_true = inputs, y_pred = parse(raw_output), identical prompts answered identically
+(4135 distinct). **Consistency vs P2.4 / P5 (descriptive, §10f): 2853 / 2853 byte-identical p5
+prompts give the identical answer** (real, none, flipped, exaggerated, and the A1 / A2 / A3 rows
+whose text equals a P3 text).
 
 **After the runs (next session):** loader + verification (fingerprints, one setup per file, test
 complete, consistency vs P5 / R2 / P6 answers on byte-identical prompts), back up with
@@ -2989,6 +3002,11 @@ change-flip domains (as §10b). Anything else is exploratory and labelled so.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-11 — R3: M5 Kaggle run back, verified, backed up (1 of 3)
+* `r3_m5_fp16_kaggle_*`: probe 40/40, test + val complete, determinism 20/20, 0 parse failures;
+  all row-level checks pass; 2853/2853 byte-identical prompts reproduce P2.4/P5 answers (§7e).
+  Not analysed — waiting for the judge and Qwen-7B runs.
 
 ### 2026-10-11 — R3: pre-registered (§10f), attacks built + validated, Kaggle notebooks built
 * **Pre-registration §10f committed alone and pushed (`68ca198`)** before any R3 text or output:
