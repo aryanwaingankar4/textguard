@@ -4,7 +4,7 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** R2 — generality, **analysis next** (P0–P6 and R1 complete; research extensions R2–R7 before P8; P7 optional)
+**Current phase:** R3 — adaptive attacks (P0–P6, R1 and R2 complete; research extensions R3–R7 before P8; P7 optional)
 **Last updated:** 2026-10-11
 
 > 👤 **Solo project.** All work by Aryan.
@@ -24,8 +24,8 @@
 | P5 | Experiment runner — screening + attack | ✅ | ✅ Done (P5a + P5b) |
 | P6 | TextGuard defense | ✅ Core | ✅ Done — exit criterion **partly met** (§9 P6.8) |
 | R1 | LLM vs fusion — late-fusion heads on Qwen embeddings (+ FinBERT) | ✅ | ✅ Done — pre-registered reading R1-a (§9 R1) |
-| **R2** | Generality — Qwen2.5-7B (4-bit), Phi-3.5-mini; prompt variants for M5 | ✅ | 🔵 **In progress** — pre-registered (§10e + Amendment 1); all 3 runs back and verified; **analysis next** (§1a) |
-| R3 | Adaptive attacks on TextGuard v1 | ✅ | ⚪ Pending |
+| **R2** | Generality — Qwen2.5-7B (4-bit), Phi-3.5-mini; prompt variants for M5 | ✅ | ✅ Done — Q7 fooled, P35 bounded (ignores report content), prompt-robust, skeptical prompt does not help (§9 R2) |
+| **R3** | Adaptive attacks on TextGuard v1 | ✅ | 🔵 **Next** — pre-register first (§1a) |
 | R4 | TextGuard v2 — val-developed, tested once on held-out domains | ✅ | ⚪ Pending |
 | R5 | Realistic attacks — other-family LLM fakes + human plausibility study | ✅ | ⚪ Pending |
 | R6 | Drift monitor for fake-report campaigns (RQ4; replaces P7.4) | ✅ | ⚪ Pending |
@@ -40,12 +40,11 @@ PHASES.md "Research extensions"). P7 is upside.
 
 ---
 
-## 1a. ▶ START HERE — handoff for the next session (R2 — analysis)
+## 1a. ▶ START HERE — handoff for the next session (R3 — adaptive attacks)
 
-> Written 2026-10-09 at the end of R1; R2 part updated 2026-10-11 when all three R2 runs were
-> in. Replace this section at the end of R2 (then R3, …, R7, P8).
+> Written 2026-10-11 at the end of R2. Replace this section at the end of R3 (then R4, …, R7, P8).
 
-**P0–P6 and R1 are complete.** Research extensions R2–R7 run next, in order (PHASES.md
+**P0–P6, R1 and R2 are complete.** Research extensions R3–R7 run next, in order (PHASES.md
 "Research extensions"), then **P8**. P7 stays optional (R6 replaces P7.4).
 
 ### The results, one line per phase (details and every number in §9)
@@ -65,86 +64,67 @@ PHASES.md "Research extensions"). P7 is upside.
   manipulation. **FinBERT: late fusion is not immune by design** — a direction-aware encoder makes
   the same heads attackable (M3-F +0.049σ, 19 toward / 1 away), ~10× less than M5. §9 "R1".
   Paper draft: `paper/sections/r1_llm_vs_fusion.tex`.
+* **R2 (generality) — COMPLETE** (§10e + Amendment 1; SESOI 0.05σ / 5 pp / 10%): **Qwen2.5-7B
+  (4-bit) is fooled** (+0.206σ, about half of M5; more accurate than M5, not better than
+  persistence; text does not improve its accuracy); **Phi-3.5 is bounded because it ignores
+  report content** (+0.007σ; exploratory: repeats the last value in 73% of windows with any
+  report vs 1% without); **M5's conclusions hold under both rewordings** (prompt-robust; size
+  wording-sensitive, reworded = 41% of M5); **the skeptical prompt does not help** (R2-d3; still
+  +0.362σ, TextGuard 0.40σ lower); TextGuard v1 on Q7 −0.112σ but Holm n.s.; no memorisation.
+  Exploratory, across R1 + R2: *in our experiments, no forecaster both reads report direction
+  and resists the attack.* §9 "R2". Paper draft: `paper/sections/r2_generality.tex`.
 
-### R2 — what to do (generality) — **next: the analysis**
+### R3 — what to do (adaptive attacks on TextGuard v1)
 
-**Question:** do the P5 findings (an early-fusion LLM forecaster is steered by flipped reports)
-hold beyond one 1.5B model and one prompt wording, and does a "be careful" prompt do TextGuard's
-job? PHASES.md R2. **Plan: §10e + Amendment 1 — follow it exactly; it is the specification.**
+**Question:** can an attacker who knows TextGuard v1 get past it? PHASES.md R3. TextGuard v1 runs
+**exactly as frozen in P6** (`summary_p6_frozen.json`: soft gate τ = 0, w = 3 monthly / 6
+Health_US; P6's judge prompt and revision) — never re-tuned (rule below).
 
-1. [x] **Pre-registered** §10e (`376382a`), committed alone: 5 forecasters, SESOI (DSS 0.05σ,
-       Flip Rate 5 pp, real-text MSE 10%), four Holm families. **Amendment 1** (`b159fe2`, before
-       any Q7 output): Q7 on Kaggle.
-2. [x] **Notebooks + loader** (§7d): `src/models/r2_prompts.py`, `notebooks/build_r2_notebooks.py`,
-       `src/models/r2_forecasters.py`, `tests/test_r2.py` (26 tests).
-3. [x] **All three runs back, verified with `load_r2`, backed up in git** (§7d runs 1–3):
-       M5 variants (Colab, probe 40/40), Phi-3.5 (Colab, fp16, no fallback), Qwen2.5-7B (Kaggle,
-       NF4). Each: one setup per file, determinism 20/20, test + val complete.
-       **Nothing has been analysed: no R2 metric, test or exact-match count exists yet.**
-4. [ ] **Analysis** → `src/analyze_r2.py` (+ `tests/test_analyze_r2.py`) → `results/summary_r2_*.csv`
-       + `summary_r2_reading.json` → §9 "R2 results" → `paper/sections/r2_generality.tex` →
-       close R2 (phase board, this handoff → R3) → commit & push.
+1. [ ] **Pre-register R3 (§10f) and commit it alone**, before any R3 text, judge answer or
+       forecast exists — **with a SESOI for every decision rule** (reuse R2's: DSS 0.05σ, Flip Rate
+       5 pp, MSE 10%, unless there is a reason to differ — state it). Decide there:
+   * **The three attacks, as deterministic rules** (like P3, `src/attacks/rules.py` style; no LLM
+     writer — R5 does fluent LLM fakes), each recording `claimed_direction` and `attacked`, and
+     "not attacked" rather than incoherent text:
+     * **trend-consistent lie** — the fake claims the direction of the lookback trend that
+       TextGuard's change evidence sees (so the gate passes it), on windows where that differs
+       from the real report / the truth. Define precisely which windows are attackable and
+       what "trend" means (TextGuard's own slope at the frozen w is the natural choice);
+     * **forward-looking lie** — keep the real report's past-tense facts and add a claim about the
+       next period ("…expected to reverse next month"); define the template(s) and direction;
+     * **magnitude lie** — right direction, wrong size (P3's ×3 exaggeration is one point; decide
+       whether R3 adds understatement / larger factors, and for which variants).
+   * **Targets:** M5 (primary, as P6). Consider Q7 (fooled in R2; Kaggle) and M5-c2; each extra
+     model is another GPU run. Models 3–4 / R1 heads are CPU and cheap but direction-blind
+     (FinBERT heads are the exception).
+   * **Comparisons:** undefended vs TextGuard v1 vs clip (k = 0.5, frozen) — DSS, Flip Rate,
+     damage; per attack, pooled + 4 domains; one Holm family (state m, assert it in code).
+   * **Readings fixed in advance**, e.g. "TextGuard v1 is evaded by attack X" = defended DSS
+     fooled by the R2 rule and not reduced vs undefended by ≥ the SESOI.
+2. [ ] **Build:** attack generators + validation (as P3 `validate_attacks`; manual check of a
+       sample); export the new texts; **two Colab jobs** — the P6 judge (Qwen2.5-1.5B @ 989aa79,
+       40-prompt probe vs P6 for the setup class) on every new text, and the forecaster(s) on
+       every new text (reuse the R2 notebook builder; M5 with the P5 probe). Kaggle for Q7 if
+       used (Amendment-1 notebook).
+3. [ ] Runs → back up → analysis against §10f → §9 "R3" → `paper/sections/r3_adaptive.tex` →
+       commit & push.
 
-**Inputs for the analysis (all in git, no GPU needed):**
+**Constraints a fresh session must respect in R3:**
+* **Stay on the four domains.** R4's held-out domains (Energy, Health_AFR, Climate if feasible)
+  must have **no model output of any kind** before R4 freezes them.
+* The test split is reused (new attacks may be evaluated on it); TextGuard v1, clip and Models
+  1–5 are not changed. Any TextGuard improvement waits for R4 (val-developed, held-out test).
+* **Flip Rate caveat (R2):** for a forecaster that copies the last value, moving off a flat
+  forecast counts as a flip (Phi under TextGuard: 2.4% → 20.4% with DSS slightly negative).
+  Keep DSS as the primary attack metric; report Flip Rate with that caveat.
 
-| What | Where |
-|---|---|
-| R2 answers, verified | `load_r2()` → long table, `model` ∈ {Q7, P35, M5-c1, M5-c2, M5-sk} (no `M5-regen`: probe passed); per row domain, split, sample_id, condition, y_true, `y_pred` (NaN on parse / scale failure), `y_pred_raw`, `parse_ok`, `scale_ok`, `format_ok`, `raw_output`, `prompt_text`, lookback, train_mean / train_std, `reused_from`, `setup` |
-| Model 5 (P5 answers, unchanged) | `qwen_forecaster.load_all_predictions()` — M5 for V, D1–D3 and TG(M5) |
-| Persistence (ACC-P) | `results/p2_baselines/main_<domain>_Persistence.csv` (`config=main`, test rows) |
-| Models 1–4 (descriptive accuracy) | P5 seed means — `analyze_p5.load_long` / `wide` |
-| TextGuard v1, frozen | `analyze_p6.load_frozen()`, `gate_table("test", fractions=(f,))`, `gates_wide`, `_specs` / `_all_terms` — copy the pattern of `analyze_r1.textguard_v1`. The gate depends only on text + lookback, so **the same g applies to every model**; FBR = P6's 14.4% |
-| Metric / test machinery | `src/metrics.py` (dss, flip_rate, text_sensitivity, paired_difference, wilcoxon, holm, bootstrap); `analyze_p5.screening / attack / damage / year_mask / GROUPS_DENSITY`; `analyze_p6._mcnemar` |
-
-**What `analyze_r2` must compute (§10e, in order):**
-* **Wide tables** per model in P5's layout (test; windows with a real report for S; attacked
-  windows for A1/A2; NaN pairing; σ = train std; pooled = 4 domains, bootstrap stratified,
-  10,000, seed 0). R1's `analyze_r1.load_long` / `wide` show how to add new models to P5's tables.
-* **Four Holm families, counts asserted in code:** R2-a Q7 **44** (S 4, A1 10, A2 10, ACC-M5 5,
-  ACC-P 5, V 5, TG 5); R2-b P35 **44** (same); R2-c M5-c1 + M5-c2 **58** (per variant S 4, A1 10,
-  A2 10, V 5); R2-d M5-sk **54** (S 4, A1 10, A2 10, D1–D6 30).
-  * ACC-M5 / ACC-P: normalised squared error, **all 326 test windows**, `real` condition.
-  * V: DSS_model − DSS_M5 per window, `flipped`, pooled + 4 domains.
-  * TG: TextGuard v1 frozen (A = model's `none`, B = its text answer; B NaN → A; A NaN → NaN)
-    vs undefended, `flipped`, pooled + 4 domains.
-  * D1–D3: sk vs M5 undefended (DSS, flips McNemar, real-text squared error); D4–D6: sk vs
-    TG(M5). D1, D2, D4, D5 on attacked `flipped` windows; D3, D6 on the 299 windows with a report.
-* **Verdict function with the SESOI rules, unit-tested:** fooled / significant but negligible /
-  bounded (CI upper < 0.05σ) / inconclusive; flips toward the lie (A2 + toward > away + ≥ 5%);
-  accuracy (≥ 10% of the comparator's MSE, "within ±10%" only if the CI is inside); V and TG
-  (≥ 0.05σ); R2-c "conclusions hold" (C1 fooled flipped, C2 not fooled exaggerated, C3 S in all 4
-  domains; per-domain agreement k/4 with M5's pattern {Economy no; SocialGood, Traffic,
-  Health_US yes}; prompt-robust = both variants); R2-d readings d1 / d2 / d3. Write the mechanical
-  readings into `summary_r2_reading.json`.
-* **Memorisation check** (descriptive, per model × domain × {real, none}, M5 included): exact match
-  at the domain's recorded precision (max decimals of train values); *unexplained* = y_true in no
-  lookback value and no number quoted in the prompt's report; placebo = the same against y_{t+1};
-  flag = rate − placebo ≥ 5 pp and ≥ 3 windows. **The issue #26 report-number matcher was a one-off
-  check and is not in the code** — write it (numbers in the report text, billion → million ×1000,
-  years excluded, §7b). Flagged cells: ACC ablation without those windows.
-* **Descriptive:** failures (parse / scale) and the non-bare-answer share per model; usage gap;
-  `text_moves_share`; content controls; damage; accuracy on `none`; accuracy vs M1–M4;
-  sk's text sensitivity vs M5's 0.388σ (honesty check); TG v1 on sk / c1 / c2; val (labelled).
-  **Ablations (raw p):** without 2020; dense vs sparse; Health_US vs change-flip domains.
-
-**Known facts to carry into the write-up (verification only, nothing analysed — §7d):**
-* Q7 is **4-bit NF4** and ran on **Kaggle** (torch 2.11.0+cu128, transformers 5.16.1,
-  bitsandbytes 0.50.2) — Amendment 1; a different setup class from Colab, acceptable for Q7 alone.
-  Unquantised layers in fp16 (fixed before the run).
-* **Format failures (NaN), counts only:** M5-c1 13 scale (Traffic 12), M5-c2 2, M5-sk 8; P35 8
-  parse (all refusals: "I'm sorry, but as an AI…", Economy 7 / SocialGood 1) + 30 scale (Traffic
-  28); Q7 0 parse + 18 scale (all Traffic, 9 test / 9 val).
-* **Parser misreads (parser unchanged, as pre-registered):** P35 127 answers lead with the number
-  plus a comment — read correctly; **Q7 one val row** ("-59653.7+6.9= -59584.8", Economy,
-  time_shifted) is read as −59653.7 (the t−1 value), not the model's −59584.8 — val only, no R2
-  test uses val.
-* 627 M5-c1 / M5-sk rows are M5's answers (byte-identical no-report prompts), carrying P2.4's
-  setup string (`…@None`, issue #28), certified by the 40/40 probe.
-
-**Open notes carried from R1:**
+**Open notes carried forward:**
 * **R4 must also test TextGuard v2 on the FinBERT heads** — v1 did not reduce M3-F's DSS
   (+0.049 → +0.053). Record it in R4's pre-registration.
-* R1's heads and embeddings are backed up / regenerable (table below); R2 does not change them.
+* R2: TextGuard v1 on Qwen2.5-7B reduced DSS by 0.112σ (≥ SESOI, raw p 0.014) but not after Holm —
+  a natural R4 test case (v2 on Q7). Q7's val DSS (+0.045σ) is far below test (+0.206σ): effect
+  sizes vary across periods.
+* R1's heads / embeddings and all R2 answers are backed up / regenerable (table below).
 
 ### Rules for every research extension (R1–R7; also in CLAUDE.md §14 and PHASES.md)
 
@@ -182,7 +162,8 @@ job? PHASES.md R2. **Plan: §10e + Amendment 1 — follow it exactly; it is the 
 | P6 tables | `python -m src.analyze_p6 judge`, `tune`, `test` (test refuses to run without `summary_p6_frozen.json`) | ~1 min |
 | P6 figures | `python -m src.figures_p6` | seconds |
 | R1 heads (train → infer → analyse) | `python -m src.models.train_r1`, `python -m src.run_r1`, `python -m src.analyze_r1 test` (Qwen embeddings from the backed-up `.npz` via `python -m src.models.qwen_embeddings import`; FinBERT: `python -m src.analyze_r1 embed-finbert`) | ~25 min + ~15 min + ~2 min CPU |
-| Tests | `python -m pytest -q` (306) | ~60 s |
+| R2 analysis (tables, reading, figure) | `python -m src.analyze_r2` (answers from `results/qwen/r2_*`, verified by `load_r2`) | ~3 min CPU |
+| Tests | `python -m pytest -q` (331) | ~60 s |
 
 Model 5 / judge answers: `results/qwen/*_predictions.csv` + `*_run_meta.json` (in git); the
 Colab notebooks in `notebooks/` are only needed to re-generate them.
@@ -1928,6 +1909,155 @@ except M3-F (+0.054, ΔMSE −0.022).
   Dogu Araci; the ProsusAI model card cites the same paper). `sec:textguard` left for P8 (the P6
   section is not written yet).
 
+### R2 results — generality (pre-registration §10e + Amendment 1)
+
+`python -m src.analyze_r2` → `results/summary_r2_*.csv` (18 tables) + `summary_r2_reading.json`
++ `paper/figures/r2_dss.{pdf,png}` (`src/figures_r2.py`). Test split; P5's windows, σ, NaN
+pairing, bootstrap (10,000, seed 0, stratified). **Four Holm families, sizes asserted
+(44 / 44 / 58 / 54): 13, 10, 23, 17 reject.** Verdicts by the §10e SESOI rules (unit-tested in
+`tests/test_analyze_r2.py`). **Integrity:** M5's attack rows reproduce `summary_p5_attack.csv`
+exactly; TextGuard v1 on M5 gives −0.041σ on the windows paired with sk (P6: −0.042, n 251).
+
+#### 1. Failures (descriptive)
+
+| Test, failures (NaN) | real | none | shuffled | cross_domain | time_shifted | flipped | exaggerated |
+|---|---|---|---|---|---|---|---|
+| Q7 scale | 2 | 0 | 0 | 0 | 2 | 1 | 4 |
+| P35 parse (all refusals) / scale | 0 / 2 | 1 / 0 | 0 / 2 | 1 / 0 | 0 / 4 | 0 / 2 | 0 / 4 |
+| M5-c1 / c2 / sk scale | 4 / 0 / 1 | 0 | 0 | 0 | 1 / 1 / 2 | 3 / 1 / 3 | 3 / 0 / 0 |
+
+All scale failures are Traffic unit slips except 2 Economy (P35) and 1 Economy (c1). **Not
+concentrated in the fakes:** the fake-condition rate vs the real-report rate the fakes were edited
+from — Q7 0.8% vs 0.6%, P35 0.9% vs 0.6%, c1 0.9% vs 1.2%, c2 0.2% vs 0%, sk 0.5% vs 0.3% (M5
+1.1% vs 0.9%). (Against all five non-fake conditions the fakes look 2–3× higher, but empty /
+shuffled / cross_domain can hardly produce a billions unit slip — the real-text yardstick is the
+fair one, as in P5.) **Multi-number / arithmetic answers on test: 2 of 2282 (both P35:
+"-97,000 (rounded from -96,047.1)", "265000 (This is a simple average…)") — both lead with the
+intended number, read correctly.** The only misread found anywhere is Q7's one val answer
+(§7d). → **not a limitation worth more than a sentence.** Non-bare answers: P35 95 / 2282 test.
+
+#### 2. R2-a (Qwen2.5-7B, 4-bit) and R2-b (Phi-3.5-mini) — pooled, test
+
+| | Q7 | P35 |
+|---|---|---|
+| S (moved by text), 4 domains | 4/4 (0.10–0.32σ) | 4/4 (0.04–0.19σ) |
+| ACC-M5: MSE model vs M5 (n 321) | 0.597 vs 1.061, **−0.464 [−0.725, −0.208], Holm 0.033 → more accurate** (Health_US −1.08; other domains n.s.) | 0.504 vs 1.060, **−0.556, Holm 3.5e-5 → more accurate** (Health_US) |
+| ACC-P: vs persistence (n 324) | 0.604 vs 0.503, +0.100 [−0.005, +0.246], Holm 0.94 → **no difference detected** (point estimate 20% worse) | 0.511 vs 0.502, +0.009 [−0.004, +0.024] → **within ±10%** |
+| A1 flipped DSS | **+0.206 [+0.127, +0.293], Holm 8.8e-8 → fooled** | +0.0071 [+0.001, +0.015] → **bounded** |
+| A2 flips toward / away | **24.6%, 61 / 13, Holm 5.6e-7 → flips toward the lie** | 2.4%, 6 / 1 → no evidence |
+| Per domain (flipped) | Traffic +0.247 **fooled**; Health_US +0.323 **fooled** (Holm 0.048); Economy +0.044, SocialGood +0.098 inconclusive | Economy, SocialGood, Health_US bounded; Traffic +0.025 inconclusive |
+| A1 exaggerated | +0.022 [−0.001, +0.045] → bounded | +0.003 → bounded |
+| V: DSS − DSS_M5 (flipped) | **−0.258 [−0.386, −0.128], Holm 8.4e-4 → smaller than M5** (Health_US −0.51 sig.) | **−0.453, Holm 2.9e-15 → smaller** |
+| TG: TextGuard v1 − undefended | +0.200 → +0.087, −0.112 [−0.183, −0.044], raw p 0.014, **Holm 0.36 → no difference detected** | +0.007 → −0.015, n.s. |
+| Damage MSE(fake) − MSE(real), flipped | +0.160 (+26%) [−0.115, +0.409] | −0.002 |
+| Usage gap MSE(none) − MSE(real) | −0.021 [−0.182, +0.125] (text does not help) | +0.025 [−0.014, +0.066] |
+
+**Mechanical readings (`summary_r2_reading.json`):** Q7 = more accurate than M5 × does not beat
+persistence × **fooled** (thesis supported; the §10e "more accurate than M5 and fooled" flag is
+True). P35 = more accurate than M5 × within ±10% of persistence × **bounded** (not fooled) — **bounded because it ignores report content; never call it "robust"**.
+
+**What the numbers say / caveats:**
+* **Q7 is the scale result:** a 7B model, more accurate than M5, is still steered by the one-word
+  flip (about half of M5's DSS, same Flip Rate). Its accuracy gain is Health_US only, and it does
+  not beat persistence. **Do not read the "more accurate than M5 and fooled" flag as "benefits
+  from text and can be steered"**: Q7's usage gap is −0.021 [−0.182, +0.125] — text does not
+  measurably help it. The pre-registered flag compares with M5, not with no-text.
+* **Surprise — Phi-3.5 is bounded because it ignores report content (exploratory, `summary_r2_copy_last.csv`):**
+  without a report it repeats the last value in **1%** of windows; with **any** report — real
+  or flipped — in **73%** (Health_US 95–97%, SocialGood 76–80%, Traffic 76–82%, Economy 17%).
+  The report moves it (S rejects) toward a flat persistence answer whatever it says, so real and
+  flipped forecasts coincide. Its "within ±10% of persistence" accuracy is the same behaviour.
+* **TextGuard on Q7:** the reduction (−0.112σ) is ≥ the SESOI and its CI excludes 0, but it
+  does not survive Holm (0.36) → pre-registered verdict "no difference detected". Report both.
+* **Surprise — TextGuard raises P35's Flip Rate 2.4% → 20.4%** (DSS +0.007 → −0.015): TextGuard
+  pulls the fake-text forecast off Phi's flat y_last answer toward its no-report extrapolation,
+  while the real-text forecast stays flat; the Flip Rate zero-change rule (§9 P4) counts
+  "flat → direction d" as a flip. A metric-copying interaction, not TextGuard following the lie.
+* Val (descriptive): Q7 flipped DSS +0.045 [+0.017, +0.073] vs test +0.206 — a large val/test
+  gap (val n 129); M5 val +0.270, P35 +0.011.
+
+#### 3. R2-c — prompt wording (M5 with c1 report-first, c2 reworded)
+
+| | c1 | c2 |
+|---|---|---|
+| C1 flipped pooled | **+0.452 [+0.319, +0.618], fooled**; flips 28.5% (70 / 3) | **+0.187 [+0.121, +0.255], fooled**; flips 12.8% (32 / 6) |
+| C2 exaggerated pooled | +0.035 [−0.020, +0.094] inconclusive (not fooled ✓) | −0.018 bounded ✓ |
+| C3 S all 4 domains | ✓ | ✓ |
+| Per-domain agreement with M5 {Eco no; SG, Tra, HUS yes} | 3/4 — SocialGood +0.103 inconclusive (Holm 0.085) | 3/4 — SocialGood +0.002 bounded |
+| V vs M5 | −0.008 [−0.159, +0.167] → no difference detected | **−0.283 [−0.398, −0.169], Holm 1.1e-4 → smaller** |
+
+**Reading: prompt-robust** — M5's three conclusions hold for both wordings; **magnitude is
+wording-sensitive** (c2 = 41% of M5's DSS; c1 = M5's). c1 Traffic DSS +0.683 with a very wide
+CI [+0.261, +1.388] (heavy tail). Accuracy (descriptive): c1 1.083, c2 0.862 vs M5 1.055.
+
+#### 4. R2-d — skeptical prompt vs undefended M5 and TextGuard v1 (frozen, on M5)
+
+| Block (pooled) | Estimate (sk − comparator) | Holm p | Verdict |
+|---|---|---|---|
+| A1 sk flipped DSS | +0.362 [+0.260, +0.470]; flips 20.2% (50 / 3) | 2.5e-12 | **sk still fooled** |
+| D1 DSS vs M5 | −0.107 [−0.178, −0.043] (raw p 0.008) | 0.30 | no difference detected (Health_US −0.260, Holm 0.031: sk lower) |
+| D2 flips vs M5 | −3.7 pp [−8.2, +1.2] (14 / 23 discordant) | 1 | no difference detected |
+| D3 real-text MSE vs M5 | +0.274 [+0.098, +0.479] (1.421 vs 1.147) | 0.56 | no difference detected (Health_US +0.64, Holm 0.0096: **sk less accurate**) |
+| D4 DSS vs TG(M5) | **+0.402 [+0.283, +0.528]** (+0.362 vs −0.041) | 1.2e-7 | **TextGuard lower** (Traffic, Health_US also sig.) |
+| D5 flips vs TG(M5) | +2.0 pp [−3.2, +7.3] (24 / 19) | 1 | no difference detected |
+| D6 real-text MSE vs TG(M5) | +0.253 [+0.005, +0.502] (1.416 vs 1.164) | 0.94 | no difference detected (Health_US sk less accurate, Holm 0.017) |
+
+**Pre-registered reading: R2-d3 "prompting does not help"** (D1 shows no reduction ≥ 0.05σ after
+Holm). Beside it: TextGuard removes 0.40σ more manipulation than the caution; flips do not differ
+detectably either way. **Surprise — the caution makes M5 react *more* to genuine reports**
+(sensitivity 0.461σ vs 0.388σ) and raises real-text error, significantly on Health_US. Note: the
+raw point estimate of D1 (−0.107σ) exceeds the SESOI; it fails only on Holm — state it so.
+Descriptive: TextGuard v1 on top of sk → DSS −0.121 [−0.216, −0.036]; on c1 +0.166; on c2 +0.014.
+
+#### 5. Memorisation (descriptive, §10e rule) — **no model × domain flagged**
+
+No model (M5, Q7, P35, c1, c2, sk) reproduces a single Economy, Traffic or Health_US test target
+exactly, with or without the report. SocialGood (1-decimal values): unexplained exact matches
+≤ 4 per model × condition (max excess over the y_{t+1} placebo 4.3 pp, M5-c2 none, 4 windows) —
+below the 5 pp flag. No accuracy ablation triggered. Report numbers are matched by the new
+`analyze_r2.report_numbers` (issue #26's rule, now code).
+
+#### 6. Ablations (raw p, outside the families)
+
+* **Without 2020:** Q7 flipped +0.197 (p < 1e-4), P35 +0.0065, c1 +0.470, c2 +0.167, sk +0.322,
+  M5 +0.437 — every conclusion unchanged; V (no 2020): Q7 −0.244, P35 −0.432, c2 −0.279,
+  c1 +0.027.
+* **Health_US (level-flip) vs change-flip domains:** Q7 +0.323 / +0.122; c1 +0.736 / +0.248;
+  c2 +0.270 / +0.128; sk +0.568 / +0.214; M5 +0.828 / +0.190 — the vulnerability is present in
+  the change-flip domains for every fooled model (Health_US's number edit is not the whole story).
+* **Dense vs sparse:** Q7 +0.127 / +0.278; P35 +0.013 / +0.001.
+
+#### 7. Caveats for the paper
+
+* Q7 = 4-bit NF4, Kaggle stack (Amendment 1); comparisons with M5 are between models.
+* Phi: "bounded, because it ignores report content" — never "robust"; the copy-last finding is exploratory.
+* One skeptical wording; the prompt variants are two neutral rewordings.
+* The two pre-registered flags that look like headlines need their caveats: Q7 "more accurate
+  than M5 and fooled" (text does not help Q7); TextGuard-on-Q7 "no difference" (raw p 0.014,
+  estimate ≥ SESOI).
+* Paper draft: `paper/sections/r2_generality.tex`.
+
+#### 8. Final wording (approved by Aryan 2026-10-11; §10e not amended)
+
+* **Phi-3.5:** "bounded, because it ignores report content" — never "robust". The copy-last
+  finding (73% of windows with any report vs 1% without) is labelled **exploratory**.
+* **Unifying observation (exploratory, R1 + R2):** every forecaster that was not fooled ignores
+  report direction (BERT heads; mean-pooled Qwen heads — R1's rule counted M4-Q "fooled" at a
+  negligible +0.0075σ; Phi-3.5); every forecaster that reads direction was steered (M5 under all
+  four prompts, Qwen2.5-7B, the FinBERT heads — fooled by R1's rule, +0.049σ / +0.034σ, just below
+  R2's 0.05σ SESOI). Paper wording: **"in our experiments, we found no forecaster that both reads
+  report direction and resists the attack"** — 13 configurations, six model types, four domains;
+  not a general law.
+* **Failure concentration:** the yardstick (the real reports the fakes were edited from) was
+  chosen **after a first look**; it matches P5's; the all-conditions comparison is in
+  `summary_r2_failure_concentration.csv` too. Stated in the paper.
+* **Flip Rate limitation:** with flat forecasts (Phi copying the last value), moving off flat
+  counts as a flip; Phi's 2.4% → 20.4% under TextGuard (DSS +0.007 → −0.015) is this artefact.
+  A limitation of the flip definition (§9 P4 zero-change rule), stated in the paper.
+* **Qwen-7B val vs test:** val DSS +0.045σ vs test +0.206σ — reported as a caution that the
+  effect size varies across periods; **no explanation claimed**.
+* Paper: `paper/sections/r2_generality.tex` (all five points in the text).
+
 ### P7.6 — FNSPID (optional)
 | Model | DSS before | DSS after | Flip before | Flip after |
 |---|---|---|---|---|
@@ -2557,6 +2687,17 @@ sampling, few-shot prompts, other model sizes).
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-11 — R2: analysis against §10e, wording approved → **R2 complete**
+- `src/analyze_r2.py` (+ 25 tests), `src/figures_r2.py`; four families asserted 44/44/58/54 →
+  13 / 10 / 23 / 17 reject; M5 rows reproduce P5 exactly
+- Q7 fooled (+0.206σ, half of M5), more accurate than M5, not better than persistence; P35
+  bounded (+0.007σ) — copies y_last in 73% of windows whenever a report is present; c1/c2:
+  conclusions hold (prompt-robust), c2 magnitude 41% of M5; skeptical prompt: R2-d3 "does not
+  help", TextGuard 0.40σ lower; TextGuard on Q7 −0.112σ but Holm n.s.; no memorisation flag
+- Paper draft `paper/sections/r2_generality.tex`; figure `paper/figures/r2_dss.*`
+- Wording approved with five additions (§9 R2.8): Phi framing, the R1 + R2 unifying observation,
+  failure-yardstick disclosure, Flip Rate limitation, Q7 val/test caution. §1a → R3
 
 ### 2026-10-11 — R2: Qwen-7B Kaggle run back, verified, backed up → all three runs in
 - Kaggle, one session (44 min), 1 visible T4, input sha matches, smoke 0/20, determinism 20/20,

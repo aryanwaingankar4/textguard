@@ -1,0 +1,81 @@
+{
+  "Q7": {
+    "vs_m5": "more accurate than M5",
+    "vs_persistence": "no difference detected",
+    "flipped": "fooled",
+    "exaggerated": "bounded",
+    "flips": "flips toward the lie",
+    "vulnerability_vs_m5": "smaller than M5",
+    "textguard_v1": "no difference detected",
+    "per_domain_flipped": {
+      "Economy": "inconclusive",
+      "SocialGood": "inconclusive",
+      "Traffic": "fooled",
+      "Health_US": "fooled"
+    },
+    "thesis_supported": true,
+    "uses_text_and_steerable": true
+  },
+  "P35": {
+    "vs_m5": "more accurate than M5",
+    "vs_persistence": "within ±10%",
+    "flipped": "bounded",
+    "exaggerated": "bounded",
+    "flips": "no evidence of flips toward the lie",
+    "vulnerability_vs_m5": "smaller than M5",
+    "textguard_v1": "no difference detected",
+    "per_domain_flipped": {
+      "Economy": "bounded",
+      "SocialGood": "bounded",
+      "Traffic": "inconclusive",
+      "Health_US": "bounded"
+    },
+    "thesis_supported": false,
+    "uses_text_and_steerable": false
+  },
+  "M5-c1": {
+    "C1_fooled_flipped": true,
+    "C2_not_fooled_exaggerated": true,
+    "C3_moved_all_domains": true,
+    "conclusions_hold": true,
+    "per_domain_agreement_with_M5": "3/4",
+    "per_domain": {
+      "Economy": true,
+      "SocialGood": false,
+      "Traffic": true,
+      "Health_US": true
+    },
+    "magnitude_vs_m5": "no difference detected",
+    "flipped": "fooled",
+    "exaggerated": "inconclusive"
+  },
+  "M5-c2": {
+    "C1_fooled_flipped": true,
+    "C2_not_fooled_exaggerated": true,
+    "C3_moved_all_domains": true,
+    "conclusions_hold": true,
+    "per_domain_agreement_with_M5": "3/4",
+    "per_domain": {
+      "Economy": true,
+      "SocialGood": false,
+      "Traffic": true,
+      "Health_US": true
+    },
+    "magnitude_vs_m5": "smaller than M5",
+    "flipped": "fooled",
+    "exaggerated": "bounded"
+  },
+  "R2-c": "prompt-robust (conclusions hold for both wordings)",
+  "R2-d": {
+    "reading": "R2-d3",
+    "text": "prompting does not help (D1 shows no reduction ≥ 0.05σ)",
+    "D1": "no difference detected",
+    "D2": "no difference detected",
+    "D3": "no difference detected",
+    "D4": "sk higher",
+    "D5": "no difference detected",
+    "D6": "no difference detected",
+    "sk_flipped": "fooled",
+    "sk_exaggerated": "bounded"
+  }
+}

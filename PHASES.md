@@ -315,9 +315,14 @@ cannot say which one makes it vulnerable.
   the manipulation; a direction-aware encoder (FinBERT) makes late heads attackable
 
 ### R2 — generality: other LLM forecasters and prompt wording
-- [ ] Qwen2.5-7B-Instruct (4-bit on a T4) and Phi-3.5-mini-instruct as early-fusion forecasters
-- [ ] 2–3 prompt-wording variants for Model 5 (Model 5's own prompt stays as reported)
-- [ ] Same conditions and metrics as P5; pre-registered family
+- [x] Qwen2.5-7B-Instruct (4-bit; on Kaggle, §10e Amendment 1) and Phi-3.5-mini-instruct as
+      early-fusion forecasters
+- [x] 2–3 prompt-wording variants for Model 5 (Model 5's own prompt stays as reported) —
+      report-first, reworded, and a skeptical "be careful" prompt
+- [x] Same conditions and metrics as P5; pre-registered families (44 / 44 / 58 / 54) with SESOI
+- **✅ R2 done (2026-10-11):** Qwen2.5-7B fooled (+0.206σ); Phi-3.5 bounded because it ignores
+  report content; M5's conclusions prompt-robust; skeptical prompt does not help (TextGuard
+  0.40σ lower)
 
 ### R3 — adaptive attacks on TextGuard v1
 Attackers who know the defence. TextGuard v1 is run exactly as frozen in P6.

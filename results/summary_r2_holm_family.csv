@@ -1,0 +1,201 @@
+family,block,model,condition,domain,estimate,ci_low,ci_high,n,p_raw,toward,away,mse_comp,p_holm,reject,verdict
+R2-a,S,Q7,real,Economy,0.112142,0.0891265,0.136848,70,7.64012e-13,,,,3.20885e-11,True,moved by text
+R2-a,S,Q7,real,SocialGood,0.0984261,0.0656174,0.136282,46,1.61675e-06,,,,6.30531e-05,True,moved by text
+R2-a,S,Q7,real,Traffic,0.323525,0.224688,0.431238,51,1.77636e-15,,,,7.63833e-14,True,moved by text
+R2-a,S,Q7,real,Health_US,0.243735,0.162617,0.341752,130,4.20867e-21,,,,1.85182e-19,True,moved by text
+R2-a,A1,Q7,flipped,Economy,0.043935,0.013426,0.0771817,70,0.0279333,,,,0.586599,False,inconclusive
+R2-a,A2,Q7,flipped,Economy,0.242857,0.142857,0.342857,70,0.00719738,17,4,,0.215921,False,no evidence of flips toward the lie
+R2-a,A1,Q7,flipped,SocialGood,0.098232,0.00893018,0.212092,26,0.0507812,,,,0.964844,False,inconclusive
+R2-a,A2,Q7,flipped,SocialGood,0.153846,0.0384615,0.307692,26,0.375,4,1,,1,False,no evidence of flips toward the lie
+R2-a,A1,Q7,flipped,Traffic,0.246504,0.12091,0.411799,49,4.96871e-06,,,,0.000183842,True,fooled
+R2-a,A2,Q7,flipped,Traffic,0.346939,0.22449,0.469388,49,1.52588e-05,17,0,,0.000549316,True,flips toward the lie
+R2-a,A1,Q7,flipped,Health_US,0.322887,0.147533,0.508344,103,0.00150536,,,,0.0481715,True,fooled
+R2-a,A2,Q7,flipped,Health_US,0.223301,0.145631,0.300971,103,0.0106738,23,8,,0.309541,False,no evidence of flips toward the lie
+R2-a,A1,Q7,flipped,pooled,0.205506,0.12732,0.292569,248,2.14606e-09,,,,8.79884e-08,True,fooled
+R2-a,A2,Q7,flipped,pooled,0.245968,0.193548,0.298387,248,1.39365e-08,61,13,,5.57459e-07,True,flips toward the lie
+R2-a,A1,Q7,exaggerated,Economy,0.0260039,-0.0106995,0.0650415,70,0.169358,,,,1,False,inconclusive
+R2-a,A2,Q7,exaggerated,Economy,0.185714,0.1,0.285714,70,0.38331,13,8,,1,False,no evidence of flips toward the lie
+R2-a,A1,Q7,exaggerated,SocialGood,-0.030098,-0.137591,0.0515966,27,0.585938,,,,1,False,inconclusive
+R2-a,A2,Q7,exaggerated,SocialGood,0.037037,0,0.111111,27,1,1,2,,1,False,no evidence of flips toward the lie
+R2-a,A1,Q7,exaggerated,Traffic,-0.0132944,-0.0598567,0.0261254,45,0.728166,,,,1,False,bounded
+R2-a,A2,Q7,exaggerated,Traffic,0.0222222,0,0.0666667,45,0.375,1,4,,1,False,no evidence of flips toward the lie
+R2-a,A1,Q7,exaggerated,Health_US,0.0491938,0.0139164,0.0866149,103,0.0138907,,,,0.361159,False,inconclusive
+R2-a,A2,Q7,exaggerated,Health_US,0.135922,0.0776699,0.203883,103,0.0127258,14,3,,0.343597,False,no evidence of flips toward the lie
+R2-a,A1,Q7,exaggerated,pooled,0.0223524,-0.000635359,0.0448723,245,0.0120416,,,,0.337165,False,bounded
+R2-a,A2,Q7,exaggerated,pooled,0.118367,0.0816327,0.159184,245,0.103805,29,17,,1,False,no evidence of flips toward the lie
+R2-a,ACC-M5,Q7,real,Economy,0.0228772,-0.0338655,0.0787532,70,0.430559,,,0.301981,1,False,no difference detected
+R2-a,ACC-M5,Q7,real,SocialGood,-0.0793509,-0.294454,0.0734997,69,0.114062,,,0.633342,1,False,no difference detected
+R2-a,ACC-M5,Q7,real,Traffic,-0.0106312,-0.804922,0.981602,48,0.938088,,,1.98416,1,False,no difference detected
+R2-a,ACC-M5,Q7,real,Health_US,-1.07854,-1.62732,-0.592637,134,1.8155e-06,,,1.34762,6.89889e-05,True,more accurate than M5
+R2-a,ACC-M5,Q7,real,pooled,-0.463891,-0.725403,-0.207647,321,0.00101495,,,1.06125,0.0334934,True,more accurate than M5
+R2-a,ACC-P,Q7,real,Economy,0.0443887,0.0137225,0.078533,70,0.0156108,,,0.280469,0.37466,False,no difference detected
+R2-a,ACC-P,Q7,real,SocialGood,-0.0188001,-0.119687,0.0620695,69,0.699075,,,0.572791,1,False,no difference detected
+R2-a,ACC-P,Q7,real,Traffic,0.288734,-0.209171,1.09009,51,0.266983,,,1.64338,1,False,no difference detected
+R2-a,ACC-P,Q7,real,Health_US,0.119037,-0.00801031,0.288357,134,0.724035,,,0.15004,1,False,no difference detected
+R2-a,ACC-P,Q7,real,pooled,0.100267,-0.00531188,0.246306,324,0.0469257,,,0.503312,0.938515,False,no difference detected
+R2-a,V,Q7,flipped,Economy,0.0129069,-0.0327549,0.0539525,70,0.410012,,,,1,False,no difference detected
+R2-a,V,Q7,flipped,SocialGood,-0.272371,-0.444277,-0.118325,26,0.0026306,,,,0.0815486,False,no difference detected
+R2-a,V,Q7,flipped,Traffic,-0.0991464,-0.260929,0.0649375,44,0.122666,,,,1,False,no difference detected
+R2-a,V,Q7,flipped,Health_US,-0.505132,-0.805268,-0.21303,103,0.000319005,,,,0.0108462,True,smaller than M5
+R2-a,V,Q7,flipped,pooled,-0.257487,-0.386468,-0.127687,243,2.41076e-05,,,,0.000843767,True,smaller than M5
+R2-a,TG,Q7,flipped,Economy,0.00120899,-0.0152469,0.018257,70,0.664408,,,,1,False,no difference detected
+R2-a,TG,Q7,flipped,SocialGood,-0.0849609,-0.199517,-0.00980077,26,0.0166016,,,,0.381836,False,no difference detected
+R2-a,TG,Q7,flipped,Traffic,-0.17206,-0.340913,-0.0400483,52,0.27648,,,,1,False,no difference detected
+R2-a,TG,Q7,flipped,Health_US,-0.165889,-0.311242,-0.0185386,103,0.0226622,,,,0.498569,False,no difference detected
+R2-a,TG,Q7,flipped,pooled,-0.112183,-0.183014,-0.0440044,251,0.0141128,,,,0.361159,False,no difference detected
+R2-b,S,P35,real,Economy,0.037296,0.0278543,0.0474804,69,2.07627e-08,,,,8.09744e-07,True,moved by text
+R2-b,S,P35,real,SocialGood,0.0630937,0.0517368,0.0744505,46,6.2449e-08,,,,2.37306e-06,True,moved by text
+R2-b,S,P35,real,Traffic,0.186077,0.146534,0.228531,51,5.68434e-14,,,,2.38742e-12,True,moved by text
+R2-b,S,P35,real,Health_US,0.0698689,0.0530608,0.090748,130,2.02947e-22,,,,8.92966e-21,True,moved by text
+R2-b,A1,P35,flipped,Economy,0.00497484,-0.000467001,0.0108911,70,0.0858146,,,,1,False,bounded
+R2-b,A2,P35,flipped,Economy,0,0,0,70,1,0,1,,1,False,no evidence of flips toward the lie
+R2-b,A1,P35,flipped,SocialGood,0.00669764,0,0.0178604,26,0.5,,,,1,False,bounded
+R2-b,A2,P35,flipped,SocialGood,0.0769231,0,0.192308,26,0.5,2,0,,1,False,no evidence of flips toward the lie
+R2-b,A1,P35,flipped,Traffic,0.0251438,-0.00232942,0.0606483,50,0.3125,,,,1,False,inconclusive
+R2-b,A2,P35,flipped,Traffic,0.06,0,0.14,50,0.25,3,0,,1,False,no evidence of flips toward the lie
+R2-b,A1,P35,flipped,Health_US,4.40051e-06,-9.92654e-05,0.000112467,103,1,,,,1,False,bounded
+R2-b,A2,P35,flipped,Health_US,0.00970874,0,0.0291262,103,1,1,0,,1,False,no evidence of flips toward the lie
+R2-b,A1,P35,flipped,pooled,0.00714868,0.00143705,0.0146617,249,0.027013,,,,0.891428,False,bounded
+R2-b,A2,P35,flipped,pooled,0.0240964,0.00803213,0.0441767,249,0.125,6,1,,1,False,no evidence of flips toward the lie
+R2-b,A1,P35,exaggerated,Economy,0.000977821,-0.00652481,0.00883411,69,0.930646,,,,1,False,bounded
+R2-b,A2,P35,exaggerated,Economy,0.0434783,0,0.101449,69,1,3,2,,1,False,no evidence of flips toward the lie
+R2-b,A1,P35,exaggerated,SocialGood,0.00859944,-0.015049,0.045147,27,1,,,,1,False,bounded
+R2-b,A2,P35,exaggerated,SocialGood,0.037037,0,0.111111,27,1,1,0,,1,False,no evidence of flips toward the lie
+R2-b,A1,P35,exaggerated,Traffic,0.00916976,0,0.0224076,47,0.25,,,,1,False,bounded
+R2-b,A2,P35,exaggerated,Traffic,0.0638298,0,0.148936,47,0.25,3,0,,1,False,no evidence of flips toward the lie
+R2-b,A1,P35,exaggerated,Health_US,3.30885e-05,0,9.92654e-05,103,1,,,,1,False,bounded
+R2-b,A2,P35,exaggerated,Health_US,0.00970874,0,0.0291262,103,1,1,0,,1,False,no evidence of flips toward the lie
+R2-b,A1,P35,exaggerated,pooled,0.00298391,-0.00107095,0.00779171,246,0.438484,,,,1,False,bounded
+R2-b,A2,P35,exaggerated,pooled,0.0325203,0.0121951,0.0569106,246,0.109375,8,2,,1,False,no evidence of flips toward the lie
+R2-b,ACC-M5,P35,real,Economy,-0.00733521,-0.0571539,0.0444953,70,0.554589,,,0.301981,1,False,no difference detected
+R2-b,ACC-M5,P35,real,SocialGood,-0.0595742,-0.232687,0.0662653,69,0.660527,,,0.633342,1,False,no difference detected
+R2-b,ACC-M5,P35,real,Traffic,-0.275424,-0.792309,0.176965,48,0.422702,,,1.97406,1,False,no difference detected
+R2-b,ACC-M5,P35,real,Health_US,-1.19754,-1.76198,-0.719768,134,1.25054e-09,,,1.34762,5.12721e-08,True,more accurate than M5
+R2-b,ACC-M5,P35,real,pooled,-0.555499,-0.797751,-0.336323,321,9.43956e-07,,,1.05974,3.49264e-05,True,more accurate than M5
+R2-b,ACC-P,P35,real,Economy,0.0141763,-0.00069749,0.0301841,70,0.0849478,,,0.280469,1,False,no difference detected
+R2-b,ACC-P,P35,real,SocialGood,0.000976626,-0.0480512,0.0386768,69,0.0631462,,,0.572791,1,False,within ±10%
+R2-b,ACC-P,P35,real,Traffic,0.0362768,-0.00457075,0.107611,51,0.300781,,,1.63387,1,False,within ±10%
+R2-b,ACC-P,P35,real,Health_US,3.82767e-05,-6.07013e-05,0.000174313,134,0.84375,,,0.15004,1,False,within ±10%
+R2-b,ACC-P,P35,real,pooled,0.00899683,-0.00442002,0.0239329,324,0.00869605,,,0.501815,0.295666,False,within ±10%
+R2-b,V,P35,flipped,Economy,-0.0260532,-0.0686405,0.00120171,70,0.371249,,,,1,False,no difference detected
+R2-b,V,P35,flipped,SocialGood,-0.363905,-0.555904,-0.200929,26,0.000212287,,,,0.00743004,True,smaller than M5
+R2-b,V,P35,flipped,Traffic,-0.312419,-0.514313,-0.149926,45,6.31809e-05,,,,0.00227451,True,smaller than M5
+R2-b,V,P35,flipped,Health_US,-0.828015,-1.08225,-0.589554,103,2.9948e-09,,,,1.19792e-07,True,smaller than M5
+R2-b,V,P35,flipped,pooled,-0.4534,-0.56894,-0.342406,244,6.72061e-17,,,,2.88986e-15,True,smaller than M5
+R2-b,TG,P35,flipped,Economy,-0.000282409,-0.00607514,0.0056167,69,0.766699,,,,1,False,no difference detected
+R2-b,TG,P35,flipped,SocialGood,0.0112528,-0.00846726,0.0289074,26,0.0445595,,,,1,False,no difference detected
+R2-b,TG,P35,flipped,Traffic,-0.0474706,-0.092021,-0.00513648,52,0.0956834,,,,1,False,no difference detected
+R2-b,TG,P35,flipped,Health_US,-0.0315087,-0.0585185,-0.00957644,103,0.135216,,,,1,False,no difference detected
+R2-b,TG,P35,flipped,pooled,-0.0217631,-0.0363101,-0.00862028,250,0.132553,,,,1,False,no difference detected
+R2-c,S,M5-c1,real,Economy,0.0942012,0.0626478,0.131559,70,5.17781e-09,,,,2.53713e-07,True,moved by text
+R2-c,S,M5-c1,real,SocialGood,0.182972,0.0883312,0.309159,46,1.12593e-06,,,,5.17928e-05,True,moved by text
+R2-c,S,M5-c1,real,Traffic,0.382739,0.221062,0.586266,49,7.94849e-07,,,,3.73579e-05,True,moved by text
+R2-c,S,M5-c1,real,Health_US,0.509178,0.347311,0.690178,130,5.46018e-16,,,,3.0031e-14,True,moved by text
+R2-c,A1,M5-c1,flipped,Economy,-0.000709686,-0.00522512,0.00345611,69,0.764648,,,,1,False,bounded
+R2-c,A2,M5-c1,flipped,Economy,0,0,0,69,1,0,0,,1,False,no evidence of flips toward the lie
+R2-c,A1,M5-c1,flipped,SocialGood,0.102697,0.049116,0.156278,26,0.00241763,,,,0.084617,False,inconclusive
+R2-c,A2,M5-c1,flipped,SocialGood,0.423077,0.230769,0.615385,26,0.000976562,11,0,,0.0351562,True,flips toward the lie
+R2-c,A1,M5-c1,flipped,Traffic,0.683262,0.260759,1.38778,48,8.29115e-06,,,,0.000356519,True,fooled
+R2-c,A2,M5-c1,flipped,Traffic,0.3125,0.1875,0.4375,48,6.10352e-05,15,0,,0.00244141,True,flips toward the lie
+R2-c,A1,M5-c1,flipped,Health_US,0.736035,0.517871,0.968902,103,5.95491e-11,,,,3.1075e-09,True,fooled
+R2-c,A2,M5-c1,flipped,Health_US,0.427184,0.330097,0.524272,103,2.46473e-10,44,3,,1.23237e-08,True,flips toward the lie
+R2-c,A1,M5-c1,flipped,pooled,0.452152,0.318673,0.618387,246,3.26088e-18,,,,1.8587e-16,True,fooled
+R2-c,A2,M5-c1,flipped,pooled,0.284553,0.235772,0.337398,246,1.37427e-17,70,3,,7.6959e-16,True,flips toward the lie
+R2-c,A1,M5-c1,exaggerated,Economy,-0.00225728,-0.0189022,0.0124193,70,0.578206,,,,1,False,bounded
+R2-c,A2,M5-c1,exaggerated,Economy,0.0714286,0.0142857,0.142857,70,0.21875,5,1,,1,False,no evidence of flips toward the lie
+R2-c,A1,M5-c1,exaggerated,SocialGood,0.0365476,-0.00429972,0.0924439,27,0.3125,,,,1,False,inconclusive
+R2-c,A2,M5-c1,exaggerated,SocialGood,0.0740741,0,0.185185,27,0.5,2,0,,1,False,no evidence of flips toward the lie
+R2-c,A1,M5-c1,exaggerated,Traffic,-0.0110545,-0.0634941,0.0390911,47,0.742188,,,,1,False,bounded
+R2-c,A2,M5-c1,exaggerated,Traffic,0,0,0,47,1,0,0,,1,False,no evidence of flips toward the lie
+R2-c,A1,M5-c1,exaggerated,Health_US,0.0797858,-0.0454364,0.22136,103,0.343578,,,,1,False,inconclusive
+R2-c,A2,M5-c1,exaggerated,Health_US,0.116505,0.0582524,0.184466,103,0.162756,12,21,,1,False,no evidence of flips toward the lie
+R2-c,A1,M5-c1,exaggerated,pooled,0.0345229,-0.0201317,0.0941047,247,0.309067,,,,1,False,inconclusive
+R2-c,A2,M5-c1,exaggerated,pooled,0.0769231,0.0445344,0.109312,247,0.755229,19,22,,1,False,no evidence of flips toward the lie
+R2-c,V,M5-c1,flipped,Economy,-0.0321876,-0.0749214,-0.00455254,69,0.0299862,,,,0.989544,False,no difference detected
+R2-c,V,M5-c1,flipped,SocialGood,-0.267905,-0.48223,-0.0893018,26,0.0610874,,,,1,False,no difference detected
+R2-c,V,M5-c1,flipped,Traffic,0.377877,-0.0737963,1.1105,44,0.360784,,,,1,False,no difference detected
+R2-c,V,M5-c1,flipped,Health_US,-0.0919846,-0.345953,0.155765,103,0.960571,,,,1,False,no difference detected
+R2-c,V,M5-c1,flipped,pooled,-0.0084063,-0.159342,0.166918,242,0.686,,,,1,False,no difference detected
+R2-c,S,M5-c2,real,Economy,0.112951,0.0784292,0.151195,70,2.38648e-10,,,,1.21711e-08,True,moved by text
+R2-c,S,M5-c2,real,SocialGood,0.105997,0.0466893,0.198114,46,1.73024e-05,,,,0.0007267,True,moved by text
+R2-c,S,M5-c2,real,Traffic,0.399564,0.285876,0.524311,53,3.63798e-12,,,,1.96451e-10,True,moved by text
+R2-c,S,M5-c2,real,Health_US,0.345714,0.247628,0.457184,130,2.66367e-18,,,,1.54493e-16,True,moved by text
+R2-c,A1,M5-c2,flipped,Economy,0.000142849,-0.017896,0.0190147,70,0.764783,,,,1,False,bounded
+R2-c,A2,M5-c2,flipped,Economy,0.0571429,0.0142857,0.114286,70,0.6875,4,2,,1,False,no evidence of flips toward the lie
+R2-c,A1,M5-c2,flipped,SocialGood,0.00223255,-0.0290231,0.0357207,26,0.8125,,,,1,False,bounded
+R2-c,A2,M5-c2,flipped,SocialGood,0.0384615,0,0.115385,26,1,1,0,,1,False,no evidence of flips toward the lie
+R2-c,A1,M5-c2,flipped,Traffic,0.368133,0.199171,0.553875,51,6.55651e-06,,,,0.000288486,True,fooled
+R2-c,A2,M5-c2,flipped,Traffic,0.27451,0.156863,0.392157,51,0.00012207,14,0,,0.00476074,True,flips toward the lie
+R2-c,A1,M5-c2,flipped,Health_US,0.270209,0.137799,0.412387,103,2.4246e-07,,,,1.16381e-05,True,fooled
+R2-c,A2,M5-c2,flipped,Health_US,0.126214,0.0679612,0.194175,103,0.0490417,13,4,,1,False,no evidence of flips toward the lie
+R2-c,A1,M5-c2,flipped,pooled,0.186698,0.120824,0.2547,250,5.86321e-11,,,,3.1075e-09,True,fooled
+R2-c,A2,M5-c2,flipped,pooled,0.128,0.088,0.168,250,2.43426e-05,32,6,,0.000998045,True,flips toward the lie
+R2-c,A1,M5-c2,exaggerated,Economy,0.00788372,-0.0100527,0.0263855,70,0.317684,,,,1,False,bounded
+R2-c,A2,M5-c2,exaggerated,Economy,0.0285714,0,0.0714286,70,0.6875,2,4,,1,False,no evidence of flips toward the lie
+R2-c,A1,M5-c2,exaggerated,SocialGood,-0.0623459,-0.128992,-0.015049,27,0.0078125,,,,0.265625,False,bounded
+R2-c,A2,M5-c2,exaggerated,SocialGood,0,0,0,27,1,0,0,,1,False,no evidence of flips toward the lie
+R2-c,A1,M5-c2,exaggerated,Traffic,0.032222,-0.0114689,0.0778988,50,0.109863,,,,1,False,inconclusive
+R2-c,A2,M5-c2,exaggerated,Traffic,0,0,0,50,1,0,0,,1,False,no evidence of flips toward the lie
+R2-c,A1,M5-c2,exaggerated,Health_US,-0.0481278,-0.154893,0.0431038,103,0.726204,,,,1,False,bounded
+R2-c,A2,M5-c2,exaggerated,Health_US,0.0485437,0.00970874,0.0970874,103,0.301758,5,10,,1,False,no evidence of flips toward the lie
+R2-c,A1,M5-c2,exaggerated,pooled,-0.0179102,-0.0624799,0.0215612,250,0.576764,,,,1,False,bounded
+R2-c,A2,M5-c2,exaggerated,pooled,0.028,0.008,0.048,250,0.189247,7,14,,1,False,no evidence of flips toward the lie
+R2-c,V,M5-c2,flipped,Economy,-0.0308852,-0.0765509,0.00262608,70,0.154887,,,,1,False,no difference detected
+R2-c,V,M5-c2,flipped,SocialGood,-0.36837,-0.576053,-0.194231,26,0.000227096,,,,0.00840256,True,smaller than M5
+R2-c,V,M5-c2,flipped,Traffic,-0.00262846,-0.216679,0.218901,46,0.765542,,,,1,False,no difference detected
+R2-c,V,M5-c2,flipped,Health_US,-0.55781,-0.81798,-0.309512,103,0.000137895,,,,0.00524,True,smaller than M5
+R2-c,V,M5-c2,flipped,pooled,-0.282918,-0.398259,-0.169421,245,2.4654e-06,,,,0.000110943,True,smaller than M5
+R2-d,S,M5-sk,real,Economy,0.155284,0.107865,0.209861,70,5.14528e-10,,,,2.57264e-08,True,moved by text
+R2-d,S,M5-sk,real,SocialGood,0.19559,0.0971643,0.334397,46,4.90934e-07,,,,2.30739e-05,True,moved by text
+R2-d,S,M5-sk,real,Traffic,0.44943,0.327973,0.582621,52,5.82077e-11,,,,2.96859e-09,True,moved by text
+R2-d,S,M5-sk,real,Health_US,0.723088,0.541931,0.930978,130,1.21717e-17,,,,6.57272e-16,True,moved by text
+R2-d,A1,M5-sk,flipped,Economy,0.0365893,0.00421807,0.0811745,70,0.0418702,,,,1,False,inconclusive
+R2-d,A2,M5-sk,flipped,Economy,0.0857143,0.0285714,0.157143,70,0.03125,6,0,,1,False,no evidence of flips toward the lie
+R2-d,A1,M5-sk,flipped,SocialGood,0.312556,0.176371,0.477765,26,0.000195066,,,,0.0085829,True,fooled
+R2-d,A2,M5-sk,flipped,SocialGood,0.461538,0.269231,0.653846,26,0.000488281,12,0,,0.0195312,True,flips toward the lie
+R2-d,A1,M5-sk,flipped,Traffic,0.419876,0.233664,0.6377,48,1.02073e-06,,,,4.69536e-05,True,fooled
+R2-d,A2,M5-sk,flipped,Traffic,0.270833,0.145833,0.395833,48,0.00183105,13,1,,0.067749,False,no evidence of flips toward the lie
+R2-d,A1,M5-sk,flipped,Health_US,0.567826,0.35346,0.799291,103,2.13884e-06,,,,9.62479e-05,True,fooled
+R2-d,A2,M5-sk,flipped,Health_US,0.184466,0.116505,0.262136,103,0.000221252,19,2,,0.00951385,True,flips toward the lie
+R2-d,A1,M5-sk,flipped,pooled,0.361651,0.259698,0.470378,247,4.79312e-14,,,,2.54035e-12,True,fooled
+R2-d,A2,M5-sk,flipped,pooled,0.202429,0.153846,0.251012,247,5.51958e-12,50,3,,2.87018e-10,True,flips toward the lie
+R2-d,A1,M5-sk,exaggerated,Economy,-0.0178271,-0.0411159,0.00463384,70,0.132447,,,,1,False,bounded
+R2-d,A2,M5-sk,exaggerated,Economy,0.0428571,0,0.1,70,1,3,2,,1,False,no evidence of flips toward the lie
+R2-d,A1,M5-sk,exaggerated,SocialGood,-0.116092,-0.30958,0.00429972,27,0.25,,,,1,False,bounded
+R2-d,A2,M5-sk,exaggerated,SocialGood,0.037037,0,0.111111,27,1,1,2,,1,False,no evidence of flips toward the lie
+R2-d,A1,M5-sk,exaggerated,Traffic,0.0507325,-0.0206571,0.139932,49,0.431641,,,,1,False,inconclusive
+R2-d,A2,M5-sk,exaggerated,Traffic,0,0,0,49,1,0,0,,1,False,no evidence of flips toward the lie
+R2-d,A1,M5-sk,exaggerated,Health_US,-0.0336879,-0.174741,0.106147,103,0.685574,,,,1,False,inconclusive
+R2-d,A2,M5-sk,exaggerated,Health_US,0.0582524,0.0194175,0.106796,103,0.753906,6,4,,1,False,no evidence of flips toward the lie
+R2-d,A1,M5-sk,exaggerated,pooled,-0.0215516,-0.0850264,0.0411891,249,0.246765,,,,1,False,bounded
+R2-d,A2,M5-sk,exaggerated,pooled,0.0401606,0.0199799,0.064257,249,0.814529,10,8,,1,False,no evidence of flips toward the lie
+R2-d,D1,M5-sk,sk - M5,Economy,0.00556123,-0.0162476,0.0302386,70,0.422979,,,0.0310281,1,False,no difference detected
+R2-d,D1,M5-sk,sk - M5,SocialGood,-0.0580462,-0.212092,0.073674,26,0.776855,,,0.370603,1,False,no difference detected
+R2-d,D1,M5-sk,sk - M5,Traffic,0.0356745,-0.0408854,0.118126,46,0.541218,,,0.335272,1,False,no difference detected
+R2-d,D1,M5-sk,sk - M5,Health_US,-0.260194,-0.419502,-0.118444,103,0.00078832,,,0.828019,0.0305178,True,sk lower
+R2-d,D1,M5-sk,sk - M5,pooled,-0.10726,-0.177757,-0.0431794,245,0.00827085,,,0.45925,0.29775,False,no difference detected
+R2-d,D4,M5-sk,sk - TG(M5),Economy,0.0284806,-0.0125325,0.0706163,70,0.168051,,,0.00810874,1,False,no difference detected
+R2-d,D4,M5-sk,sk - TG(M5),SocialGood,0.021179,-0.142816,0.183456,26,0.426142,,,0.291377,1,False,no difference detected
+R2-d,D4,M5-sk,sk - TG(M5),Traffic,0.348345,0.142132,0.600056,48,0.000782509,,,0.0715308,0.0305178,True,sk higher
+R2-d,D4,M5-sk,sk - TG(M5),Health_US,0.778062,0.524675,1.04168,103,4.58392e-07,,,-0.210236,2.20028e-05,True,sk higher
+R2-d,D4,M5-sk,sk - TG(M5),pooled,0.40245,0.282949,0.527629,247,2.52082e-09,,,-0.0407991,1.2352e-07,True,sk higher
+R2-d,D2,M5-sk,sk - M5,Economy,0.0285714,-0.0428571,0.1,70,0.6875,4,2,0.0571429,1,False,no difference detected
+R2-d,D2,M5-sk,sk - M5,SocialGood,-0.0384615,-0.230769,0.153846,26,1,3,4,0.5,1,False,no difference detected
+R2-d,D2,M5-sk,sk - M5,Traffic,0.0217391,-0.0869565,0.130435,46,1,4,3,0.23913,1,False,no difference detected
+R2-d,D2,M5-sk,sk - M5,Health_US,-0.106796,-0.184466,-0.0291262,103,0.0127258,3,14,0.291262,0.445404,False,no difference detected
+R2-d,D2,M5-sk,sk - M5,pooled,-0.0367347,-0.0816327,0.0122449,245,0.187742,14,23,0.236735,1,False,no difference detected
+R2-d,D5,M5-sk,sk - TG(M5),Economy,0.0142857,-0.0571429,0.0857143,70,1,4,3,0.0714286,1,False,no difference detected
+R2-d,D5,M5-sk,sk - TG(M5),SocialGood,0,-0.192308,0.192308,26,1,3,3,0.461538,1,False,no difference detected
+R2-d,D5,M5-sk,sk - TG(M5),Traffic,0.0833333,-0.0416667,0.208333,48,0.34375,7,3,0.1875,1,False,no difference detected
+R2-d,D5,M5-sk,sk - TG(M5),Health_US,0,-0.0873786,0.0873786,103,1,10,10,0.184466,1,False,no difference detected
+R2-d,D5,M5-sk,sk - TG(M5),pooled,0.0202429,-0.0323887,0.0728745,247,0.542384,24,19,0.182186,1,False,no difference detected
+R2-d,D3,M5-sk,sk - M5,Economy,0.0161625,-0.0108396,0.043912,70,0.279832,,,0.301981,1,False,no difference detected
+R2-d,D3,M5-sk,sk - M5,SocialGood,-0.0084234,-0.0185315,7.3247e-05,46,0.0839844,,,0.922985,1,False,within ±10%
+R2-d,D3,M5-sk,sk - M5,Traffic,-0.0518125,-0.384463,0.273401,50,0.375732,,,1.90497,1,False,no difference detected
+R2-d,D3,M5-sk,sk - M5,Health_US,0.638045,0.257126,1.1107,130,0.000229211,,,1.38871,0.00962685,True,sk less accurate
+R2-d,D3,M5-sk,sk - M5,pooled,0.273983,0.0983363,0.479185,296,0.0164379,,,1.14654,0.558889,False,no difference detected
+R2-d,D6,M5-sk,sk - TG(M5),Economy,0.00716665,-0.0229566,0.0374978,70,0.906974,,,0.310977,1,False,no difference detected
+R2-d,D6,M5-sk,sk - TG(M5),SocialGood,-0.00481922,-0.0163634,0.00603932,46,0.392738,,,0.919381,1,False,within ±10%
+R2-d,D6,M5-sk,sk - TG(M5),Traffic,-0.0649143,-0.368947,0.234092,52,0.617092,,,1.87691,1,False,no difference detected
+R2-d,D6,M5-sk,sk - TG(M5),Health_US,0.603159,0.0491795,1.16163,130,0.000424854,,,1.4236,0.017419,True,sk less accurate
+R2-d,D6,M5-sk,sk - TG(M5),pooled,0.252735,0.00513557,0.501831,298,0.0285039,,,1.16351,0.94063,False,no difference detected

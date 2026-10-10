@@ -1,0 +1,17 @@
+model,domain,condition,sample_id,y_true,y_pred
+M5-c1,SocialGood,none,2018-10-01,3.5,3.5
+M5-c1,SocialGood,real,2018-10-01,3.5,3.5
+M5-c2,SocialGood,none,2018-05-01,3.6,3.6
+M5-c2,SocialGood,none,2018-10-01,3.5,3.5
+M5-c2,SocialGood,none,2021-05-01,5.5,5.5
+M5-c2,SocialGood,none,2021-10-01,4.3,4.3
+M5-c2,SocialGood,real,2018-10-01,3.5,3.5
+M5-sk,SocialGood,none,2018-10-01,3.5,3.5
+P35,SocialGood,none,2019-05-01,3.4,3.4
+P35,SocialGood,none,2020-12-01,6.5,6.5
+P35,SocialGood,real,2020-12-01,6.5,6.5
+Q7,SocialGood,none,2018-10-01,3.5,3.5
+Q7,SocialGood,none,2022-02-01,4.1,4.1
+Q7,SocialGood,real,2018-10-01,3.5,3.5
+Q7,SocialGood,real,2022-02-01,4.1,4.1
+Qwen2.5-1.5B,SocialGood,none,2018-10-01,3.5,3.5

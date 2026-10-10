@@ -48,10 +48,13 @@ SHORT = {"DLinear": "M1", "PatchTST": "M2", "DLinear+BERT": "M3", "PatchTST+BERT
          "Qwen2.5-1.5B": "M5",
          # R1 heads (PROJECT_STATUS §10d) — analysed by src/analyze_r1.py, not here
          "DLinear+Qwen": "M3-Q", "PatchTST+Qwen": "M4-Q",
-         "DLinear+FinBERT": "M3-F", "PatchTST+FinBERT": "M4-F"}
+         "DLinear+FinBERT": "M3-F", "PatchTST+FinBERT": "M4-F",
+         # R2 forecasters (PROJECT_STATUS §10e) — analysed by src/analyze_r2.py, not here
+         "Q7": "Q7", "P35": "P35", "M5-c1": "M5-c1", "M5-c2": "M5-c2", "M5-sk": "M5-sk"}
 FUSION = {"DLinear": "none", "PatchTST": "none", "DLinear+BERT": "late",
           "PatchTST+BERT": "late", "Qwen2.5-1.5B": "early", "DLinear+Qwen": "late",
-          "PatchTST+Qwen": "late", "DLinear+FinBERT": "late", "PatchTST+FinBERT": "late"}
+          "PatchTST+Qwen": "late", "DLinear+FinBERT": "late", "PatchTST+FinBERT": "late",
+          "Q7": "early", "P35": "early", "M5-c1": "early", "M5-c2": "early", "M5-sk": "early"}
 CONTROLS = ("shuffled", "cross_domain", "time_shifted")
 ATTACKS = ("flipped", "exaggerated")
 SCREEN_CONDITIONS = ("real", "empty") + CONTROLS
