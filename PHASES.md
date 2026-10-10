@@ -326,6 +326,7 @@ cannot say which one makes it vulnerable.
 
 ### R3 — adaptive attacks on TextGuard v1
 Attackers who know the defence. TextGuard v1 is run exactly as frozen in P6.
+- [x] Pre-register (PROJECT_STATUS §10f), commit alone
 - [ ] Trend-consistent lies (claim direction agrees with the lookback trend, so the gate passes it)
 - [ ] Forward-looking lies ("will reverse next period" — a claim about the future, not the past)
 - [ ] Magnitude lies (right direction, wrong size)

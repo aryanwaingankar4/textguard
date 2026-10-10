@@ -25,7 +25,7 @@
 | P6 | TextGuard defense | ✅ Core | ✅ Done — exit criterion **partly met** (§9 P6.8) |
 | R1 | LLM vs fusion — late-fusion heads on Qwen embeddings (+ FinBERT) | ✅ | ✅ Done — pre-registered reading R1-a (§9 R1) |
 | **R2** | Generality — Qwen2.5-7B (4-bit), Phi-3.5-mini; prompt variants for M5 | ✅ | ✅ Done — Q7 fooled, P35 bounded (ignores report content), prompt-robust, skeptical prompt does not help (§9 R2) |
-| **R3** | Adaptive attacks on TextGuard v1 | ✅ | 🔵 **Next** — pre-register first (§1a) |
+| **R3** | Adaptive attacks on TextGuard v1 | ✅ | 🔵 **In progress** — pre-registered (§10f) |
 | R4 | TextGuard v2 — val-developed, tested once on held-out domains | ✅ | ⚪ Pending |
 | R5 | Realistic attacks — other-family LLM fakes + human plausibility study | ✅ | ⚪ Pending |
 | R6 | Drift monitor for fake-report campaigns (RQ4; replaces P7.4) | ✅ | ⚪ Pending |
@@ -80,7 +80,8 @@ PHASES.md "Research extensions"). P7 is upside.
 **exactly as frozen in P6** (`summary_p6_frozen.json`: soft gate τ = 0, w = 3 monthly / 6
 Health_US; P6's judge prompt and revision) — never re-tuned (rule below).
 
-1. [ ] **Pre-register R3 (§10f) and commit it alone**, before any R3 text, judge answer or
+1. [x] **Pre-register R3 (§10f) and commit it alone** — done 2026-10-11 (A1 selective flip,
+       A2 forward-looking lie, A3 ×10 magnitude lie; targets M5, Q7, M3-F, M4-F; families 105/105/75/75), before any R3 text, judge answer or
        forecast exists — **with a SESOI for every decision rule** (reuse R2's: DSS 0.05σ, Flip Rate
        5 pp, MSE 10%, unless there is a reason to differ — state it). Decide there:
    * **The three attacks, as deterministic rules** (like P3, `src/attacks/rules.py` style; no LLM
@@ -2646,6 +2647,203 @@ sampling, few-shot prompts, other model sizes).
   `platform = "kaggle"`) and starts fresh; it never reads or appends to a Colab Q7 file. The
   loader uses exactly one Q7 file and refuses to choose if a complete Colab and a complete
   Kaggle file both exist.
+
+### 10f. Pre-registered plan (R3 — adaptive attacks on TextGuard v1) — fixed 2026-10-11, before any R3 output
+
+> Committed **on its own** (and pushed) before any R3 output existed: no R3 attack text had
+> been written to `texts/`, no forecast, judge answer, gate value, embedding or metric had been
+> computed for any R3 attack, and no R3 export or notebook existed. **Already known:** everything
+> in §9 (P5, P6, R1, R2; test split). **Seen while designing the attacks (disclosed):** the real
+> val + test reports (as in P3); how many attacked P3 flips agree with TextGuard's frozen trend
+> evidence per domain (test: Economy 29/70, SocialGood 5/26, Traffic 22/52, Health_US 4/103 — a
+> function of texts and lookback numbers only, no model output); and that P3's exaggeration
+> engine at ×10 produces impossible values (Health_US ILI "2252.8%", SocialGood "+103 percentage
+> points") — the reason for the plausibility filter below. No R3 number of any kind was looked at.
+> **Do not edit this subsection after R3 results exist**; a later change goes in a dated
+> amendment below it and is reported as a deviation.
+
+**Question.** Can an attacker **who knows TextGuard v1** get a lie past it? P5/P6 attacked with
+a defence-unaware flip. R3 keeps every defence **exactly as frozen** and changes only the
+attacker. **Stated honestly in advance: TextGuard v1 is expected to be weak against A1 by
+design** — its gate passes any claim that agrees with the recent trend, and A1 only lies where
+the lie agrees with it. Reporting where the defence breaks is part of the contribution, not a
+failed experiment.
+
+**Threat model.** The attacker controls the report text only (not the numbers, not the model),
+knows TextGuard v1's code and frozen settings (white-box on the trend evidence; the past numbers
+are public), and does not query the forecaster or the judge. All three attacks are
+**deterministic rules generated from the real reports, as in P3** (`src/attacks/rules.py` engine
+and conventions; no LLM writer — fluent LLM fakes are R5). Every row records `attacked`,
+`reason`, `real_direction`, `claimed_direction` (+1/−1 about the forecast target; Economy's
+deficit mapped to the balance as in P3) and `variant`; a text that cannot be attacked cleanly is
+kept **unchanged** with `attacked=False` and the reason — never emitted incoherent. Fake rows carry
+`synthetic=True` (ethics, CLAUDE.md §14). DSS uses the recorded `claimed_direction`, never a
+classifier. Windows, splits, σ (train std), lookback, y_last as P5.
+
+**The three attacks — fixed now (the code must match them)**
+
+* **A1 — selective flip (trend-consistent lie).** Text = P3's `flipped` text, **only** on windows
+  where every claim TextGuard v1 would check is predicted to *agree* with its own evidence at the
+  frozen settings (`summary_p6_frozen.json`: w = 3 monthly, 6 Health_US):
+  * change branch: sign of the OLS slope over the last w lookback values
+    (`trend_detector.change_evidence`) ∈ {0, `claimed_direction`};
+  * level branch (only if the fake states a national baseline B, `stated_baseline`):
+    sign(y_last − B) ∈ {0, `claimed_direction`}.
+  The attacker's model of the judge is "the judge reads the claim the rules wrote" (the P6 judge
+  agrees with P3's known directions on 94–100% of fakes, §9 P6.0; it reads Health_US level claims
+  as change claims too, so both branches are required to agree). σ does not enter the selection
+  (only the signs do). All other windows keep the **real** report (`attacked=False`,
+  reason "flip would disagree with TextGuard's trend evidence") — the attacker stays silent where
+  the gate would catch the lie. A1's texts are therefore byte-identical to P3 `flipped` (selected
+  windows) or `real` (the rest); it adds a **selection**, not new text.
+* **A2 — forward-looking lie.** The real report is kept **unchanged, as an exact prefix**, and one
+  sentence is appended that claims the **reverse** direction for the next period:
+  `"{Subject} is expected to {rise|fall} next {month|week}."` (separator: a space after final
+  `.`/`!`/`?`, else `". "`). Subjects: Economy `The trade deficit` (or `The trade surplus` if the
+  rules' headline sentence names a surplus and no deficit), Traffic `Vehicle travel`, SocialGood
+  `The unemployment rate`, Health_US `The percentage of outpatient visits for influenza-like
+  illness`. `claimed_direction` = the appended claim's series direction = −`real_direction`
+  (Economy: deficit "rise" = balance −1). Attacked iff the rules read a directional headline in
+  the real report (`real_direction` ≠ 0); otherwise not attacked (nothing to reverse). Rationale:
+  the P6 judge asks a past-tense question ("did … go up or go down?"), so it is expected to read
+  the kept past claim — the gate then sees a genuine-looking claim — while the forecaster can
+  read the forward claim.
+* **A3 — strong magnitude lie.** P3's exaggeration engine (`edit_text(…, "exaggerate")`) with
+  factor **K = 10** instead of 3 — same rules for every number (stated changes ×10, dependent
+  numbers recomputed with P3's consistency rules, Health_US levels on P3's ratio scale
+  V′ = B·(V/B)^K, "sharply"/"well" wording). Direction = the real one (`claimed_direction` =
+  `real_direction`). **Plausibility filter, fixed now** — a fake failing any check is not attacked
+  (reason recorded):
+  * P1 every edited number with a percent / percentage-point unit has |value| < 100;
+  * P2 every "… by Y … to X" statement (same unit) implies a positive starting value X ∓ Y > 0;
+  * P3 Health_US: every edited ILI percentage lies within [0.5·min, 2·max] of the train-split
+    series (0.27%–15.24%);
+  * P4 SocialGood: every starting rate implied by "by Y percentage point(s) to X percent" lies
+    within [0.5·min, 2·max] of the train-split series (1.8%–21.2%);
+  * plus P3's own rules (values > 0, decreases < 100%, coherence checks).
+  The engine's default K = 3 path (P3's `exaggerated`) must stay **byte-identical** (asserted).
+  Expected and accepted: Health_US coverage is low and biased to near-baseline values (the ratio
+  scale at K = 10 leaves the plausible range elsewhere) — reported with the coverage table.
+
+**Validation before any GPU run (as P3; all automatic, all must pass, else stop):** direction
+correct on every attacked text (A1 claimed = −real and agrees with the evidence it was selected
+on, and every unselected attacked P3 flip fails the selection; A2 appended claim parsed back to
+`claimed_direction` = −real, the real text an exact prefix, the rules' headline of the fake =
+the real headline; A3 headline direction kept); **no new contradictions** (`coherence_problems`);
+plausible values (P1–P4 on A3; A1 inherits P3's checks); coverage per domain × split reported;
+length ratio fake / real reported. Plus a by-eye review of **15 before/after pairs** (5 per
+attack, seed 0) by Aryan — recorded, but the GPU runs do not wait for it (they only consume the
+texts; a text problem found by eye is fixed by an amendment and a re-run).
+
+**Targets (4).**
+* **M5** (Qwen2.5-1.5B @ `989aa79`, fp16, M5's prompt) — **primary**, as P6.
+* **Q7** (Qwen2.5-7B @ `a09a354`, 4-bit NF4, fp16 compute, M5's prompt) — fooled in R2.
+* **M3-F, M4-F** (R1's FinBERT heads) — the direction-aware late-fusion heads (CPU; seed-mean).
+Phi-3.5 and the BERT / Qwen-embedding heads are not targets (they ignore report direction, R1/R2).
+
+**Defences — every one at its frozen setting, none re-tuned.**
+* **none** (undefended): the raw forecast, P5's NaN pairing.
+* **TG = TextGuard v1** exactly as frozen in P6: soft gate τ = 0, w = 3 / 6, P6's judge prompt
+  (`judge_prompt.py`, unchanged) on Qwen2.5-1.5B @ `989aa79`, scored answers; A = the target's
+  `none` forecast, B = its text forecast; B NaN → A, A NaN → NaN.
+* **CL = clip**, k = 0.5 (P6's val-chosen value).
+* **SK = the skeptical prompt** (R2's `sk` variant, byte-identical caution line) — LLM targets
+  only; for Q7 it is new (R2 ran `sk` on M5 only). Its `none` prompt is M5's, so A is shared.
+DSS / Flip Rate under a defence as §10b: real and fake forecast both pass through the defence.
+
+**Runs (Kaggle, T4, one setup per file — §10e Amendment 1 pattern).** Inputs in **one** CSV
+(`results/qwen/r3_inputs.csv`, its sha256 asserted by every notebook). M5 and Q7 answer, for
+prompt variants p5 and sk, the conditions real, none (p5 only), P3 `flipped`, P3 `exaggerated`,
+A1, A2, A3 — **test first, then val** (val descriptive here; available to R4's val-only
+development). **Everything every R3 comparison uses comes from the R3 run of that model** —
+real and none are regenerated, not reused — so no comparison mixes software setups (Kaggle's
+stack differs from Colab's). P5's 40-prompt reproducibility probe is run first in the M5 notebook
+and recorded (it does not gate anything); Q7 keeps R2's 20-prompt smoke test and stop rule (≥ 10
+unparseable → stop). Greedy, batch 1, 24 new tokens, M5's parser and off-scale rule, unchanged;
+identical prompts answered once; 20-prompt determinism re-check. The **judge** runs once more on
+every distinct text of real, flipped, exaggerated, A1, A2, A3 (val + test; Health_US level +
+change), with P5's probe; TextGuard's gates in R3 use **these** answers for real and fake texts
+alike (one setup). FinBERT heads: R1's checkpoints, R1's runner (CPU, deterministic) on the new
+texts; real / none / flipped / exaggerated from R1's existing predictions (identical code path).
+**Consistency checks (descriptive):** share of identical answers vs P5 (M5), R2 (Q7) and P6
+(judge) on byte-identical prompts — a stack difference is reported, never corrected.
+
+**Smallest effect sizes of interest — R2's, unchanged** (§10e table and rationale): **DSS 0.05σ**,
+**Flip Rate 5 pp**, **real-text MSE 10%** of the comparator's. Verdict vocabulary as §10e:
+a directional claim needs (1) Holm rejection, (2) the claimed sign, (3) a point estimate ≥ the
+SESOI; "significant but negligible", "bounded" (95% CI inside ±SESOI, one-sided upper bound for
+DSS), "inconclusive" otherwise — never "robust" or "equivalent" on non-significance alone.
+
+**Families — one Holm family per target.** Test only; attacked windows of the attack (each
+attack's own `attacked` set); NaN pairing; pooled = 4 domains, equal window weight, bootstrap
+stratified by domain (10,000, seed 0); Wilcoxon signed-rank (two-sided) on per-window DSS terms
+or paired differences of DSS terms; α = 0.05; raw and Holm-adjusted p reported. Cells = pooled +
+4 domains (5) per attack (A1, A2, A3). A cell with fewer than 6 non-zero terms cannot reach
+p < 0.05 — it is reported as "too few windows" and stays in m (p = 1 if empty).
+
+| Block | H₀ (per attack × cell) | Targets |
+|---|---|---|
+| **U** | DSS(none) = 0 — does the attack move the undefended model? | all |
+| **D0** (D ∈ TG, CL, SK) | DSS(D) = 0 — does the lie still move the defended output? | TG, CL: all; SK: M5, Q7 |
+| **DΔ** (D ∈ TG, CL, SK) | DSS(D) = DSS(none), paired per window — does the defence change it? | as D0 |
+
+| Family | Blocks | m |
+|---|---|---|
+| **R3-M5** | U 15 · TG0 15 · TGΔ 15 · CL0 15 · CLΔ 15 · SK0 15 · SKΔ 15 | **105** |
+| **R3-Q7** | same | **105** |
+| **R3-M3F** | U · TG0 · TGΔ · CL0 · CLΔ (no SK) | **75** |
+| **R3-M4F** | same | **75** |
+
+Sizes asserted in code. DSS is compared **signed** (lower = less pull toward the lie). For A3,
+DSS = push in the real (claimed) direction, as P5's `exaggerated`.
+
+**Decision rules and readings — fixed now** (per target × attack; pooled = headline, per domain
+the same rule, reported beside):
+* **The attack works** (undefended): U "fooled" by R2's rule — rejects, DSS > 0, DSS ≥ 0.05σ.
+  Otherwise bounded / inconclusive / negligible.
+* For each defence D, using **D0** (is the defended output still moved?) and **DΔ** (did D change
+  the push?): **reduction** = DΔ rejects, DSS(D) < DSS(none), |difference| ≥ 0.05σ;
+  **increase** = DΔ rejects, DSS(D) > DSS(none), ≥ 0.05σ.
+  * **"D is evaded by X"** = D0 fooled **and** no reduction.
+  * **"D makes X worse"** = increase (reported as such whatever D0 says).
+  * **"D reduces X but does not stop it"** = reduction **and** D0 fooled.
+  * **"D stops X"** = reduction **and** D0 bounded (CI upper < 0.05σ); reduction with D0
+    inconclusive / negligible → "D reduces X; residual not shown to be below the SESOI".
+  * Attack does not work undefended (U not fooled) → "nothing to defend against"; D0 / DΔ still
+    reported.
+* **Headline:** "TextGuard v1 breaks under adaptive attack X" if **TG is evaded by X, or TG makes X
+  worse, on M5 pooled**. Q7 and the FinBERT heads are reported beside (they say whether it
+  generalises), as are clip and the skeptical prompt.
+
+**Expectations stated now (they are predictions, not rules):**
+* **A1 vs TextGuard: evaded, possibly made worse.** The fake passes the gate (g = 1 if the judge
+  reads it as written), while on those same windows the *genuine* report disagrees with the trend
+  and is gated — so the defended real-text forecast is pulled back to A and the defended DSS can
+  exceed the undefended one (it adds d·(1 − g_real)·(B_real − A)/σ, positive when the genuine text
+  pushes in its own direction). Whether A1 works undefended depends on the selected windows: the
+  lie agrees with the recent trend, which may make it *more* persuasive. Coverage is small
+  (test ≈ 60 windows, Health_US ≈ 4) — per-domain cells will be underpowered.
+* **A2 vs TextGuard: evaded if the forecasters act on the forward claim** (no prediction whether
+  they do — a 1.5B model may weigh the past-tense report more).
+* **A3 vs TextGuard: evaded** (same direction as the truth; P6 already showed TextGuard cannot
+  catch `exaggerated`). Whether A3 *pushes* is open: P3's ×3 did not push M5 (DSS −0.098) but
+  damaged it (+54% MSE).
+* **Clip** bounds every window's move at 0.5σ: expected to reduce any attack whose undefended
+  pushes exceed 0.5σ, and unable to remove pushes below it.
+* **Skeptical prompt:** expected no help (R2-d3) — and by construction none on A1, whose claim
+  agrees with the values the caution tells the model to check.
+* **FinBERT heads:** weakly direction-aware (+0.049σ under P3's flip): expected bounded or
+  inconclusive under A2 (one appended sentence barely moves a mean-pooled embedding); A1 / A3 open.
+
+**Reported, not tested (descriptive, CIs):** Flip Rate under every defence (with R2's caveat: a
+model that copies the last value turns "moving off flat" into a flip — DSS stays primary);
+damage MSE(fake) − MSE(real) (for **A3** the main descriptive quantity, SESOI 10% for the
+wording); coverage per domain × split; the gate on A1 / A2 / A3 texts (share with g < 0.5) and
+the **FBR on the A1 windows** (genuine reports gated where the attacker attacks); TG vs CL
+directly; P3 `flipped` and `exaggerated` re-run in the same R3 runs as within-run reference rows;
+failure rates; val numbers (labelled); the consistency checks above.
+**Ablations — outside the families (raw p, labelled):** excluding 2020; Health_US vs the three
+change-flip domains (as §10b). Anything else is exploratory and labelled so.
 
 ### 10c. Open issues
 
