@@ -2383,6 +2383,30 @@ vs sparse (SocialGood, Health_US) domains; Health_US (level-flip) vs the three c
 pooled — all as §10a / §10b. Anything else is exploratory and labelled so (e.g. other quantisation,
 sampling, few-shot prompts, other model sizes).
 
+#### Amendment 1 — 2026-10-10, before any Q7 output existed
+
+> Written after the M5-variant and Phi-3.5 runs were back (verified, **not analysed**), before
+> any Qwen2.5-7B answer existed on any platform. It changes **where Q7 runs**, nothing else.
+> Reported as a deviation.
+
+* **Q7 runs on Kaggle, not Colab** (`notebooks/r2_qwen7b_kaggle.ipynb`). Reason: logistics only —
+  Kaggle's background "Save & Run All" survives a laptop shutdown (run 1 needed a second
+  session after one) and its 12-hour sessions avoid splitting the slowest run.
+* **Unchanged:** model, pinned revision `a09a354`, 4-bit NF4 (fp16 compute, no double
+  quantisation), M5's prompt and parser, off-scale rule, greedy / batch 1 / 24 new tokens, test
+  rows first, incremental saving, setup recording, the 20-prompt determinism check, the smoke
+  test and its stop rule. **GPU type held: a T4** (asserted; on a "T4 ×2" machine only cuda:0
+  is made visible, so the model sits on one GPU exactly as on Colab).
+* **Setup class.** Kaggle's software stack differs from Colab's. This is acceptable **for Q7
+  alone**: Q7 reuses no answer from any other run, its fake-vs-real comparisons all come from
+  one file written by one setup, and Q7-vs-M5 comparisons were already between-model and
+  between-setup (§10e caveat iii). M5's variants and Phi-3.5 are unaffected (already run on
+  Colab).
+* **No mixing.** The Kaggle run writes its own file (`r2_qwen7b_nf4_kaggle_*`, meta
+  `platform = "kaggle"`) and starts fresh; it never reads or appends to a Colab Q7 file. The
+  loader uses exactly one Q7 file and refuses to choose if a complete Colab and a complete
+  Kaggle file both exist.
+
 ### 10c. Open issues
 
 | # | Issue | Phase | Status |
