@@ -4,8 +4,8 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** R2 — generality (P0–P6 and R1 complete; research extensions R2–R7 before P8; P7 optional)
-**Last updated:** 2026-10-09
+**Current phase:** R2 — generality, **analysis next** (P0–P6 and R1 complete; research extensions R2–R7 before P8; P7 optional)
+**Last updated:** 2026-10-11
 
 > 👤 **Solo project.** All work by Aryan.
 > 📌 **Phase-gated, no deadlines.** See `PHASES.md`.
@@ -24,7 +24,7 @@
 | P5 | Experiment runner — screening + attack | ✅ | ✅ Done (P5a + P5b) |
 | P6 | TextGuard defense | ✅ Core | ✅ Done — exit criterion **partly met** (§9 P6.8) |
 | R1 | LLM vs fusion — late-fusion heads on Qwen embeddings (+ FinBERT) | ✅ | ✅ Done — pre-registered reading R1-a (§9 R1) |
-| **R2** | Generality — Qwen2.5-7B (4-bit), Phi-3.5-mini; prompt variants for M5 | ✅ | 🔵 **In progress** — pre-registered (§10e); M5 prompts + Phi runs back (2/3), 7B next on Kaggle (Amendment 1) |
+| **R2** | Generality — Qwen2.5-7B (4-bit), Phi-3.5-mini; prompt variants for M5 | ✅ | 🔵 **In progress** — pre-registered (§10e + Amendment 1); all 3 runs back and verified; **analysis next** (§1a) |
 | R3 | Adaptive attacks on TextGuard v1 | ✅ | ⚪ Pending |
 | R4 | TextGuard v2 — val-developed, tested once on held-out domains | ✅ | ⚪ Pending |
 | R5 | Realistic attacks — other-family LLM fakes + human plausibility study | ✅ | ⚪ Pending |
@@ -40,9 +40,10 @@ PHASES.md "Research extensions"). P7 is upside.
 
 ---
 
-## 1a. ▶ START HERE — handoff for the next session (R2 — generality)
+## 1a. ▶ START HERE — handoff for the next session (R2 — analysis)
 
-> Written 2026-10-09 at the end of R1. Replace this section at the end of R2 (then R3, …, R7, P8).
+> Written 2026-10-09 at the end of R1; R2 part updated 2026-10-11 when all three R2 runs were
+> in. Replace this section at the end of R2 (then R3, …, R7, P8).
 
 **P0–P6 and R1 are complete.** Research extensions R2–R7 run next, in order (PHASES.md
 "Research extensions"), then **P8**. P7 stays optional (R6 replaces P7.4).
@@ -65,24 +66,80 @@ PHASES.md "Research extensions"). P7 is upside.
   the same heads attackable (M3-F +0.049σ, 19 toward / 1 away), ~10× less than M5. §9 "R1".
   Paper draft: `paper/sections/r1_llm_vs_fusion.tex`.
 
-### R2 — what to do (generality)
+### R2 — what to do (generality) — **next: the analysis**
 
 **Question:** do the P5 findings (an early-fusion LLM forecaster is steered by flipped reports)
-hold beyond one 1.5B model and one prompt wording? PHASES.md R2.
+hold beyond one 1.5B model and one prompt wording, and does a "be careful" prompt do TextGuard's
+job? PHASES.md R2. **Plan: §10e + Amendment 1 — follow it exactly; it is the specification.**
 
-1. [x] **Pre-register R2 (§10e) and commit it alone** (done 2026-10-09: 5 forecasters Q7, P35,
-       M5-c1, M5-c2, M5-sk; SESOI 0.05σ / 5 pp / 10% MSE; four Holm families m = 44 / 44 / 58 / 54), before any R2 output — **with a SESOI**
-       for every decision rule (new rule, below). Decide there: models and pinned revisions
-       (Qwen2.5-7B-Instruct 4-bit on a T4; Phi-3.5-mini-instruct, fp16 fits a T4), the 2–3
-       prompt-wording variants for M5 (Model 5's own prompt stays exactly as reported), the
-       conditions (at least real / empty / flipped / exaggerated; the screening controls if
-       the T4 budget allows), the family (S / A1 / A2 per new model, comparisons vs M5) and the
-       readings.
-2. [x] Notebooks built (2026-10-09, §7d): P5's input table reused (no new export); three
-       notebooks (M5 prompt variants, Phi-3.5, Qwen2.5-7B 4-bit), pinned revisions, probe /
-       smoke test, test-first, resumable across sessions; loader `r2_forecasters.load_r2`.
-3. [ ] Colab runs → back up predictions with `git add -f` → analysis against §10e → §9 "R2"
-       → results section into `paper/sections/`.
+1. [x] **Pre-registered** §10e (`376382a`), committed alone: 5 forecasters, SESOI (DSS 0.05σ,
+       Flip Rate 5 pp, real-text MSE 10%), four Holm families. **Amendment 1** (`b159fe2`, before
+       any Q7 output): Q7 on Kaggle.
+2. [x] **Notebooks + loader** (§7d): `src/models/r2_prompts.py`, `notebooks/build_r2_notebooks.py`,
+       `src/models/r2_forecasters.py`, `tests/test_r2.py` (26 tests).
+3. [x] **All three runs back, verified with `load_r2`, backed up in git** (§7d runs 1–3):
+       M5 variants (Colab, probe 40/40), Phi-3.5 (Colab, fp16, no fallback), Qwen2.5-7B (Kaggle,
+       NF4). Each: one setup per file, determinism 20/20, test + val complete.
+       **Nothing has been analysed: no R2 metric, test or exact-match count exists yet.**
+4. [ ] **Analysis** → `src/analyze_r2.py` (+ `tests/test_analyze_r2.py`) → `results/summary_r2_*.csv`
+       + `summary_r2_reading.json` → §9 "R2 results" → `paper/sections/r2_generality.tex` →
+       close R2 (phase board, this handoff → R3) → commit & push.
+
+**Inputs for the analysis (all in git, no GPU needed):**
+
+| What | Where |
+|---|---|
+| R2 answers, verified | `load_r2()` → long table, `model` ∈ {Q7, P35, M5-c1, M5-c2, M5-sk} (no `M5-regen`: probe passed); per row domain, split, sample_id, condition, y_true, `y_pred` (NaN on parse / scale failure), `y_pred_raw`, `parse_ok`, `scale_ok`, `format_ok`, `raw_output`, `prompt_text`, lookback, train_mean / train_std, `reused_from`, `setup` |
+| Model 5 (P5 answers, unchanged) | `qwen_forecaster.load_all_predictions()` — M5 for V, D1–D3 and TG(M5) |
+| Persistence (ACC-P) | `results/p2_baselines/main_<domain>_Persistence.csv` (`config=main`, test rows) |
+| Models 1–4 (descriptive accuracy) | P5 seed means — `analyze_p5.load_long` / `wide` |
+| TextGuard v1, frozen | `analyze_p6.load_frozen()`, `gate_table("test", fractions=(f,))`, `gates_wide`, `_specs` / `_all_terms` — copy the pattern of `analyze_r1.textguard_v1`. The gate depends only on text + lookback, so **the same g applies to every model**; FBR = P6's 14.4% |
+| Metric / test machinery | `src/metrics.py` (dss, flip_rate, text_sensitivity, paired_difference, wilcoxon, holm, bootstrap); `analyze_p5.screening / attack / damage / year_mask / GROUPS_DENSITY`; `analyze_p6._mcnemar` |
+
+**What `analyze_r2` must compute (§10e, in order):**
+* **Wide tables** per model in P5's layout (test; windows with a real report for S; attacked
+  windows for A1/A2; NaN pairing; σ = train std; pooled = 4 domains, bootstrap stratified,
+  10,000, seed 0). R1's `analyze_r1.load_long` / `wide` show how to add new models to P5's tables.
+* **Four Holm families, counts asserted in code:** R2-a Q7 **44** (S 4, A1 10, A2 10, ACC-M5 5,
+  ACC-P 5, V 5, TG 5); R2-b P35 **44** (same); R2-c M5-c1 + M5-c2 **58** (per variant S 4, A1 10,
+  A2 10, V 5); R2-d M5-sk **54** (S 4, A1 10, A2 10, D1–D6 30).
+  * ACC-M5 / ACC-P: normalised squared error, **all 326 test windows**, `real` condition.
+  * V: DSS_model − DSS_M5 per window, `flipped`, pooled + 4 domains.
+  * TG: TextGuard v1 frozen (A = model's `none`, B = its text answer; B NaN → A; A NaN → NaN)
+    vs undefended, `flipped`, pooled + 4 domains.
+  * D1–D3: sk vs M5 undefended (DSS, flips McNemar, real-text squared error); D4–D6: sk vs
+    TG(M5). D1, D2, D4, D5 on attacked `flipped` windows; D3, D6 on the 299 windows with a report.
+* **Verdict function with the SESOI rules, unit-tested:** fooled / significant but negligible /
+  bounded (CI upper < 0.05σ) / inconclusive; flips toward the lie (A2 + toward > away + ≥ 5%);
+  accuracy (≥ 10% of the comparator's MSE, "within ±10%" only if the CI is inside); V and TG
+  (≥ 0.05σ); R2-c "conclusions hold" (C1 fooled flipped, C2 not fooled exaggerated, C3 S in all 4
+  domains; per-domain agreement k/4 with M5's pattern {Economy no; SocialGood, Traffic,
+  Health_US yes}; prompt-robust = both variants); R2-d readings d1 / d2 / d3. Write the mechanical
+  readings into `summary_r2_reading.json`.
+* **Memorisation check** (descriptive, per model × domain × {real, none}, M5 included): exact match
+  at the domain's recorded precision (max decimals of train values); *unexplained* = y_true in no
+  lookback value and no number quoted in the prompt's report; placebo = the same against y_{t+1};
+  flag = rate − placebo ≥ 5 pp and ≥ 3 windows. **The issue #26 report-number matcher was a one-off
+  check and is not in the code** — write it (numbers in the report text, billion → million ×1000,
+  years excluded, §7b). Flagged cells: ACC ablation without those windows.
+* **Descriptive:** failures (parse / scale) and the non-bare-answer share per model; usage gap;
+  `text_moves_share`; content controls; damage; accuracy on `none`; accuracy vs M1–M4;
+  sk's text sensitivity vs M5's 0.388σ (honesty check); TG v1 on sk / c1 / c2; val (labelled).
+  **Ablations (raw p):** without 2020; dense vs sparse; Health_US vs change-flip domains.
+
+**Known facts to carry into the write-up (verification only, nothing analysed — §7d):**
+* Q7 is **4-bit NF4** and ran on **Kaggle** (torch 2.11.0+cu128, transformers 5.16.1,
+  bitsandbytes 0.50.2) — Amendment 1; a different setup class from Colab, acceptable for Q7 alone.
+  Unquantised layers in fp16 (fixed before the run).
+* **Format failures (NaN), counts only:** M5-c1 13 scale (Traffic 12), M5-c2 2, M5-sk 8; P35 8
+  parse (all refusals: "I'm sorry, but as an AI…", Economy 7 / SocialGood 1) + 30 scale (Traffic
+  28); Q7 0 parse + 18 scale (all Traffic, 9 test / 9 val).
+* **Parser misreads (parser unchanged, as pre-registered):** P35 127 answers lead with the number
+  plus a comment — read correctly; **Q7 one val row** ("-59653.7+6.9= -59584.8", Economy,
+  time_shifted) is read as −59653.7 (the t−1 value), not the model's −59584.8 — val only, no R2
+  test uses val.
+* 627 M5-c1 / M5-sk rows are M5's answers (byte-identical no-report prompts), carrying P2.4's
+  setup string (`…@None`, issue #28), certified by the 40/40 probe.
 
 **Open notes carried from R1:**
 * **R4 must also test TextGuard v2 on the FinBERT heads** — v1 did not reduce M3-F's DSS
@@ -1039,6 +1096,19 @@ banners printed once.
 7. If the version **fails**: read the last lines of its log. Smoke-test stop ("Too many
    unparseable answers"), a non-T4 GPU, or a setup / input-sha error → tell Claude, change nothing.
    A plain crash / timeout → Save & Run All again (it starts fresh; ~1–1.5 h).
+
+**Run 3 — `r2_qwen7b_kaggle` (Kaggle T4, 2026-10-10), backed up with `git add -f`:**
+`r2_qwen7b_nf4_kaggle_run_meta.json`: one committed background session, **44 min**; setup `Tesla
+T4 | torch 2.11.0+cu128 | transformers 5.16.1 | nf4 bitsandbytes 0.50.2 | …7B@a09a354 | kaggle`;
+`platform = "kaggle"`, **1 visible GPU**, input sha256 `89260e2a…` (= the export). **Smoke test
+0/20 unparseable; determinism 20/20**; test + val complete; 0 parse failures. `load_r2`: one file
+chosen (the Kaggle one; no Colab Q7 file exists), pin, all 3451 fingerprints, one setup, Q7 2282
+test + 1169 val. Format (counts only, not analysed): **18 scale failures, all Traffic** (9 test,
+9 val); 2 non-bare answers — "1.8%" (read correctly) and **one misread**: "-59653.7+6.9=
+-59584.8" (Economy, val, time_shifted) parses as −59653.7, the first number (= t−1), not the
+model's result; parser unchanged as pre-registered, val only.
+
+**All three R2 runs are in (2026-10-11).** Next: the analysis (§1a).
 
 **Locally afterwards:** `python -c "from src.models.r2_forecasters import load_r2; print(load_r2().groupby(['model','split']).size())"`
 verifies every file; back up with `git add -f results/qwen/r2_*`; then the R2 analysis
@@ -2487,6 +2557,12 @@ sampling, few-shot prompts, other model sizes).
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-11 — R2: Qwen-7B Kaggle run back, verified, backed up → all three runs in
+- Kaggle, one session (44 min), 1 visible T4, input sha matches, smoke 0/20, determinism 20/20,
+  test + val complete, 0 parse failures; 18 Traffic unit slips; 1 val misread (parser unchanged)
+- `load_r2` passes for all five models (2282 test + 1169 val each). Nothing analysed yet
+- §1a rewritten as the analysis handoff. Next: `src/analyze_r2.py` against §10e
 
 ### 2026-10-10 — R2: Qwen-7B moved to Kaggle (Amendment 1), Kaggle notebook built
 - §10e Amendment 1 committed alone before any Q7 output (`b159fe2`): Kaggle T4, one GPU, everything

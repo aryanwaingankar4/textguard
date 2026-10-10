@@ -1,0 +1,43 @@
+{
+ "run": "qwen7b",
+ "model_id": "Qwen/Qwen2.5-7B-Instruct",
+ "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+ "quant": "nf4",
+ "quant_desc": "nf4 bitsandbytes 0.50.2",
+ "variants": [
+  "p5"
+ ],
+ "decoding": "greedy",
+ "batch_size": 1,
+ "max_new_tokens": 24,
+ "gpu": "Tesla T4",
+ "torch": "2.11.0+cu128",
+ "transformers": "5.16.1",
+ "inputs": "qwen_inputs_p5.csv",
+ "setup": "Tesla T4 | torch 2.11.0+cu128 | transformers 5.16.1 | nf4 bitsandbytes 0.50.2 | Qwen/Qwen2.5-7B-Instruct@a09a35458c702b33eeacc393d103063234e8bc28 | kaggle",
+ "platform": "kaggle",
+ "input_path": "/kaggle/input/datasets/aryanwaingankar/textguard/qwen_inputs_p5.csv",
+ "input_sha256": "89260e2a627a6e94a94459f71fb4e69cdcb6ee35206c93f8f869bd87dce4460e",
+ "gpu_count_visible": 1,
+ "sessions": [
+  {
+   "started": "2026-10-10T14:56:51.629125+00:00",
+   "setup": "Tesla T4 | torch 2.11.0+cu128 | transformers 5.16.1 | nf4 bitsandbytes 0.50.2 | Qwen/Qwen2.5-7B-Instruct@a09a35458c702b33eeacc393d103063234e8bc28 | kaggle"
+  }
+ ],
+ "smoke_test": [
+  {
+   "n": 20,
+   "unparseable": 0
+  }
+ ],
+ "rows_expected": 3451,
+ "rows_expected_test": 2282,
+ "finished": "2026-10-10T15:41:15.195824+00:00",
+ "rows": 3451,
+ "test_complete": true,
+ "val_complete": true,
+ "determinism_n": 20,
+ "determinism_mismatches": 0,
+ "parse_failures": 0
+}
