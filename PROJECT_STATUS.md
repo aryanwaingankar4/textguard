@@ -24,7 +24,7 @@
 | P5 | Experiment runner — screening + attack | ✅ | ✅ Done (P5a + P5b) |
 | P6 | TextGuard defense | ✅ Core | ✅ Done — exit criterion **partly met** (§9 P6.8) |
 | R1 | LLM vs fusion — late-fusion heads on Qwen embeddings (+ FinBERT) | ✅ | ✅ Done — pre-registered reading R1-a (§9 R1) |
-| **R2** | Generality — Qwen2.5-7B (4-bit), Phi-3.5-mini; prompt variants for M5 | ✅ | 🔵 **In progress** — pre-registered (§10e); M5 prompts + Phi runs back (2/3), 7B next |
+| **R2** | Generality — Qwen2.5-7B (4-bit), Phi-3.5-mini; prompt variants for M5 | ✅ | 🔵 **In progress** — pre-registered (§10e); M5 prompts + Phi runs back (2/3), 7B next on Kaggle (Amendment 1) |
 | R3 | Adaptive attacks on TextGuard v1 | ✅ | ⚪ Pending |
 | R4 | TextGuard v2 — val-developed, tested once on held-out domains | ✅ | ⚪ Pending |
 | R5 | Realistic attacks — other-family LLM fakes + human plausibility study | ✅ | ⚪ Pending |
@@ -125,7 +125,7 @@ hold beyond one 1.5B model and one prompt wording? PHASES.md R2.
 | P6 tables | `python -m src.analyze_p6 judge`, `tune`, `test` (test refuses to run without `summary_p6_frozen.json`) | ~1 min |
 | P6 figures | `python -m src.figures_p6` | seconds |
 | R1 heads (train → infer → analyse) | `python -m src.models.train_r1`, `python -m src.run_r1`, `python -m src.analyze_r1 test` (Qwen embeddings from the backed-up `.npz` via `python -m src.models.qwen_embeddings import`; FinBERT: `python -m src.analyze_r1 embed-finbert`) | ~25 min + ~15 min + ~2 min CPU |
-| Tests | `python -m pytest -q` (300) | ~50 s |
+| Tests | `python -m pytest -q` (306) | ~60 s |
 
 Model 5 / judge answers: `results/qwen/*_predictions.csv` + `*_run_meta.json` (in git); the
 Colab notebooks in `notebooks/` are only needed to re-generate them.
@@ -999,6 +999,46 @@ cross_domain) — and **30 scale failures** (Traffic 28, Economy 2). **135 / 345
 a bare number:** 8 refusals + 127 that start with the number and add a comment ("… (estimated
 based on the trend)"; Economy 87, Traffic 35, SocialGood 5) — every one starts with the number,
 so the first-number parser reads the intended value.
+
+**Run 3 — Qwen2.5-7B moves to Kaggle (§10e Amendment 1, `b159fe2`, before any Q7 output).**
+`notebooks/r2_qwen7b_kaggle.ipynb` is built **from the Colab 7B cells by asserted, exact
+replacements** (`build_kaggle` in the builder): prompt modules, cells 4 (look), 6 (smoke test) are
+identical; cell 7 (main loop) only gains two progress prints; cell 8 only a message. Platform
+changes: input found by `glob("/kaggle/input/**/qwen_inputs_p5.csv")` and refused unless its
+sha256 is the export's (`89260e2a…`); outputs in `/kaggle/working` as
+`r2_qwen7b_nf4_kaggle_{predictions.csv, run_meta.json}`; no Drive / `files.download`;
+`CUDA_VISIBLE_DEVICES=0` set in cell 0 before torch is imported + asserts of exactly one visible
+GPU and a **T4**; `platform="kaggle"`, input path / sha256 and visible GPU count in the meta;
+`… | kaggle` appended to the setup string. **Also fixed for both 7B notebooks (found while
+building):** the 4-bit branch set no `torch_dtype`, so the layers bitsandbytes leaves unquantised
+(embeddings, norms, `lm_head`) would take the installed transformers' default — fp32 on 4.x,
+the checkpoint's bf16 on 5.x, which a T4 lacks; now fp16, matching §10e's "fp16 compute". The
+M5-variant and Phi notebooks (already run) are byte-identical.
+**Loader:** `files_for` picks exactly one file per run — the one whose meta says the test split is
+complete; two complete files (e.g. a Colab and a Kaggle Q7) → refused; a file whose name and
+`platform` disagree → refused; Q7 alone may be Kaggle. Tests (`tests/test_r2.py`, 26): Kaggle
+cells run with a fake model — input found in any dataset folder, foreign / conflicting inputs
+refused, a partial Colab Q7 file in the same folder is left untouched and never used, progress
+banners printed once.
+
+**Kaggle steps (run 3):**
+1. kaggle.com → **Datasets → New Dataset** → upload `results/qwen/qwen_inputs_p5.csv` → any name,
+   **Private** → Create. (Account must be phone-verified for GPU + Internet.)
+2. **Code → New Notebook → File → Import Notebook** → `notebooks/r2_qwen7b_kaggle.ipynb`.
+3. Right panel → **Session options**: **Accelerator: GPU T4 ×2**, **Internet: On**,
+   Persistence: none needed. **+ Add Input** → Your Datasets → the dataset from step 1.
+4. Optional smoke check (interactive, ~10 min incl. the 15 GB download): run cells 0–6; cell 1
+   must print one Tesla T4, cell 3 the input path, cell 6 `smoke test: k/20 unparseable` with k
+   small. Then **Stop session** (a committed run starts fresh anyway).
+5. **Save Version → Save & Run All (Commit) → Save.** Laptop can be closed. Progress: notebook page
+   → the running version → **Logs** (`===== MAIN LOOP`, a line per 100 rows with an ETA,
+   `===== TEST SPLIT DONE`, at the end `RUN FINISHED: TEST COMPLETE | determinism 20/20`).
+6. When the version shows **Complete**: open it → **Output** → download
+   `r2_qwen7b_nf4_kaggle_predictions.csv` and `r2_qwen7b_nf4_kaggle_run_meta.json` →
+   `results/qwen/`.
+7. If the version **fails**: read the last lines of its log. Smoke-test stop ("Too many
+   unparseable answers"), a non-T4 GPU, or a setup / input-sha error → tell Claude, change nothing.
+   A plain crash / timeout → Save & Run All again (it starts fresh; ~1–1.5 h).
 
 **Locally afterwards:** `python -c "from src.models.r2_forecasters import load_r2; print(load_r2().groupby(['model','split']).size())"`
 verifies every file; back up with `git add -f results/qwen/r2_*`; then the R2 analysis
@@ -2447,6 +2487,13 @@ sampling, few-shot prompts, other model sizes).
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-10 — R2: Qwen-7B moved to Kaggle (Amendment 1), Kaggle notebook built
+- §10e Amendment 1 committed alone before any Q7 output (`b159fe2`): Kaggle T4, one GPU, everything
+  else unchanged; a different setup class is acceptable for Q7 alone
+- `r2_qwen7b_kaggle.ipynb` built from the Colab cells by asserted replacements; fp16 pinned for the
+  unquantised layers of both 7B notebooks (T4 has no bf16); loader picks one complete file per run
+- 306 tests pass. Next: Kaggle run (§7d steps), then verify + back up, then `analyze_r2`
 
 ### 2026-10-10 — R2: Phi-3.5 run back, verified, backed up
 - One session, smoke test 0/20 (no nf4 fallback), determinism 20/20, test + val complete (§7d)

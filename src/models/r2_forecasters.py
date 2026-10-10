@@ -47,14 +47,16 @@ KEYS = ["domain", "split", "sample_id", "condition"]
 RUN_SPECS = {
     "qwen7b": dict(model_id="Qwen/Qwen2.5-7B-Instruct",
                    revision="a09a35458c702b33eeacc393d103063234e8bc28",
-                   quant=("nf4",), variants=("p5",)),
+                   quant=("nf4",), variants=("p5",),
+                   # §10e Amendment 1: Q7 runs on Kaggle; a Colab file is still recognised, never mixed
+                   files=(("nf4_kaggle", "kaggle"), ("nf4", "colab"))),
     "phi35": dict(model_id="microsoft/Phi-3.5-mini-instruct",
                   revision="2fe192450127e6a83f7441aef6e3ca586c338b77",
                   quant=("fp16", "nf4"),             # nf4 only via the pre-registered fallback
-                  variants=("p5",)),
+                  variants=("p5",), files=(("fp16", "colab"), ("nf4", "colab"))),
     "m5prompts": dict(model_id="Qwen/Qwen2.5-1.5B-Instruct",
                       revision="989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
-                      quant=("fp16",), variants=("c1", "c2", "sk")),
+                      quant=("fp16",), variants=("c1", "c2", "sk"), files=(("fp16", "colab"),)),
 }
 MODEL_NAME = {("qwen7b", "p5"): "Q7", ("phi35", "p5"): "P35", ("m5prompts", "c1"): "M5-c1",
               ("m5prompts", "c2"): "M5-c2", ("m5prompts", "sk"): "M5-sk",
@@ -62,15 +64,28 @@ MODEL_NAME = {("qwen7b", "p5"): "Q7", ("phi35", "p5"): "P35", ("m5prompts", "c1"
 
 
 def files_for(run: str, out_dir: Path = OUT_DIR) -> tuple[Path, Path]:
-    """The run's predictions + meta file. Phi falls back to its nf4 file only if no fp16 file
-    exists (the pre-registered fallback writes a separate file)."""
-    for q in RUN_SPECS[run]["quant"]:
-        p = Path(out_dir) / f"r2_{run}_{q}_predictions.csv"
+    """The ONE predictions + meta file to use for a run — files are never combined.
+
+    A run can have several candidate files: Phi's fp16 file or its pre-registered nf4 fallback;
+    Q7's Kaggle file (§10e Amendment 1) or a Colab file from before the move. The rule: the
+    candidate whose meta says the test split is complete; if two are complete, refuse (which
+    one counts is a decision, not something to guess); if none is, the first existing one (and
+    ``load_run`` then refuses it as incomplete)."""
+    found = []
+    for tag, _ in RUN_SPECS[run]["files"]:
+        p = Path(out_dir) / f"r2_{run}_{tag}_predictions.csv"
         if p.exists():
-            return p, p.with_name(f"r2_{run}_{q}_run_meta.json")
-    q = RUN_SPECS[run]["quant"][0]
-    raise FileNotFoundError(f"no R2 predictions for {run}: put r2_{run}_{q}_predictions.csv and "
-                            f"r2_{run}_{q}_run_meta.json in {out_dir}")
+            found.append((p, p.with_name(f"r2_{run}_{tag}_run_meta.json")))
+    if not found:
+        tag = RUN_SPECS[run]["files"][0][0]
+        raise FileNotFoundError(f"no R2 predictions for {run}: put r2_{run}_{tag}_predictions.csv "
+                                f"and r2_{run}_{tag}_run_meta.json in {out_dir}")
+    complete = [f for f in found if f[1].exists()
+                and json.loads(f[1].read_text()).get("test_complete")]
+    if len(complete) > 1:
+        raise ValueError(f"{run}: several complete answer files {[f[0].name for f in complete]}; "
+                         "one run = one file — move the one that does not count out of results/qwen")
+    return complete[0] if complete else found[0]
 
 
 def _read(path) -> pd.DataFrame:
@@ -93,6 +108,11 @@ def load_run(run: str, predictions: Path | str | None = None, meta: Path | str |
             raise ValueError(f"{run}: {k} is {m.get(k)!r}, pre-registered {spec[k]!r}")
     if m.get("quant") not in spec["quant"]:
         raise ValueError(f"{run}: quantisation {m.get('quant')!r} not pre-registered")
+    platform = m.get("platform", "colab")          # the Colab notebooks do not record one
+    tag = Path(predictions).name[len(f"r2_{run}_"):-len("_predictions.csv")]
+    if (tag, platform) not in spec["files"]:
+        raise ValueError(f"{run}: file {Path(predictions).name} with platform {platform!r} is not "
+                         f"a pre-registered combination {spec['files']}")
     if not m.get("test_complete"):
         raise ValueError(f"{run}: the run's meta says the test split is incomplete — re-run "
                          "the notebook (it resumes) until cell 8 prints TEST COMPLETE")

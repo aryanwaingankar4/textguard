@@ -74,8 +74,12 @@ def test_unknown_variant_is_refused():
 
 # --- notebooks stay in sync with the modules and the pins -------------------------------------
 
+KAGGLE_NB = "r2_qwen7b_kaggle.ipynb"
+
+
 def _cells(run):
-    nb = json.loads((ROOT / "notebooks" / NB[run]).read_text(encoding="utf-8"))
+    name = KAGGLE_NB if run == "qwen7b_kaggle" else NB[run]
+    nb = json.loads((ROOT / "notebooks" / name).read_text(encoding="utf-8"))
     return [("".join(c["source"]), c["cell_type"]) for c in nb["cells"]]
 
 
@@ -157,9 +161,9 @@ def _m5_table(inp):
 
 
 def _run(tmp_path, run, generate, quant=None, stop_after=None, cells=("6", "7", "8"),
-         splits=("test", "val")):
+         splits=("test", "val"), kaggle=False):
     spec = RUN_SPECS[run]
-    code = [s for s, t in _cells(run) if t == "code"]
+    code = [s for s, t in _cells("qwen7b_kaggle" if kaggle else run) if t == "code"]
     pick = lambda key: next(c for c in code if c.startswith(key) or key in c[:80])
     cfg = dict(RUN=run, MODEL_ID=spec["model_id"], REVISION=spec["revision"],
                QUANT=quant or spec["quant"][0], RUN_VARIANTS=list(spec["variants"]),
@@ -174,10 +178,14 @@ def _run(tmp_path, run, generate, quant=None, stop_after=None, cells=("6", "7", 
         return generate(system, user)
 
     setup = f"Tesla T4 | torch x | transformers y | {cfg['QUANT']} | {spec['model_id']}@{spec['revision']}"
-    ns = {**cfg, "LOCAL_TEST": True, "generate": gen, "SETUP": setup}
-    exec(pick("# 3. Paths and inputs").replace("/content", tmp_path.as_posix()), ns)
+    ns = {**cfg, "LOCAL_TEST": True, "generate": gen,
+          "SETUP": setup + (" | kaggle" if kaggle else "")}
+    cell3 = pick("# 3. Paths and inputs")
+    exec(cell3.replace("/kaggle", tmp_path.as_posix()) if kaggle
+         else cell3.replace("/content", tmp_path.as_posix()), ns)
     ns["meta"] = dict(run=run, model_id=spec["model_id"], revision=spec["revision"],
-                      quant=cfg["QUANT"], setup=setup)
+                      quant=cfg["QUANT"], setup=ns["SETUP"],
+                      **({"platform": "kaggle"} if kaggle else {}))
     exec(pick("# Generated verbatim from src/models/qwen_prompt.py"), ns)
     exec(pick("# Generated verbatim from src/models/r2_prompts.py"), ns)
     for c in cells:
@@ -320,3 +328,121 @@ def test_off_scale_answer_is_a_format_failure(tmp_path):
     bad = df[df.text.str.contains("rose 2")]
     assert len(bad) and bad.y_pred.isna().all() and (~bad.scale_ok).all()
     assert (bad.y_pred_raw == 0.5).all() and math.isnan(bad.y_pred.iloc[0])
+
+
+# --- Kaggle version of the Qwen-7B run (§10e Amendment 1) ------------------------------------
+
+def _kaggle_inputs(tmp_path, dataset="any-dataset-name/v3"):
+    inp = _inputs(tmp_path)
+    d = tmp_path / "input" / dataset
+    d.mkdir(parents=True)
+    (d / "qwen_inputs_p5.csv").write_bytes((tmp_path / "qwen_inputs_p5.csv").read_bytes())
+    return inp
+
+
+def _kfiles(tmp_path):
+    w = tmp_path / "working"
+    return w / "r2_qwen7b_nf4_kaggle_predictions.csv", w / "r2_qwen7b_nf4_kaggle_run_meta.json"
+
+
+def test_kaggle_notebook_keeps_the_colab_run_logic_and_changes_only_the_platform():
+    colab = {s.split("\n")[0]: s for s, t in _cells("qwen7b") if t == "code"}
+    kag = {s.split("\n")[0]: s for s, t in _cells("qwen7b_kaggle") if t == "code"}
+    assert len(colab) == len(kag)
+    for key in colab:                                  # prompt modules, look, smoke test: identical
+        if key.startswith(("# Generated verbatim", "# 4.", "# 6.")):
+            assert colab[key] == kag[key], key
+    k0 = next(v for k, v in kag.items() if k.startswith("# 0."))
+    assert 'os.environ["CUDA_VISIBLE_DEVICES"] = "0"' in k0 and "import torch" not in k0
+    assert 'PLATFORM = "kaggle"' in k0 and f'REVISION = "{RUN_SPECS["qwen7b"]["revision"]}"' in k0
+    assert 'QUANT = "nf4"' in k0
+    k1 = next(v for k, v in kag.items() if k.startswith("# 1."))
+    assert "device_count() == 1" in k1 and '"T4" in torch.cuda.get_device_name(0)' in k1
+    k5 = next(v for k, v in kag.items() if k.startswith("# 5."))
+    assert 'kw["torch_dtype"] = torch.float16' in k5 and "{PLATFORM}" in k5
+    assert "platform=PLATFORM" in k5 and "input_sha256=INPUT_SHA" in k5
+    allsrc = "\n".join(kag.values())
+    assert "google.colab" not in allsrc and "files.download" not in allsrc
+    assert "/content" not in allsrc
+    assert 'glob.glob("/kaggle/input/**/qwen_inputs_p5.csv", recursive=True)' in allsrc
+    assert 'OUT_DIR = "/kaggle/working"' in allsrc
+    c7, k7 = (next(v for k, v in d.items() if k.startswith("# 7.")) for d in (colab, kag))
+    added = [ln for ln in k7.splitlines() if ln not in c7.splitlines()]
+    assert added and all("print(" in ln or ln.strip().startswith(("if r.split", 'f"'))
+                         for ln in added), added
+    removed = [ln for ln in c7.splitlines() if ln not in k7.splitlines()]
+    assert not removed, removed                        # main loop: only progress lines added
+
+
+def test_colab_7b_notebook_pins_fp16_for_unquantised_layers_and_others_are_untouched():
+    load = next(s for s, _ in _cells("qwen7b") if "def generate" in s)
+    assert 'kw["torch_dtype"] = torch.float16' in load.split("else:")[0]
+    for run in ("phi35", "m5prompts"):                 # already run: template unchanged
+        load = next(s for s, _ in _cells(run) if "def generate" in s)
+        assert load.count('kw["torch_dtype"] = torch.float16') == 1
+
+
+def test_kaggle_run_finds_input_anywhere_writes_own_file_and_loads(tmp_path, capsys):
+    inp = _kaggle_inputs(tmp_path)
+    ns, _ = _run(tmp_path, "qwen7b", fake, kaggle=True)
+    assert ns["INPUTS"].replace("\\", "/").endswith("any-dataset-name/v3/qwen_inputs_p5.csv")
+    pred, meta = _kfiles(tmp_path)
+    m = json.loads(meta.read_text())
+    assert m["platform"] == "kaggle" and m["test_complete"] and m["determinism_mismatches"] == 0
+    log = capsys.readouterr().out
+    assert log.count("===== TEST SPLIT DONE") == 1 and "===== MAIN LOOP" in log
+    df = load_run("qwen7b", pred, meta, tmp_path / "qwen_inputs_p5.csv")
+    assert set(df.model) == {"Q7"} and len(df) == len(inp)
+    assert set(df.setup) == {ns["SETUP"]} and ns["SETUP"].endswith("| kaggle")
+
+
+def test_kaggle_run_refuses_a_different_input_file(tmp_path):
+    _kaggle_inputs(tmp_path)
+    cell3 = next(s for s, _ in _cells("qwen7b_kaggle") if s.startswith("# 3."))
+    with pytest.raises(AssertionError, match="not the exported file"):     # no LOCAL_TEST bypass
+        exec(cell3.replace("/kaggle", tmp_path.as_posix()), {"RUN": "qwen7b", "QUANT": "nf4"})
+    other = tmp_path / "input" / "second-dataset"
+    other.mkdir()
+    (other / "qwen_inputs_p5.csv").write_text("domain\nEconomy\n")
+    with pytest.raises(AssertionError, match="several different"):
+        exec(cell3.replace("/kaggle", tmp_path.as_posix()),
+             {"RUN": "qwen7b", "QUANT": "nf4", "LOCAL_TEST": True})
+
+
+def test_kaggle_run_starts_fresh_and_never_mixes_with_a_partial_colab_file(tmp_path):
+    from src.models.r2_forecasters import files_for
+    inp = _kaggle_inputs(tmp_path)
+    with pytest.raises(ConnectionError):               # a partial Colab 7B run
+        _run(tmp_path, "qwen7b", fake, stop_after=20 + 7, cells=("6", "7"))
+    colab_pred, colab_meta = _files(tmp_path, "qwen7b")
+    n_colab = len(pd.read_csv(colab_pred))
+    assert 0 < n_colab < len(inp)
+    w = tmp_path / "working"
+    w.mkdir()
+    for f in (colab_pred, colab_meta):                 # even sitting next to the Kaggle output
+        (w / f.name).write_bytes(f.read_bytes())
+    ns, _ = _run(tmp_path, "qwen7b", fake, kaggle=True)
+    pred, meta = _kfiles(tmp_path)
+    assert len(pd.read_csv(pred)) == len(inp)          # every row from the Kaggle setup
+    assert len(pd.read_csv(w / colab_pred.name)) == n_colab        # Colab file untouched
+    assert files_for("qwen7b", w) == (pred, meta)      # the complete Kaggle file is used
+    df = load_run("qwen7b", *files_for("qwen7b", w), inputs=tmp_path / "qwen_inputs_p5.csv")
+    assert set(df.setup) == {ns["SETUP"]}
+
+
+def test_loader_refuses_two_complete_7b_files_and_a_mislabelled_platform(tmp_path):
+    from src.models.r2_forecasters import files_for
+    _kaggle_inputs(tmp_path)
+    _run(tmp_path, "qwen7b", fake)                     # complete Colab run in tmp_path
+    _run(tmp_path, "qwen7b", fake, kaggle=True)        # complete Kaggle run in tmp_path/working
+    w = tmp_path / "working"
+    for f in _files(tmp_path, "qwen7b"):
+        (w / f.name).write_bytes(f.read_bytes())
+    with pytest.raises(ValueError, match="several complete"):
+        files_for("qwen7b", w)
+    pred, meta = _kfiles(tmp_path)
+    m = json.loads(meta.read_text())
+    del m["platform"]                                  # a Kaggle-named file claiming Colab
+    meta.write_text(json.dumps(m))
+    with pytest.raises(ValueError, match="platform"):
+        load_run("qwen7b", pred, meta, tmp_path / "qwen_inputs_p5.csv")

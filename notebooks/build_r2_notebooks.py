@@ -2,6 +2,8 @@
 
 * ``r2_qwen7b.ipynb``    — Qwen2.5-7B-Instruct, **4-bit NF4** (R2-a, scale), M5's prompt
 * ``r2_phi35.ipynb``     — Phi-3.5-mini-instruct, fp16 (R2-b, family), M5's prompt
+* ``r2_qwen7b_kaggle.ipynb`` — the same 7B run on Kaggle (§10e Amendment 1), built from the
+  Colab cells by asserted replacements (``build_kaggle``)
 * ``r2_m5_prompts.ipynb`` — Model 5 (Qwen2.5-1.5B, M5's revision) with the report-first (c1),
   reworded (c2) and skeptical (sk) prompts (R2-c, R2-d)
 
@@ -348,6 +350,14 @@ def build(run: str) -> dict:
         "__R2_PROMPT_MODULE__": code("# Generated verbatim from src/models/r2_prompts.py\n" + r2),
     }
     cells = [sub.get(c, c) if isinstance(c, str) else c for c in CELLS]
+    if run == "qwen7b":
+        # The layers bitsandbytes leaves unquantised (embeddings, norms, lm_head) otherwise get
+        # the installed transformers' default dtype — fp32 on 4.x, the checkpoint's bf16 on 5.x,
+        # and a T4 has no bf16. §10e says "fp16 compute": pin it. (Only the 7B notebooks: the
+        # M5-variant and Phi notebooks ran in fp16 already and stay byte-identical.)
+        cells = _edit(cells, "# 5.", 'QUANT_DESC = f"nf4 bitsandbytes {bitsandbytes.__version__}"',
+                      'QUANT_DESC = f"nf4 bitsandbytes {bitsandbytes.__version__}"\n'
+                      '    kw["torch_dtype"] = torch.float16   # unquantised layers in fp16 (T4: no bf16)')
     return {"cells": cells,
             "metadata": {"accelerator": "GPU",
                          "colab": {"gpuType": "T4", "provenance": []},
@@ -356,8 +366,150 @@ def build(run: str) -> dict:
             "nbformat": 4, "nbformat_minor": 0}
 
 
+def _src(cell: dict) -> str:
+    return "".join(cell["source"])
+
+
+def _edit(cells: list, key: str, old: str, new: str) -> list:
+    """Replace ``old`` by ``new`` in the one code cell starting with ``key``; the text must occur
+    exactly once, so a template change can never silently skip a platform edit."""
+    hits = [i for i, c in enumerate(cells) if c["cell_type"] == "code" and _src(c).startswith(key)]
+    assert len(hits) == 1, f"{len(hits)} cells start with {key!r}"
+    src = _src(cells[hits[0]])
+    assert src.count(old) == 1, f"{old!r} occurs {src.count(old)}x in cell {key!r}"
+    out = list(cells)
+    out[hits[0]] = code(src.replace(old, new))
+    return out
+
+
+# ---- Kaggle version of the Qwen-7B run (§10e Amendment 1) -------------------------------------
+# Built FROM the Colab cells by exact, asserted replacements, so cells 4, 6, 7, 8 (prompts,
+# smoke test, main loop, completeness + determinism) are the Colab code — only the platform
+# plumbing changes: input found by glob under /kaggle/input, outputs in /kaggle/working, no
+# Drive / files.download, one visible GPU, platform recorded, progress lines for the log.
+
+KAGGLE_FILE = "r2_qwen7b_kaggle.ipynb"
+# sha256 prefix of results/qwen/qwen_inputs_p5.csv (a fresh export reproduces it byte for byte,
+# §7d): the run refuses any other file before spending GPU time.
+INPUT_SHA256 = "89260e2a627a6e94"
+
+KAGGLE_INTRO = """
+# R2-a — Qwen2.5-7B-Instruct (4-bit NF4) — **Kaggle** version
+
+TextGuard R2 (pre-registration PROJECT_STATUS §10e, **Amendment 1**: Q7 runs on Kaggle). Same
+model, pinned revision, 4-bit NF4, prompt, parser, test-first order, incremental saving and
+checks as the Colab notebook `r2_qwen7b.ipynb`; only the platform plumbing differs.
+`flipped` / `exaggerated` rows are **synthetic text for defence research** — not real reports.
+
+* Input: `qwen_inputs_p5.csv` in **any** Kaggle dataset attached to this notebook (found by
+  searching `/kaggle/input`); its sha256 must match the export.
+* Output: `/kaggle/working/r2_qwen7b_nf4_kaggle_predictions.csv` + `…_run_meta.json`, appended
+  every 10 prompts. After a background run they are in the notebook's **Output** tab.
+* Settings: **Accelerator: GPU T4 ×2** (only cuda:0 is used), **Internet: on**.
+  Then **Save Version → Save & Run All (Commit)**. The log prints a progress line every 100 rows.
+* A committed run always starts fresh in `/kaggle/working`; it never reads a Colab Q7 file.
+"""
+
+KAGGLE_CELL2 = """
+# 2. Platform: Kaggle. No Google Drive and no browser download: outputs are written to
+#    /kaggle/working and saved as this notebook's Output when the committed run finishes.
+import subprocess
+print(subprocess.run(["nvidia-smi", "-L"], capture_output=True, text=True).stdout.strip(), flush=True)
+print("visible to torch:", torch.cuda.device_count(), "GPU(s) ->", torch.cuda.get_device_name(0), flush=True)
+"""
+
+COLAB_PATHS = """OUT_DIR = "/content/drive/MyDrive/textguard" if os.path.isdir("/content/drive/MyDrive") else "/content"
+os.makedirs(OUT_DIR, exist_ok=True)
+INPUTS = next((p for p in ("/content/qwen_inputs_p5.csv", f"{OUT_DIR}/qwen_inputs_p5.csv") if os.path.exists(p)), None)
+assert INPUTS, "Upload qwen_inputs_p5.csv to /content (Files panel on the left) or to MyDrive/textguard/"
+TAG = f"r2_{RUN}_{QUANT}\""""
+
+KAGGLE_PATHS = """import glob, hashlib
+OUT_DIR = "/kaggle/working"
+os.makedirs(OUT_DIR, exist_ok=True)
+found = sorted(glob.glob("/kaggle/input/**/qwen_inputs_p5.csv", recursive=True))
+assert found, "qwen_inputs_p5.csv not found under /kaggle/input: + Add Input > your dataset, then run again"
+shas = {p: hashlib.sha256(open(p, "rb").read()).hexdigest() for p in found}
+assert len(set(shas.values())) == 1, f"several different qwen_inputs_p5.csv files attached: {shas}"
+INPUTS = found[0]
+INPUT_SHA = shas[INPUTS]
+assert INPUT_SHA.startswith("__SHA__") or "LOCAL_TEST" in globals(), (
+    f"{INPUTS} has sha256 {INPUT_SHA[:16]}, expected __SHA__: not the exported file")
+TAG = f"r2_{RUN}_{QUANT}_kaggle"     # own file: never appends to a Colab Q7 file""".replace(
+    "__SHA__", INPUT_SHA256)
+
+KAGGLE_CELL9 = """
+# 9. Outputs — in /kaggle/working; after a committed run: the notebook's Output tab -> download both
+for f in (OUT, META):
+    print(f"{f}  ({os.path.getsize(f) / 1024:.0f} KB)", flush=True)
+print("RUN FINISHED:", "TEST COMPLETE" if test_done else "TEST INCOMPLETE", "| determinism",
+      f"{meta['determinism_n'] - meta['determinism_mismatches']}/{meta['determinism_n']}", flush=True)
+"""
+
+
+def build_kaggle() -> dict:
+    nb = build("qwen7b")
+    cells = nb["cells"]
+    cells[0] = md(KAGGLE_INTRO)
+    cells = _edit(cells, "# 0.",
+                  "# 0. Run configuration (pre-registered, §10e) — do not change except the Phi "
+                  "fp16 fallback\n",
+                  "# 0. Run configuration (pre-registered, §10e + Amendment 1: Kaggle) — do not "
+                  "change\nimport os\n"
+                  'os.environ["CUDA_VISIBLE_DEVICES"] = "0"   # one GPU (cuda:0) even on T4 x2; '
+                  "before torch is imported\n"
+                  'PLATFORM = "kaggle"\n')
+    cells = _edit(cells, "# 1.",
+                  'assert torch.cuda.is_available(), "No GPU: Runtime > Change runtime type > T4 '
+                  'GPU, then Run all again"',
+                  'assert torch.cuda.is_available(), "No GPU: Settings > Accelerator > GPU T4 x2, '
+                  'then Save & Run All again"\n'
+                  'assert torch.cuda.device_count() == 1, "exactly one GPU must be visible: '
+                  'restart the session and run from cell 0"\n'
+                  'assert "T4" in torch.cuda.get_device_name(0), (\n'
+                  '    f"pre-registered GPU is a T4, got {torch.cuda.get_device_name(0)}: '
+                  'Settings > Accelerator > GPU T4 x2")')
+    i2 = next(i for i, c in enumerate(cells) if _src(c).startswith("# 2."))
+    cells[i2] = code(KAGGLE_CELL2)
+    cells = _edit(cells, "# 3.", COLAB_PATHS, KAGGLE_PATHS)
+    cells = _edit(cells, "# 5.",
+                  'f"{transformers.__version__} | {QUANT_DESC} | {MODEL_ID}@{REVISION}")',
+                  'f"{transformers.__version__} | {QUANT_DESC} | {MODEL_ID}@{REVISION} | {PLATFORM}")')
+    cells = _edit(cells, "# 5.",
+                  "transformers=transformers.__version__, inputs=os.path.basename(INPUTS), setup=SETUP)",
+                  "transformers=transformers.__version__, inputs=os.path.basename(INPUTS), setup=SETUP,\n"
+                  "            platform=PLATFORM, input_path=INPUTS, input_sha256=INPUT_SHA,\n"
+                  "            gpu_count_visible=torch.cuda.device_count())")
+    cells = _edit(cells, "# 5.", "print(SETUP)", 'print("SETUP:", SETUP, flush=True)')
+    cells = _edit(cells, "# 7.", "    if k % 100 == 0 or k == len(todo):",
+                  '    if r.split == "test" and (k == len(todo) or todo[k].split != "test"):\n'
+                  '        print(f"===== TEST SPLIT DONE (row {k}/{len(todo)} of this run, "\n'
+                  '              f"{(time.time() - t0) / 60:.1f} min) - val follows (optional) =====",'
+                  " flush=True)\n"
+                  "    if k % 100 == 0 or k == len(todo):")
+    cells = _edit(cells, "# 7.", 'print(f"{len(needed)} rows needed',
+                  'print(f"===== MAIN LOOP | {SETUP} =====", flush=True)\n'
+                  'print(f"{len(needed)} rows needed')
+    cells = _edit(cells, "# 8.",
+                  'assert test_done, "test split incomplete: Run all again (it resumes) — in a new '
+                  'session if the GPU quota ran out"',
+                  'assert test_done, "test split incomplete: Save & Run All again (a committed run '
+                  'starts fresh)"')
+    i9 = next(i for i, c in enumerate(cells) if _src(c).startswith("# 9."))
+    cells[i9] = code(KAGGLE_CELL9)
+    nb["cells"] = cells
+    nb["metadata"] = {"kernelspec": {"display_name": "Python 3", "language": "python",
+                                     "name": "python3"},
+                      "language_info": {"name": "python"},
+                      "kaggle": {"accelerator": "nvidiaTeslaT4", "isGpuEnabled": True,
+                                 "isInternetEnabled": True}}
+    return nb
+
+
 if __name__ == "__main__":
-    for run, cfg in RUNS.items():
-        out = ROOT / "notebooks" / cfg["file"]
-        out.write_text(json.dumps(build(run), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    nbs = {cfg["file"]: build(run) for run, cfg in RUNS.items()}
+    nbs[KAGGLE_FILE] = build_kaggle()
+    for name, nb in nbs.items():
+        out = ROOT / "notebooks" / name
+        out.write_text(json.dumps(nb, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
         print(f"wrote {out}")
