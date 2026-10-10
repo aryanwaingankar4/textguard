@@ -1,0 +1,39 @@
+{
+ "run": "phi35",
+ "model_id": "microsoft/Phi-3.5-mini-instruct",
+ "revision": "2fe192450127e6a83f7441aef6e3ca586c338b77",
+ "quant": "fp16",
+ "quant_desc": "fp16",
+ "variants": [
+  "p5"
+ ],
+ "decoding": "greedy",
+ "batch_size": 1,
+ "max_new_tokens": 24,
+ "gpu": "Tesla T4",
+ "torch": "2.11.0+cu130",
+ "transformers": "5.18.0",
+ "inputs": "qwen_inputs_p5.csv",
+ "setup": "Tesla T4 | torch 2.11.0+cu130 | transformers 5.18.0 | fp16 | microsoft/Phi-3.5-mini-instruct@2fe192450127e6a83f7441aef6e3ca586c338b77",
+ "sessions": [
+  {
+   "started": "2026-10-10T12:24:02.389716+00:00",
+   "setup": "Tesla T4 | torch 2.11.0+cu130 | transformers 5.18.0 | fp16 | microsoft/Phi-3.5-mini-instruct@2fe192450127e6a83f7441aef6e3ca586c338b77"
+  }
+ ],
+ "smoke_test": [
+  {
+   "n": 20,
+   "unparseable": 0
+  }
+ ],
+ "rows_expected": 3451,
+ "rows_expected_test": 2282,
+ "finished": "2026-10-10T13:16:21.487533+00:00",
+ "rows": 3451,
+ "test_complete": true,
+ "val_complete": true,
+ "determinism_n": 20,
+ "determinism_mismatches": 0,
+ "parse_failures": 8
+}

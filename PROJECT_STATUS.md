@@ -24,7 +24,7 @@
 | P5 | Experiment runner — screening + attack | ✅ | ✅ Done (P5a + P5b) |
 | P6 | TextGuard defense | ✅ Core | ✅ Done — exit criterion **partly met** (§9 P6.8) |
 | R1 | LLM vs fusion — late-fusion heads on Qwen embeddings (+ FinBERT) | ✅ | ✅ Done — pre-registered reading R1-a (§9 R1) |
-| **R2** | Generality — Qwen2.5-7B (4-bit), Phi-3.5-mini; prompt variants for M5 | ✅ | 🔵 **In progress** — pre-registered (§10e); M5 prompts run back (1/3), Phi + 7B next |
+| **R2** | Generality — Qwen2.5-7B (4-bit), Phi-3.5-mini; prompt variants for M5 | ✅ | 🔵 **In progress** — pre-registered (§10e); M5 prompts + Phi runs back (2/3), 7B next |
 | R3 | Adaptive attacks on TextGuard v1 | ✅ | ⚪ Pending |
 | R4 | TextGuard v2 — val-developed, tested once on held-out domains | ✅ | ⚪ Pending |
 | R5 | Realistic attacks — other-family LLM fakes + human plausibility study | ✅ | ⚪ Pending |
@@ -987,6 +987,18 @@ prompts, byte-identical to M5's), c2 none. The filled rows carry P2.4's setup (`
 did not record the revision, issue #28); the probe compares against P2.4's raw answers, so
 40/40 certifies them directly, as in P5. **Scale (unit) failures** (NaN by the P2.4 rule, counts
 only, not analysed): c1 13 (Traffic 12, Economy 1), c2 2, sk 8 — Traffic again (issue #27).
+
+**Run 2 — `r2_phi35` (Colab T4, 2026-10-10), backed up with `git add -f`:**
+`r2_phi35_fp16_run_meta.json`: one session, 53 min; setup `Tesla T4 | torch 2.11.0+cu130 |
+transformers 5.18.0 | fp16 | microsoft/Phi-3.5-mini-instruct@2fe1924`. No probe (Model 5 only);
+**fp16 smoke test 0/20 unparseable → no fallback, fp16 as pre-registered**. Test + val complete;
+**determinism 20/20**. `load_r2`: pin, all 3451 fingerprints, one setup, P35 2282 test + 1169 val.
+Format (counts only, not analysed): **8 parse failures** — all refusals ("I'm sorry, but as an AI,
+I don't have the ability to predict future values…"; Economy 7, 6 of them val; SocialGood 1,
+cross_domain) — and **30 scale failures** (Traffic 28, Economy 2). **135 / 3451 answers are not
+a bare number:** 8 refusals + 127 that start with the number and add a comment ("… (estimated
+based on the trend)"; Economy 87, Traffic 35, SocialGood 5) — every one starts with the number,
+so the first-number parser reads the intended value.
 
 **Locally afterwards:** `python -c "from src.models.r2_forecasters import load_r2; print(load_r2().groupby(['model','split']).size())"`
 verifies every file; back up with `git add -f results/qwen/r2_*`; then the R2 analysis
@@ -2411,6 +2423,12 @@ sampling, few-shot prompts, other model sizes).
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-10 — R2: Phi-3.5 run back, verified, backed up
+- One session, smoke test 0/20 (no nf4 fallback), determinism 20/20, test + val complete (§7d)
+- `load_r2` passes; 8 refusals (parse failures), 30 unit slips (Traffic 28); 127 annotated
+  answers all lead with the number (parser unaffected)
+- Not analysed (by plan). Next: `r2_qwen7b`
 
 ### 2026-10-10 — R2: M5 prompt-variant run back, verified, backed up
 - Colab run in two sessions (laptop shutdown after cell 7; re-run for cells 8–9): same setup,
