@@ -303,17 +303,21 @@ def level_mirror(v: float, b: float) -> float:
     return lin if lin > 0 else b * b / v
 
 
-def _flip_sign_token(sign: str, num: str, mode: str) -> str:
+def _flip_sign_token(sign: str, num: str, mode: str, factor: float = FACTOR) -> str:
     v = parse_num(num)
     if mode == "exaggerate":
-        return sign + fmt_like(v * FACTOR, num)
+        return sign + fmt_like(v * factor, num)
     if v == 0:
         return sign + num
     return ("+" if sign == "-" else "-") + num
 
 
-def edit_text(text: str | None, domain: str, mode: str) -> EditResult:
-    """Flip or exaggerate one report; see the module docstring for every rule."""
+def edit_text(text: str | None, domain: str, mode: str, factor: float = FACTOR) -> EditResult:
+    """Flip or exaggerate one report; see the module docstring for every rule.
+
+    ``factor`` is the exaggeration factor (P3: 3; R3's A3 magnitude lie: 10). It is ignored by
+    ``flip``. The default keeps P3's output byte-identical.
+    """
     if mode not in ("flip", "exaggerate"):
         raise ValueError("mode must be 'flip' or 'exaggerate'")
     if not isinstance(text, str):
@@ -329,7 +333,7 @@ def edit_text(text: str | None, domain: str, mode: str) -> EditResult:
             return _not(text, f"unhandled directional word: {bad[0]}", h)
     E = Edits()
     try:
-        _numbers(text, E, mode)
+        _numbers(text, E, mode, factor)
         if mode == "flip":
             _words(text, E)
         else:
@@ -389,7 +393,7 @@ def _emphasis(text: str, E: Edits, h: Headline) -> None:
                 break
 
 
-def _numbers(text: str, E: Edits, mode: str) -> None:
+def _numbers(text: str, E: Edits, mode: str, factor: float = FACTOR) -> None:
     flip = mode == "flip"
     # 1. "X …, up/down [Y] from Z"
     for m in re.finditer(rf"\b(?P<dir>up|down)\s+(?:(?:by\s+)?(?P<y>{NUM})\s*(?P<yu>{UNIT})?\s+)?"
@@ -402,14 +406,14 @@ def _numbers(text: str, E: Edits, mode: str) -> None:
         up = m.group("dir").lower() == "up"
         if m.group("y"):
             Y = parse_num(m.group("y"))
-            Y2 = Y if flip else Y * FACTOR
+            Y2 = Y if flip else Y * factor
             # keep X; new direction (flip) or same direction with bigger step (exaggerate)
             new_up = (not up) if flip else up
             Z2 = X - Y2 if new_up else X + Y2
             if not flip:
                 E.add(m.start("y"), m.end("y"), fmt_like(Y2, m.group("y")))
         else:
-            Z2 = 2 * X - Z if flip else X - FACTOR * (X - Z)
+            Z2 = 2 * X - Z if flip else X - factor * (X - Z)
         if Z2 <= 0:
             raise _Skip("recomputed 'from' value would be <= 0")
         E.add(m.start("z"), m.end("z"), fmt_like(Z2, m.group("z")))
@@ -417,7 +421,7 @@ def _numbers(text: str, E: Edits, mode: str) -> None:
     for m in re.finditer(rf"\b(?P<v>increased|decreased|rose|fell|declined|went (?:up|down))\s+"
                          rf"from\s+(?P<a>{NUM})\s*(?P<au>{UNIT})?\s+to\s+(?P<b>{NUM})", text, re.I):
         A, B = parse_num(m.group("a")), parse_num(m.group("b"))
-        A2 = 2 * B - A if flip else B - FACTOR * (B - A)
+        A2 = 2 * B - A if flip else B - factor * (B - A)
         if A2 <= 0:
             raise _Skip("recomputed 'from A' value would be <= 0")
         E.add(m.start("a"), m.end("a"), fmt_like(A2, m.group("a")))
@@ -435,11 +439,11 @@ def _numbers(text: str, E: Edits, mode: str) -> None:
                 if it.group(n_key) is None:
                     continue
                 v = parse_num(it.group(n_key))
-                if not flip and it.group(s_key) == "-" and v * FACTOR >= 100 and n_key == "num" \
+                if not flip and it.group(s_key) == "-" and v * factor >= 100 and n_key == "num" \
                         and it.group("pct"):
                     raise _Skip("exaggerated decrease would be >= 100%")
                 E.add(it.start(s_key), it.end(n_key),
-                      _flip_sign_token(it.group(s_key), it.group(n_key), mode))
+                      _flip_sign_token(it.group(s_key), it.group(n_key), mode, factor))
             pos = it.end()
             nxt = sep.match(text, pos)
             if not nxt:
@@ -449,7 +453,7 @@ def _numbers(text: str, E: Edits, mode: str) -> None:
     for m in re.finditer(rf"(?<![\w.])(?P<sign>[-+])(?P<num>\d[\d,]*(?:\.\d+)?)"
                          rf"(?=\s*(?:%|percent|billion|million))", text):
         if not E.taken(m.start(), m.end()):
-            E.add(m.start(), m.end(), _flip_sign_token(m.group("sign"), m.group("num"), mode))
+            E.add(m.start(), m.end(), _flip_sign_token(m.group("sign"), m.group("num"), mode, factor))
     # 5. level vs a stated baseline: "V% … (above|below) the national baseline of B%"
     for m in re.finditer(rf"\b(?P<cmp>above|below)\s+(?:the\s+)?(?:national\s+)?baseline"
                          rf"(?:\s+level)?\s+of\s+(?P<b>\d+(?:\.\d+)?)%", text, re.I):
@@ -459,7 +463,7 @@ def _numbers(text: str, E: Edits, mode: str) -> None:
         if v is None:
             raise _Skip("baseline claim without a stated value")
         V, B = float(v.group(1)), float(m.group("b"))
-        V2 = level_mirror(V, B) if flip else B * (V / B) ** FACTOR
+        V2 = level_mirror(V, B) if flip else B * (V / B) ** factor
         V2r = round(V2, decimals(v.group(1)))
         if V2r <= 0 or (flip and (V2r > B) == (V > B)) or V2r == B:
             raise _Skip("mirrored level does not cross the baseline cleanly" if flip
@@ -478,19 +482,19 @@ def _numbers(text: str, E: Edits, mode: str) -> None:
                              rf"(?:up|down))\s+(?:by\s+)?(?P<y>{NUM})(?=\s*{UNIT}?\s*(?:to\b|,|\.|and\b|or\b|from\b|"
                              rf"compared|in\b|\(|over\b|$))", text, re.I):
             if not E.taken(m.start("y"), m.end("y")) and not YEAR.match(m.group("y")):
-                _scale(text, E, m, "y")
+                _scale(text, E, m, "y", factor)
         for m in re.finditer(rf"(?P<y>{NUM})\s*(?:{UNIT})?\s+(?:more|less|higher|lower)\s+than", text, re.I):
             if not E.taken(m.start("y"), m.end("y")):
-                _scale(text, E, m, "y")
+                _scale(text, E, m, "y", factor)
         for m in re.finditer(rf"\ba\s+(?P<y>{NUM})%\s*(?:\((?P<p>{NUM})\s*billion[^)]*\)\s*)?"
                              rf"(?:increase|decrease|decline|rise)", text, re.I):
             for g in ("y", "p"):
                 if m.group(g) and not E.taken(m.start(g), m.end(g)):
-                    _scale(text, E, m, g)
+                    _scale(text, E, m, g, factor)
 
 
-def _scale(text: str, E: Edits, m, g: str) -> None:
-    v = parse_num(m.group(g)) * FACTOR
+def _scale(text: str, E: Edits, m, g: str, factor: float = FACTOR) -> None:
+    v = parse_num(m.group(g)) * factor
     after = text[m.end(g):m.end(g) + 3]
     window = text[max(0, m.start() - 30):m.end() + 5].lower()
     if ("%" in after or "percent" in text[m.end(g):m.end(g) + 9]) and v >= 100 and \

@@ -102,11 +102,16 @@ Health_US; P6's judge prompt and revision) — never re-tuned (rule below).
      damage; per attack, pooled + 4 domains; one Holm family (state m, assert it in code).
    * **Readings fixed in advance**, e.g. "TextGuard v1 is evaded by attack X" = defended DSS
      fooled by the R2 rule and not reduced vs undefended by ≥ the SESOI.
-2. [ ] **Build:** attack generators + validation (as P3 `validate_attacks`; manual check of a
-       sample); export the new texts; **two Colab jobs** — the P6 judge (Qwen2.5-1.5B @ 989aa79,
-       40-prompt probe vs P6 for the setup class) on every new text, and the forecaster(s) on
-       every new text (reuse the R2 notebook builder; M5 with the P5 probe). Kaggle for Q7 if
-       used (Amendment-1 notebook).
+2. [x] **Build** (2026-10-11): `src/attacks/adaptive.py` (A1–A3) + `validate_r3.py` — **all automatic
+       checks pass** (§8 "R3"); 15 review pairs in `texts/r3_review_pairs.md` (**by-eye review by
+       Aryan pending** — two items flagged there, §8 "R3"); one input CSV
+       `results/qwen/r3_inputs.csv` (sha256 `136a1416…`); **three Kaggle notebooks** (§7e).
+   * [ ] **Kaggle runs** (§7e steps): `r3_m5_kaggle`, `r3_judge_kaggle`, `r3_qwen7b_kaggle` → download
+         the six output files into `results/qwen/` → verify → back up with `git add -f`.
+   * [ ] FinBERT heads (CPU, local): FinBERT-embed the new texts, R1 runner on `a2_forward` /
+         `a3_magnitude` (A1 = P3 `flipped` texts — R1 already has those predictions). Needs
+         `run_r1` / `embed-finbert` extended to the R3 conditions (R1's own outputs must stay
+         byte-identical).
 3. [ ] Runs → back up → analysis against §10f → §9 "R3" → `paper/sections/r3_adaptive.tex` →
        commit & push.
 
@@ -164,7 +169,8 @@ Health_US; P6's judge prompt and revision) — never re-tuned (rule below).
 | P6 figures | `python -m src.figures_p6` | seconds |
 | R1 heads (train → infer → analyse) | `python -m src.models.train_r1`, `python -m src.run_r1`, `python -m src.analyze_r1 test` (Qwen embeddings from the backed-up `.npz` via `python -m src.models.qwen_embeddings import`; FinBERT: `python -m src.analyze_r1 embed-finbert`) | ~25 min + ~15 min + ~2 min CPU |
 | R2 analysis (tables, reading, figure) | `python -m src.analyze_r2` (answers from `results/qwen/r2_*`, verified by `load_r2`) | ~3 min CPU |
-| Tests | `python -m pytest -q` (331) | ~60 s |
+| R3 texts → validation → Kaggle input | `python -m src.attacks.adaptive`, `python -m src.attacks.validate_r3`, `python -m src.models.export_r3_inputs`, `python notebooks/build_r3_notebooks.py` | ~1 min |
+| Tests | `python -m pytest -q` (355) | ~90 s |
 
 Model 5 / judge answers: `results/qwen/*_predictions.csv` + `*_run_meta.json` (in git); the
 Colab notebooks in `notebooks/` are only needed to re-generate them.
@@ -330,6 +336,11 @@ Related Work in P8, and re-run the arXiv search then.
 | `src/models/late_fusion.py` R1 heads | R1 | ✅ `DLinear/PatchTST + Qwen/FinBERT`: only the encoder differs (MLP hidden 96 fixed); M3/M4 predictions unchanged (≤ 6e-8 relative) |
 | `src/models/train_r1.py`, `src/run_r1.py` | R1 | ✅ P2.2 protocol + P5a runner into their own unit folders (`results/r1_*`), P2/P5 tables untouched; text=None check |
 | `src/analyze_r1.py` | R1 | ✅ FinBERT embedding, val mechanism, test analysis (Holm m = 108 asserted), mechanical §10d reading, TextGuard v1 on fooled heads (12 tests in `test_r1.py`) |
+| `src/attacks/adaptive.py` | R3 | ✅ A1 selective flip / A2 forward-looking lie / A3 ×10 magnitude lie (+ plausibility filter) → `texts/{a1_selective,a2_forward,a3_magnitude}.csv` |
+| `src/attacks/rules.py` `factor=` | R3 | ✅ exaggeration factor parameter; default 3 → all 7 P3 text files byte-identical after regeneration (checked) |
+| `src/attacks/validate_r3.py` | R3 | ✅ §10f checks (all pass), coverage, `results/summary_r3_attack_validation.csv`, 15 review pairs |
+| `src/models/export_r3_inputs.py` | R3 | ✅ ONE CSV for all three Kaggle jobs: 3451 forecast + 2411 judge + 40 probe rows (deterministic, sha256 `136a1416…`) |
+| `notebooks/build_r3_notebooks.py` → `r3_m5_kaggle`, `r3_qwen7b_kaggle`, `r3_judge_kaggle` | R3 | ✅ built; executed locally with a fake model on toy and on the real inputs (`tests/test_r3.py`, 24 tests) — **awaiting Kaggle** |
 | `src/auditor.py` | P7 | ⚪ |
 | `app/` (Streamlit) | P7 | ⚪ |
 
@@ -1096,6 +1107,50 @@ model's result; parser unchanged as pre-registered, val only.
 verifies every file; back up with `git add -f results/qwen/r2_*`; then the R2 analysis
 (`src/analyze_r2.py`, written after the CSVs arrive) against §10e.
 
+## 7e. R3 runs — M5, Qwen2.5-7B and the judge on the adaptive attacks (Kaggle)
+
+Pre-registration: §10f (`68ca198`). Code: `src/models/export_r3_inputs.py` → **one** input CSV,
+`notebooks/build_r3_notebooks.py` → three Kaggle notebooks, `tests/test_r3.py` (cells executed
+with a fake model: test-first order, resume, sk shares M5's no-report prompt, probe recorded but
+never gating, Q7 smoke-test stop rule, judge = P6's main loop byte for byte).
+
+**Input:** `results/qwen/r3_inputs.csv` (3.3 MB, gitignored; sha256 `136a1416093568e7…`, embedded
+in every notebook — a re-export reproduces it byte for byte): 3451 forecast rows (493 val + test
+windows × real, none, flipped, exaggerated, a1_selective, a2_forward, a3_magnitude), 2411 judge
+questions (every distinct text of real / flipped / exaggerated / A1–A3, val + test; Health_US level
++ change), P5's 40 probe prompts.
+
+| Notebook | Model @ revision | Precision | Work (test first) | Output (`/kaggle/working`) |
+|---|---|---|---|---|
+| `r3_m5_kaggle.ipynb` | Qwen2.5-1.5B @ 989aa79 (= M5) | fp16 | 6409 rows, 4170 distinct prompts (2713 test) + 40 probe | `r3_m5_fp16_kaggle_predictions.csv` + `_run_meta.json` |
+| `r3_qwen7b_kaggle.ipynb` | Qwen2.5-7B @ a09a354 (= Q7) | 4-bit NF4, fp16 compute | same rows; 20-prompt smoke test | `r3_qwen7b_nf4_kaggle_*` |
+| `r3_judge_kaggle.ipynb` | Qwen2.5-1.5B @ 989aa79 | fp16, scored answers | 2411 questions + 40 probe | `r3_judge_kaggle_*` |
+
+Rows per forecaster: variant p5 on all 7 conditions, variant sk on all but `none` (sk's no-report
+prompt is M5's own). Everything is regenerated on Kaggle — real and none included — so every R3
+comparison stays inside one software setup (§10f). Expected time on a T4: judge ~10 min, M5
+~25 min, Q7 ~1–1.5 h (plus model download).
+
+**Kaggle steps:**
+1. kaggle.com → **Datasets → New Dataset** → upload `results/qwen/r3_inputs.csv` → any name,
+   **Private** → Create.
+2. For **each** of the three notebooks (`notebooks/r3_m5_kaggle.ipynb`, `r3_judge_kaggle.ipynb`,
+   `r3_qwen7b_kaggle.ipynb`): **Code → New Notebook → File → Import Notebook** → the file.
+3. In that notebook, right panel → **Session options**: **Accelerator GPU T4 ×2**, **Internet On**;
+   **+ Add Input → Your Datasets →** the dataset from step 1.
+4. **Save Version → Save & Run All (Commit) → Save.** Then the next notebook (steps 2–4). If
+   Kaggle refuses another GPU session, start the remaining one when a run finishes.
+5. Progress: notebook page → the running version → **Logs** (`===== MAIN LOOP`, progress lines,
+   `===== TEST SPLIT DONE`, at the end `RUN FINISHED`).
+6. When a version shows **Complete**: open it → **Output** → download both files → `results/qwen/`.
+7. A **failed** version: read the last log lines. Smoke-test stop ("Too many unparseable"), a
+   non-T4 GPU, or an input-sha error → tell Claude, change nothing. A plain crash / timeout →
+   Save & Run All again (starts fresh).
+
+**After the runs (next session):** loader + verification (fingerprints, one setup per file, test
+complete, consistency vs P5 / R2 / P6 answers on byte-identical prompts), back up with
+`git add -f results/qwen/r3_*`, FinBERT heads, then the analysis against §10f.
+
 ## 8. Attack module and fake-text validation (P3)
 
 `python -m src.attacks.generate` → `texts/<condition>.csv` (gitignored; 7 files: real, empty,
@@ -1205,6 +1260,55 @@ baseline, sign agreement in "changed by S% (T billion)"); length fake/real 0.95�
   mirror — check plausibility if exaggeration matters in P6.
 
 ---
+
+### R3 adaptive attacks — validation (2026-10-11, before any R3 model or judge output)
+
+`python -m src.attacks.adaptive` → `texts/a1_selective.csv`, `a2_forward.csv`, `a3_magnitude.csv`;
+`python -m src.attacks.validate_r3` → `results/summary_r3_attack_validation.csv`,
+`texts/r3_review_pairs.md`. Definitions: §10f. P3's engine gained a `factor` argument; with the
+default (3) all seven P3 text files regenerate **byte-identical**.
+
+**Automatic checks — all pass (every row, val + test):** bookkeeping (same windows as `real`,
+`synthetic` = `attacked`, claimed ≠ 0 exactly on attacked rows, unattacked rows = real text);
+**A1** text = P3 flip on selected windows, claimed = −real, the rules read the flip, selection =
+exactly "agrees with TextGuard's frozen evidence" (493/493), no new contradiction; **A2** real
+report an exact prefix, appended claim parses back to claimed = −real, the rules' headline is still
+the real one, no new contradiction, attacked ⇔ the real report has a directional headline; **A3**
+headline direction kept, no new contradiction, plausibility P1–P4 hold.
+
+**Coverage** (attacked / texts with a report):
+
+| | A1 test | A1 val+test | A2 test | A2 val+test | A3 test | A3 val+test |
+|---|---|---|---|---|---|---|
+| Economy | 29/70 | 46/105 | 70/70 | 105/105 | 61/70 | 95/105 |
+| SocialGood | 5/46 | 10/77 | 27/46 | 44/77 | 23/46 | 38/77 |
+| Traffic | 22/53 | 34/80 | 52/53 | 79/80 | 28/53 | 55/80 |
+| Health_US | 4/130 | 6/196 | 104/130 | 158/196 | 16/130 | 27/196 |
+| **All** | **60/299** | 96/458 | **253/299** | 386/458 | **128/299** | 215/458 |
+
+* **A1** is small by construction (the flip agrees with the 3-month trend in ~42% of Economy /
+  Traffic windows) and nearly absent on Health_US (4 test windows): there the level branch also
+  has to agree, and a flipped level claim almost always contradicts y_last vs the stated
+  baseline — TextGuard's level check is hard to evade with a level flip. Claimed up/down 30/30 on test.
+* **A2** covers every window whose real report has a directional headline (P3's flip coverage
+  plus the 2 texts P3 could not flip for an unhandled word). Length fake/real median 1.17.
+* **A3** at K = 10 — not attacked because a decrease would pass 100% (Traffic 13, Economy 1), a
+  recomputed "from" value ≤ 0 (Economy 9), the plausibility filter (Traffic 11 P1; SocialGood 1 P1
+  + 4 P4; Health_US 44 P1 + 20 P3) or a level that rounds to ≤ 0 (Health_US 67 below-baseline
+  values). Health_US A3 is therefore small (16 test) and biased to values near the baseline, as
+  §10f anticipated. Edited change numbers are ×10 (median |new|/|old| = 10.0 in Economy,
+  SocialGood, Traffic; Health_US 0.29 — mostly below-baseline levels pushed further down).
+
+**Flagged for Aryan's by-eye review (not automatic failures; nothing changed — §10f rule):**
+1. **A2 separator after markdown.** 72 / 386 real reports end with Time-MMD's `**` (or `)`), so
+   the pre-registered separator gives `…**. The trade deficit is expected to rise next month.`
+   (pair 6). Cosmetic; changing it needs an amendment and a re-run of those prompts.
+2. **A3 on 3 Health_US change-variant texts (test 2018-11-05, 2018-11-12, 2019-04-15).** P3's
+   engine exaggerates the change claim and the level claim separately; where they point opposite
+   ways ("decreased … to 2.4%, but remains above the national baseline of 2.2%") the level moves
+   *against* the claimed direction ("decreased sharply to 5.3%", pair 14). Inherited from P3's
+   engine (same at ×3). Option: an amendment marking these 3 "not attacked" — no re-run needed
+   (the analysis would just drop them).
 
 ## 9. Results
 
@@ -2885,6 +2989,17 @@ change-flip domains (as §10b). Anything else is exploratory and labelled so.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-11 — R3: pre-registered (§10f), attacks built + validated, Kaggle notebooks built
+* **Pre-registration §10f committed alone and pushed (`68ca198`)** before any R3 text or output:
+  A1 selective flip, A2 forward-looking lie, A3 ×10 magnitude lie; targets M5, Q7, M3-F, M4-F;
+  defences none / TextGuard v1 / clip / skeptical prompt at frozen settings; R2's SESOI; one Holm
+  family per target (105 / 105 / 75 / 75); expectation stated: TextGuard v1 likely evaded by A1.
+* Attacks generated and validated: **all automatic checks pass**; test coverage A1 60, A2 253,
+  A3 128 of 299 windows with a report (§8 "R3"). P3's texts regenerate byte-identical.
+  Two items flagged for by-eye review (A2 separator after `**`; 3 Health_US A3 texts).
+* One Kaggle input CSV (`136a1416…`) and three notebooks (M5, Q7, judge); 24 new tests (355 total).
+* **Next:** Aryan launches the three Kaggle runs (§7e) and reviews `texts/r3_review_pairs.md`.
 
 ### 2026-10-11 — R2: analysis against §10e, wording approved → **R2 complete**
 - `src/analyze_r2.py` (+ 25 tests), `src/figures_r2.py`; four families asserted 44/44/58/54 →
