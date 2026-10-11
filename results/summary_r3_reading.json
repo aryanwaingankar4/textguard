@@ -1,0 +1,60 @@
+{
+ "headline_M5_pooled": {
+  "a1_selective": {
+   "U": "inconclusive",
+   "TG0": "inconclusive",
+   "TGΔ": "no change shown",
+   "reading": "nothing to defend against",
+   "textguard_breaks": false
+  },
+  "a2_forward": {
+   "U": "fooled",
+   "TG0": "fooled",
+   "TGΔ": "significant but negligible",
+   "reading": "evaded",
+   "textguard_breaks": true
+  },
+  "a3_magnitude": {
+   "U": "inconclusive",
+   "TG0": "bounded",
+   "TGΔ": "no change shown",
+   "reading": "nothing to defend against",
+   "textguard_breaks": false
+  }
+ },
+ "headline_M5_pooled_all_texts": {
+  "a1_selective": {
+   "U": "fooled",
+   "TG0": "inconclusive",
+   "TGΔ": "reduction",
+   "reading": "reduces; residual not shown to be below the SESOI",
+   "textguard_breaks": false
+  },
+  "a2_forward": {
+   "U": "fooled",
+   "TG0": "fooled",
+   "TGΔ": "significant but negligible",
+   "reading": "evaded",
+   "textguard_breaks": true
+  },
+  "a3_magnitude": {
+   "U": "inconclusive",
+   "TG0": "bounded",
+   "TGΔ": "no change shown",
+   "reading": "nothing to defend against",
+   "textguard_breaks": false
+  }
+ },
+ "rejections": {
+  "R3-M3F": 22,
+  "R3-M4F": 13,
+  "R3-M5": 15,
+  "R3-Q7": 16
+ },
+ "family_sizes": {
+  "R3-M3F": 75,
+  "R3-M4F": 75,
+  "R3-M5": 105,
+  "R3-Q7": 105
+ }
+}

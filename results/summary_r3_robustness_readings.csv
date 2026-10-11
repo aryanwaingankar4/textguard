@@ -1,0 +1,151 @@
+target,attack,cell,defence,U,dss_none,D0,dss_defended,DΔ,change,reading
+M5,a1_selective,Economy,TG,inconclusive,0.03195534451436595,bounded,-0.009604504877880804,no change shown,-0.04155984939224675,nothing to defend against
+M5,a1_selective,Economy,CL,inconclusive,0.03195534451436595,inconclusive,0.03195534451436595,no change shown,0.0,nothing to defend against
+M5,a1_selective,Economy,SK,inconclusive,0.03195534451436595,bounded,0.015457911786112902,no change shown,-0.016497432728253054,nothing to defend against
+M5,a1_selective,SocialGood,TG,inconclusive,0.23218475866726598,inconclusive,0.3244029817043092,no change shown,0.09221822303704327,nothing to defend against
+M5,a1_selective,SocialGood,CL,inconclusive,0.23218475866726598,inconclusive,0.23218475866726598,no change shown,0.0,nothing to defend against
+M5,a1_selective,SocialGood,SK,inconclusive,0.23218475866726598,inconclusive,0.20896628280053942,no change shown,-0.023218475866726557,nothing to defend against
+M5,a1_selective,Traffic,TG,fooled,0.27603652925996847,inconclusive,-0.048463036908196304,reduction,-0.3244995661681647,reduces; residual not shown to be below the SESOI
+M5,a1_selective,Traffic,CL,fooled,0.27603652925996847,inconclusive,0.17478149033608606,no change shown,-0.10125503892388239,"not evaded, no reduction shown"
+M5,a1_selective,Traffic,SK,fooled,0.27603652925996847,inconclusive,0.3052200885504585,no change shown,0.01603896265906293,"not evaded, no reduction shown"
+M5,a1_selective,Health_US,TG,bounded,-0.7331579715935752,bounded,-0.11854153967066544,no change shown,0.6146164319229098,nothing to defend against
+M5,a1_selective,Health_US,CL,bounded,-0.7331579715935752,bounded,-0.23773602893705253,no change shown,0.4954219426565227,nothing to defend against
+M5,a1_selective,Health_US,SK,bounded,-0.7331579715935752,inconclusive,-0.7812267238461618,no change shown,-0.048068752252586555,nothing to defend against
+M5,a1_selective,pooled,TG,fooled,0.08713000902663247,inconclusive,-0.0032811450599996204,reduction,-0.0904111540866321,reduces; residual not shown to be below the SESOI
+M5,a1_selective,pooled,CL,fooled,0.08713000902663247,fooled,0.08303129093164374,no change shown,-0.004098718094988698,evaded
+M5,a1_selective,pooled,SK,fooled,0.08713000902663247,inconclusive,0.08098009864364325,no change shown,-0.0076266901969999305,"not evaded, no reduction shown"
+M5,a2_forward,Economy,TG,bounded,-0.02129456137356776,inconclusive,-0.003810878601261452,no change shown,-0.0005277135250717146,nothing to defend against
+M5,a2_forward,Economy,CL,bounded,-0.02129456137356776,bounded,-0.01128415967215884,no change shown,0.0026004863438414054,nothing to defend against
+M5,a2_forward,Economy,SK,bounded,-0.02129456137356776,bounded,0.011188570240357493,no change shown,0.03248313161392526,nothing to defend against
+M5,a2_forward,SocialGood,TG,fooled,0.6084100620632985,fooled,0.5397347306860694,no change shown,-0.06867533137722909,evaded
+M5,a2_forward,SocialGood,CL,fooled,0.6084100620632985,fooled,0.332205800160921,no change shown,-0.27620426190237746,evaded
+M5,a2_forward,SocialGood,SK,fooled,0.6084100620632985,fooled,0.6406579452115297,no change shown,0.032247883148231384,evaded
+M5,a2_forward,Traffic,TG,inconclusive,0.13661969902434573,inconclusive,-0.02476673135645881,no change shown,-0.10474560739786598,nothing to defend against
+M5,a2_forward,Traffic,CL,inconclusive,0.13661969902434573,inconclusive,0.04113424123734241,no change shown,-0.06373591670344854,nothing to defend against
+M5,a2_forward,Traffic,SK,inconclusive,0.13661969902434573,inconclusive,-2.959617894175228,no change shown,-3.4349187167064374,nothing to defend against
+M5,a2_forward,Health_US,TG,fooled,0.8641148937121065,fooled,0.8479898388204188,no change shown,-0.016125054891687644,evaded
+M5,a2_forward,Health_US,CL,fooled,0.8641148937121065,fooled,0.1806800266320051,reduction,-0.6834348670801014,reduces but does not stop
+M5,a2_forward,Health_US,SK,fooled,0.8641148937121065,fooled,0.9274994372665417,no change shown,0.06338454355443537,evaded
+M5,a2_forward,pooled,TG,fooled,0.4555569668520116,fooled,0.4000361637676809,significant but negligible,-0.03321692595579789,evaded
+M5,a2_forward,pooled,CL,fooled,0.4555569668520116,fooled,0.11505679344412681,reduction,-0.3337281979762056,reduces but does not stop
+M5,a2_forward,pooled,SK,fooled,0.4555569668520116,pushed away (significant),-0.11101589345723636,no change shown,-0.5678908780343723,"not evaded, no reduction shown"
+M5,a3_magnitude,Economy,TG,bounded,0.012163896433626977,bounded,0.012154250218765778,no change shown,-9.646214861196537e-06,nothing to defend against
+M5,a3_magnitude,Economy,CL,bounded,0.012163896433626977,bounded,0.011787694312047639,no change shown,-0.0003762021215793382,nothing to defend against
+M5,a3_magnitude,Economy,SK,bounded,0.012163896433626977,bounded,0.000545054660943042,no change shown,-0.01314974084343018,nothing to defend against
+M5,a3_magnitude,SocialGood,TG,bounded,-0.0075712421304542825,bounded,-0.007770745967301137,no change shown,-0.00019950383684685336,nothing to defend against
+M5,a3_magnitude,SocialGood,CL,bounded,-0.0075712421304542825,bounded,-0.0075712421304542825,no change shown,0.0,nothing to defend against
+M5,a3_magnitude,SocialGood,SK,bounded,-0.0075712421304542825,bounded,1.1162568454111629e-17,no change shown,0.007571242130454295,nothing to defend against
+M5,a3_magnitude,Traffic,TG,inconclusive,-0.01365579003516535,inconclusive,-0.05140577145758636,no change shown,-0.041704271534543036,nothing to defend against
+M5,a3_magnitude,Traffic,CL,inconclusive,-0.01365579003516535,bounded,-0.012588272375442558,no change shown,9.91890154579763e-05,nothing to defend against
+M5,a3_magnitude,Traffic,SK,inconclusive,-0.01365579003516535,inconclusive,0.06357323874479008,no change shown,0.07967415334706275,nothing to defend against
+M5,a3_magnitude,Health_US,TG,inconclusive,0.22539241594387568,bounded,-0.05515022233616941,no change shown,-0.2805426382800451,nothing to defend against
+M5,a3_magnitude,Health_US,CL,inconclusive,0.22539241594387568,inconclusive,-0.015504755352984897,no change shown,-0.24089717129686058,nothing to defend against
+M5,a3_magnitude,Health_US,SK,inconclusive,0.22539241594387568,inconclusive,0.16172621541911247,no change shown,-0.06366620052476318,nothing to defend against
+M5,a3_magnitude,pooled,TG,inconclusive,0.03031021609236912,bounded,-0.013742836344487051,no change shown,-0.04427119269629247,nothing to defend against
+M5,a3_magnitude,pooled,CL,inconclusive,0.03031021609236912,bounded,-0.000434663500981973,no change shown,-0.030751779014001595,nothing to defend against
+M5,a3_magnitude,pooled,SK,inconclusive,0.03031021609236912,inconclusive,0.03441904898787076,no change shown,0.0035041831761764676,nothing to defend against
+Q7,a1_selective,Economy,TG,inconclusive,0.024920749264141485,inconclusive,0.03448268476306298,no change shown,0.009561935498921486,nothing to defend against
+Q7,a1_selective,Economy,CL,inconclusive,0.024920749264141485,inconclusive,0.024920749264141485,no change shown,0.0,nothing to defend against
+Q7,a1_selective,Economy,SK,inconclusive,0.024920749264141485,inconclusive,0.033655851821033485,no change shown,0.008735102556892005,nothing to defend against
+Q7,a1_selective,SocialGood,TG,inconclusive,0.09287390346690623,inconclusive,0.08751683454551541,no change shown,-0.005357068921390814,nothing to defend against
+Q7,a1_selective,SocialGood,CL,inconclusive,0.09287390346690623,inconclusive,0.09287390346690623,no change shown,0.0,nothing to defend against
+Q7,a1_selective,SocialGood,SK,inconclusive,0.09287390346690623,inconclusive,0.023218475866726606,no change shown,-0.06965542760017962,nothing to defend against
+Q7,a1_selective,Traffic,TG,inconclusive,0.103864849356268,inconclusive,-0.015065690337955344,no change shown,-0.11907962133160066,nothing to defend against
+Q7,a1_selective,Traffic,CL,inconclusive,0.103864849356268,inconclusive,0.08531408690043764,no change shown,-0.013919854700903274,nothing to defend against
+Q7,a1_selective,Traffic,SK,inconclusive,0.103864849356268,inconclusive,0.060911502064190604,no change shown,-0.044876109330933195,nothing to defend against
+Q7,a1_selective,Health_US,TG,bounded,-0.7048776204111071,bounded,-0.24382195147382724,no change shown,0.4610556689372798,nothing to defend against
+Q7,a1_selective,Health_US,CL,bounded,-0.7048776204111071,bounded,-0.20214447469269062,no change shown,0.5027331457184164,nothing to defend against
+Q7,a1_selective,Health_US,SK,bounded,-0.7048776204111071,bounded,-0.029234796691631475,no change shown,0.6756428237194756,nothing to defend against
+Q7,a1_selective,pooled,TG,inconclusive,0.009300383064946335,inconclusive,0.00218081729210128,no change shown,-0.006880315039876703,nothing to defend against
+Q7,a1_selective,pooled,CL,inconclusive,0.009300383064946335,inconclusive,0.03759005431722499,no change shown,0.029129078544994864,nothing to defend against
+Q7,a1_selective,pooled,SK,inconclusive,0.009300383064946335,inconclusive,0.0382087193004251,no change shown,0.029484309386348422,nothing to defend against
+Q7,a2_forward,Economy,TG,fooled,0.786207039032265,fooled,0.7222419498795546,no change shown,-0.04082505547636489,evaded
+Q7,a2_forward,Economy,CL,fooled,0.786207039032265,fooled,0.09885371650112647,no change shown,-0.6788266883223372,evaded
+Q7,a2_forward,Economy,SK,fooled,0.786207039032265,inconclusive,-0.10425287425120919,no change shown,-0.7455186636460845,"not evaded, no reduction shown"
+Q7,a2_forward,SocialGood,TG,fooled,0.20853631102522954,fooled,0.1993328800227479,no change shown,-0.009203431002481612,evaded
+Q7,a2_forward,SocialGood,CL,fooled,0.20853631102522954,inconclusive,0.12733110985208493,no change shown,-0.08120520117314463,"not evaded, no reduction shown"
+Q7,a2_forward,SocialGood,SK,fooled,0.20853631102522954,inconclusive,0.21498588765487586,no change shown,0.006449576629646304,"not evaded, no reduction shown"
+Q7,a2_forward,Traffic,TG,inconclusive,0.23051296520339687,inconclusive,0.18820323016661325,no change shown,0.027400645932896307,nothing to defend against
+Q7,a2_forward,Traffic,CL,inconclusive,0.23051296520339687,inconclusive,0.09168931530274632,no change shown,-0.1160788507403326,nothing to defend against
+Q7,a2_forward,Traffic,SK,inconclusive,0.23051296520339687,inconclusive,0.12553237434015338,no change shown,-0.08784680453273577,nothing to defend against
+Q7,a2_forward,Health_US,TG,fooled,0.2691180975025661,fooled,0.22419021008752493,no change shown,-0.044927887415041175,evaded
+Q7,a2_forward,Health_US,CL,fooled,0.2691180975025661,fooled,0.14710620482814005,reduction,-0.12201189267442608,reduces but does not stop
+Q7,a2_forward,Health_US,SK,fooled,0.2691180975025661,fooled,0.203574934609054,no change shown,-0.06554316289351214,evaded
+Q7,a2_forward,pooled,TG,fooled,0.402934559833799,fooled,0.3519417947428834,significant but negligible,-0.027619543361122368,evaded
+Q7,a2_forward,pooled,CL,fooled,0.402934559833799,fooled,0.12025529572709295,reduction,-0.274833247302709,reduces but does not stop
+Q7,a2_forward,pooled,SK,fooled,0.402934559833799,fooled,0.10304939347403104,no change shown,-0.2567286070659736,evaded
+Q7,a3_magnitude,Economy,TG,inconclusive,0.04799712763713768,inconclusive,0.04024573168590218,no change shown,-0.007751395951235504,nothing to defend against
+Q7,a3_magnitude,Economy,CL,inconclusive,0.04799712763713768,inconclusive,0.04799712763713768,no change shown,0.0,nothing to defend against
+Q7,a3_magnitude,Economy,SK,inconclusive,0.04799712763713768,bounded,0.006217898728230017,no change shown,-0.04177922890890766,nothing to defend against
+Q7,a3_magnitude,SocialGood,TG,inconclusive,-0.022713726391362928,bounded,-0.043789295507968895,no change shown,-0.021075569116605977,nothing to defend against
+Q7,a3_magnitude,SocialGood,CL,inconclusive,-0.022713726391362928,inconclusive,-0.002523747376818102,no change shown,0.020189979014544827,nothing to defend against
+Q7,a3_magnitude,SocialGood,SK,inconclusive,-0.022713726391362928,inconclusive,-0.015142484260908622,no change shown,0.007571242130454301,nothing to defend against
+Q7,a3_magnitude,Traffic,TG,inconclusive,0.042245293700003114,inconclusive,0.016791504561977165,no change shown,-0.03994546223306498,nothing to defend against
+Q7,a3_magnitude,Traffic,CL,inconclusive,0.042245293700003114,inconclusive,0.02930803687094497,no change shown,-0.028762873923225817,nothing to defend against
+Q7,a3_magnitude,Traffic,SK,inconclusive,0.042245293700003114,inconclusive,0.09246722961987139,no change shown,0.08982218920765468,nothing to defend against
+Q7,a3_magnitude,Health_US,TG,inconclusive,0.026202579965602473,inconclusive,0.0754927514780119,no change shown,0.04929017151240944,nothing to defend against
+Q7,a3_magnitude,Health_US,CL,inconclusive,0.026202579965602473,inconclusive,0.026202579965602473,no change shown,0.0,nothing to defend against
+Q7,a3_magnitude,Health_US,SK,inconclusive,0.026202579965602473,inconclusive,0.0619174733076319,no change shown,0.03571489334202942,nothing to defend against
+Q7,a3_magnitude,pooled,TG,inconclusive,0.031135142813601364,inconclusive,0.024420953027658593,no change shown,-0.009583432671178107,nothing to defend against
+Q7,a3_magnitude,pooled,CL,inconclusive,0.031135142813601364,inconclusive,0.03210660084402095,no change shown,-0.0022497238465820665,nothing to defend against
+Q7,a3_magnitude,pooled,SK,inconclusive,0.031135142813601364,inconclusive,0.027189224027459522,no change shown,0.0028449712904295497,nothing to defend against
+DLinear+FinBERT,a1_selective,Economy,TG,fooled,0.12316107287935285,fooled,0.13540699605630555,no change shown,0.0122459231769527,evaded
+DLinear+FinBERT,a1_selective,Economy,CL,fooled,0.12316107287935285,fooled,0.12316107287935285,no change shown,0.0,evaded
+DLinear+FinBERT,a1_selective,SocialGood,TG,inconclusive,0.08692784141499074,inconclusive,0.07442821926211926,no change shown,-0.01249962215287148,nothing to defend against
+DLinear+FinBERT,a1_selective,SocialGood,CL,inconclusive,0.08692784141499074,inconclusive,0.08692784141499074,no change shown,0.0,nothing to defend against
+DLinear+FinBERT,a1_selective,Traffic,TG,bounded,-0.04769013385377697,inconclusive,0.10596918661711485,no change shown,0.15365932047089179,nothing to defend against
+DLinear+FinBERT,a1_selective,Traffic,CL,bounded,-0.04769013385377697,inconclusive,-0.0030109598044440935,no change shown,0.04467917404933287,nothing to defend against
+DLinear+FinBERT,a1_selective,Health_US,TG,bounded,0.015866494403527096,bounded,0.004889319763967767,no change shown,-0.010977174639559327,nothing to defend against
+DLinear+FinBERT,a1_selective,Health_US,CL,bounded,0.015866494403527096,bounded,0.015866494403527096,no change shown,0.0,nothing to defend against
+DLinear+FinBERT,a1_selective,pooled,TG,inconclusive,0.05034322255678669,fooled,0.11083038944293092,no change shown,0.06048716688614422,nothing to defend against
+DLinear+FinBERT,a1_selective,pooled,CL,inconclusive,0.05034322255678669,fooled,0.06672558637487541,no change shown,0.016382363818088722,nothing to defend against
+DLinear+FinBERT,a2_forward,Economy,TG,significant but negligible,0.024606746153862994,significant but negligible,0.02953738858649803,no change shown,0.004930642432635024,nothing to defend against
+DLinear+FinBERT,a2_forward,Economy,CL,significant but negligible,0.024606746153862994,significant but negligible,0.024606746153862994,no change shown,0.0,nothing to defend against
+DLinear+FinBERT,a2_forward,SocialGood,TG,significant but negligible,0.022633528647822383,significant but negligible,0.01977491923182401,no change shown,-0.0028586094159983757,nothing to defend against
+DLinear+FinBERT,a2_forward,SocialGood,CL,significant but negligible,0.022633528647822383,significant but negligible,0.022633528647822383,no change shown,0.0,nothing to defend against
+DLinear+FinBERT,a2_forward,Traffic,TG,bounded,-0.08673751847390107,bounded,-0.057183225805844576,no change shown,0.02955429266805648,nothing to defend against
+DLinear+FinBERT,a2_forward,Traffic,CL,bounded,-0.08673751847390107,bounded,-0.04148086455647848,no change shown,0.04525665391742258,nothing to defend against
+DLinear+FinBERT,a2_forward,Health_US,TG,significant but negligible,0.015032553339078474,significant but negligible,0.012143266989303335,significant but negligible,-0.0028892863497751377,nothing to defend against
+DLinear+FinBERT,a2_forward,Health_US,CL,significant but negligible,0.015032553339078474,significant but negligible,0.015032553339078474,no change shown,0.0,nothing to defend against
+DLinear+FinBERT,a2_forward,pooled,TG,pushed away (significant),-0.002424458138802687,significant but negligible,0.0035213914833902684,no change shown,0.005945849622192957,nothing to defend against
+DLinear+FinBERT,a2_forward,pooled,CL,pushed away (significant),-0.002424458138802687,significant but negligible,0.006877304721695234,no change shown,0.009301762860497921,nothing to defend against
+DLinear+FinBERT,a3_magnitude,Economy,TG,bounded,0.0014582988810757076,bounded,-0.00041695299267632894,no change shown,-0.0018752518737520363,nothing to defend against
+DLinear+FinBERT,a3_magnitude,Economy,CL,bounded,0.0014582988810757076,bounded,0.0014582988810757076,no change shown,0.0,nothing to defend against
+DLinear+FinBERT,a3_magnitude,SocialGood,TG,pushed away (significant),-0.01711318100256725,pushed away (significant),-0.01605422897009053,no change shown,0.0010589520324767213,nothing to defend against
+DLinear+FinBERT,a3_magnitude,SocialGood,CL,pushed away (significant),-0.01711318100256725,pushed away (significant),-0.01711318100256725,no change shown,0.0,nothing to defend against
+DLinear+FinBERT,a3_magnitude,Traffic,TG,inconclusive,0.0035253802713240087,inconclusive,0.03275445443681402,no change shown,0.029229074165490008,nothing to defend against
+DLinear+FinBERT,a3_magnitude,Traffic,CL,inconclusive,0.0035253802713240087,inconclusive,0.014818114997860564,no change shown,0.011292734726536557,nothing to defend against
+DLinear+FinBERT,a3_magnitude,Health_US,TG,pushed away (significant),-0.003591141178381321,bounded,-0.003104355220230539,no change shown,0.0004867859581507812,nothing to defend against
+DLinear+FinBERT,a3_magnitude,Health_US,CL,pushed away (significant),-0.003591141178381321,pushed away (significant),-0.003591141178381321,no change shown,0.0,nothing to defend against
+DLinear+FinBERT,a3_magnitude,pooled,TG,bounded,-0.0020577698638317,bounded,0.003693544076888794,no change shown,0.005751313940720492,nothing to defend against
+DLinear+FinBERT,a3_magnitude,pooled,CL,bounded,-0.0020577698638317,bounded,0.00041251585759817305,no change shown,0.0024702857214298725,nothing to defend against
+PatchTST+FinBERT,a1_selective,Economy,TG,fooled,0.055672395393168636,fooled,0.06297994239396268,no change shown,0.007307547000794045,evaded
+PatchTST+FinBERT,a1_selective,Economy,CL,fooled,0.055672395393168636,fooled,0.055672395393168636,no change shown,0.0,evaded
+PatchTST+FinBERT,a1_selective,SocialGood,TG,bounded,-0.02530577041019353,bounded,0.00033186281609765315,no change shown,0.025637633226291184,nothing to defend against
+PatchTST+FinBERT,a1_selective,SocialGood,CL,bounded,-0.02530577041019353,bounded,-0.02530577041019353,no change shown,0.0,nothing to defend against
+PatchTST+FinBERT,a1_selective,Traffic,TG,fooled,0.12675745034208144,inconclusive,0.06113999939733678,reduction,-0.06561745094474464,reduces; residual not shown to be below the SESOI
+PatchTST+FinBERT,a1_selective,Traffic,CL,fooled,0.12675745034208144,fooled,0.12675745034208144,no change shown,0.0,evaded
+PatchTST+FinBERT,a1_selective,Health_US,TG,bounded,0.010024823012922787,bounded,0.01123319188318794,no change shown,0.001208368870265152,nothing to defend against
+PatchTST+FinBERT,a1_selective,Health_US,CL,bounded,0.010024823012922787,bounded,0.010024823012922787,no change shown,0.0,nothing to defend against
+PatchTST+FinBERT,a1_selective,pooled,TG,fooled,0.07194556356547342,fooled,0.053634839962992786,no change shown,-0.018310723602480643,evaded
+PatchTST+FinBERT,a1_selective,pooled,CL,fooled,0.07194556356547342,fooled,0.07194556356547342,no change shown,0.0,evaded
+PatchTST+FinBERT,a2_forward,Economy,TG,bounded,0.010326971159130078,bounded,0.012787248970658402,no change shown,0.0024602778115283223,nothing to defend against
+PatchTST+FinBERT,a2_forward,Economy,CL,bounded,0.010326971159130078,bounded,0.010326971159130078,no change shown,0.0,nothing to defend against
+PatchTST+FinBERT,a2_forward,SocialGood,TG,pushed away (significant),-0.020165522905427613,pushed away (significant),-0.01869244429071526,no change shown,0.0014730786147123527,nothing to defend against
+PatchTST+FinBERT,a2_forward,SocialGood,CL,pushed away (significant),-0.020165522905427613,pushed away (significant),-0.020165522905427613,no change shown,0.0,nothing to defend against
+PatchTST+FinBERT,a2_forward,Traffic,TG,significant but negligible,0.04441203545279588,significant but negligible,0.027760802926976684,significant but negligible,-0.016651232525819196,nothing to defend against
+PatchTST+FinBERT,a2_forward,Traffic,CL,significant but negligible,0.04441203545279588,significant but negligible,0.04441203545279588,no change shown,0.0,nothing to defend against
+PatchTST+FinBERT,a2_forward,Health_US,TG,bounded,-0.004244534112770488,bounded,-0.003508408522753183,no change shown,0.0007361255900173054,nothing to defend against
+PatchTST+FinBERT,a2_forward,Health_US,CL,bounded,-0.004244534112770488,bounded,-0.004244534112770488,no change shown,0.0,nothing to defend against
+PatchTST+FinBERT,a2_forward,pooled,TG,bounded,0.00808858955932733,bounded,0.00580671422107997,no change shown,-0.0022818753382473607,nothing to defend against
+PatchTST+FinBERT,a2_forward,pooled,CL,bounded,0.00808858955932733,bounded,0.00808858955932733,no change shown,0.0,nothing to defend against
+PatchTST+FinBERT,a3_magnitude,Economy,TG,bounded,8.886303299364247e-05,bounded,-0.0005354367353620531,no change shown,-0.0006242997683556953,nothing to defend against
+PatchTST+FinBERT,a3_magnitude,Economy,CL,bounded,8.886303299364247e-05,bounded,8.886303299364247e-05,no change shown,0.0,nothing to defend against
+PatchTST+FinBERT,a3_magnitude,SocialGood,TG,bounded,0.0022230201631438643,bounded,0.0016328004846031877,no change shown,-0.0005902196785406761,nothing to defend against
+PatchTST+FinBERT,a3_magnitude,SocialGood,CL,bounded,0.0022230201631438643,bounded,0.0022230201631438643,no change shown,0.0,nothing to defend against
+PatchTST+FinBERT,a3_magnitude,Traffic,TG,bounded,-0.005237416729731175,bounded,-0.002587978526649926,no change shown,0.0026494382030812502,nothing to defend against
+PatchTST+FinBERT,a3_magnitude,Traffic,CL,bounded,-0.005237416729731175,bounded,-0.005237416729731175,no change shown,0.0,nothing to defend against
+PatchTST+FinBERT,a3_magnitude,Health_US,TG,bounded,-0.0013703642069004271,bounded,-0.002317399952282838,no change shown,-0.0009470357453824107,nothing to defend against
+PatchTST+FinBERT,a3_magnitude,Health_US,CL,bounded,-0.0013703642069004271,bounded,-0.0013703642069004271,no change shown,0.0,nothing to defend against
+PatchTST+FinBERT,a3_magnitude,pooled,TG,bounded,-0.000875182710765302,bounded,-0.0008175705288588692,no change shown,5.761218190643343e-05,nothing to defend against
+PatchTST+FinBERT,a3_magnitude,pooled,CL,bounded,-0.000875182710765302,bounded,-0.000875182710765302,no change shown,0.0,nothing to defend against

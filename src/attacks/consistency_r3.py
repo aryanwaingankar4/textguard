@@ -421,7 +421,27 @@ def c7_p2_implied_start(text: str, domain: str) -> dict[str, str]:
     return out
 
 
+# --- C8 — found after R3 metrics existed; NOT adopted (Aryan, 2026-10-11): sensitivity only --
+# "<verb> from A to B" whose own numbers contradict the verb ("increased from 3.0% to 0.9%").
+# P3's flip recomputes A from the *old* B while the Health_US level mirror moves B, so both edits
+# together can reverse the stated movement. Rule (a): the text's stated numbers contradict each other.
+
+FROM_TO = re.compile(rf"\b(?P<v>{UP_V}|{DOWN_V})(?:\s+(?:sharply|slightly|marginally|modestly|somewhat))?"
+                     rf"\s+from\s+(?P<a>{NUM})\s*(?P<au>{UNIT})?\s+to\s+(?P<b>{NUM})", re.I)
+
+
+def c8_from_to_direction(text: str, domain: str) -> dict[str, str]:
+    out = {}
+    for k, m in enumerate(FROM_TO.finditer(text)):
+        a, b = parse_num(m.group("a")), parse_num(m.group("b"))
+        d = 1 if re.fullmatch(UP_V, m.group("v"), re.I) else -1
+        if (b - a) * d < 0:
+            out[f"C8 from-to #{k}"] = f"'{m.group('v')} from {m.group('a')} to {m.group('b')}'"
+    return out
+
+
 SINGLE = (c1_week_sequence, c2_pct_vs_level, c3_nsa_vs_sa, c4_economy_avg3, c7_p2_implied_start)
+NOT_ADOPTED = (c8_from_to_direction,)   # R3 sensitivity only; R4+ scans include it
 
 
 def problems(text: str | None, domain: str) -> dict[str, str]:

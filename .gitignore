@@ -51,3 +51,6 @@ Thumbs.db
 /cache/
 /results/r1_train_units/
 /results/r1_units/
+# R3 FinBERT-head inference (regenerable: python -m src.run_r3_finbert)
+results/r3_finbert_units/
+results/r3_finbert_run.log

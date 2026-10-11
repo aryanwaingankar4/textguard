@@ -1,0 +1,16 @@
+attack,cell,texts,attacked_all,attacked_kept
+a1_selective,Economy,70,29,29
+a1_selective,SocialGood,46,5,5
+a1_selective,Traffic,53,22,5
+a1_selective,Health_US,130,4,3
+a1_selective,pooled,299,60,42
+a2_forward,Economy,70,70,70
+a2_forward,SocialGood,46,27,27
+a2_forward,Traffic,53,52,52
+a2_forward,Health_US,130,104,104
+a2_forward,pooled,299,253,253
+a3_magnitude,Economy,70,61,58
+a3_magnitude,SocialGood,46,23,23
+a3_magnitude,Traffic,53,28,4
+a3_magnitude,Health_US,130,16,13
+a3_magnitude,pooled,299,128,98

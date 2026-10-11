@@ -327,12 +327,17 @@ cannot say which one makes it vulnerable.
 ### R3 — adaptive attacks on TextGuard v1
 Attackers who know the defence. TextGuard v1 is run exactly as frozen in P6.
 - [x] Pre-register (PROJECT_STATUS §10f), commit alone
-- [ ] Trend-consistent lies (claim direction agrees with the lookback trend, so the gate passes it)
-- [ ] Forward-looking lies ("will reverse next period" — a claim about the future, not the past)
-- [ ] Magnitude lies (right direction, wrong size)
-- [ ] DSS / Flip Rate / damage undefended vs TextGuard v1 vs clip; pre-registered family
+- [x] Trend-consistent lies (claim direction agrees with the lookback trend, so the gate passes it)
+- [x] Forward-looking lies ("will reverse next period" — a claim about the future, not the past)
+- [x] Magnitude lies (right direction, wrong size)
+- [x] DSS / Flip Rate / damage undefended vs TextGuard v1 vs clip; pre-registered family
+- **✅ R3 done (2026-10-11):** one appended forward-looking sentence (A2) evades TextGuard v1 on M5
+  (+0.456σ) and Qwen2.5-7B (+0.403σ); no defence stops it (clip leaves +0.12σ); A1 on M5 small and
+  not robust (evades TG on M3-F); A3 pushes nothing. Amendment 1: text-validity exclusions
 
 ### R4 — TextGuard v2
+- [ ] **Judge evaluates every claim in a report, including forward-looking ones** (R3: A2's
+      appended forward claim was never checked — v1 asks only about the main past claim)
 - [ ] Level/change-aware judge; longer history for year-over-year claims; a magnitude cap
       (borrowed from clip, which beat v1 on exaggeration)
 - [ ] **Developed on VAL only.** Held-out Time-MMD domains (Energy, Health_AFR, Climate if
