@@ -1337,6 +1337,11 @@ headline direction kept, no new contradiction, plausibility P1–P4 hold.
   §10f anticipated. Edited change numbers are ×10 (median |new|/|old| = 10.0 in Economy,
   SocialGood, Traffic; Health_US 0.29 — mostly below-baseline levels pushed further down).
 
+**By-eye review done (Aryan, 2026-10-11) → §10f Amendment 1:** cross-sentence contradictions
+found in pairs 3, 11, 13, 15 led to an automatic scan (`src/attacks/consistency_r3.py`) of every
+A1/A2/A3 text; flagged texts are excluded from the attacked sets (test A1 60 → 42, A2 253, A3
+128 → 98; `results/r3_text_exclusions.csv`). Item 1 below stays cosmetic; item 2 is covered (C6).
+
 **Flagged for Aryan's by-eye review (not automatic failures; nothing changed — §10f rule):**
 1. **A2 separator after markdown.** 72 / 386 real reports end with Time-MMD's `**` (or `)`), so
    the pre-registered separator gives `…**. The trade deficit is expected to rise next month.`
@@ -2986,6 +2991,74 @@ directly; P3 `flipped` and `exaggerated` re-run in the same R3 runs as within-ru
 failure rates; val numbers (labelled); the consistency checks above.
 **Ablations — outside the families (raw p, labelled):** excluding 2020; Health_US vs the three
 change-flip domains (as §10b). Anything else is exploratory and labelled so.
+
+#### Amendment 1 — 2026-10-11, after the three Kaggle runs, before any R3 metric was computed
+
+> **Timing, stated plainly.** Made **after** the M5, Q7 and judge Kaggle runs had finished and been
+> verified (§7e: fingerprints, completeness, determinism, identical answers on prompts shared with
+> P5 / R2 / P6 — no DSS, flip rate, MSE, gate value or any other R3 metric), and **before any R3
+> metric was computed**. No R3 forecast or judge answer was read to make it: the criterion is
+> **text validity only**, computed from the attack texts and the genuine reports. It **enforces**
+> §10f ("a text that cannot be attacked cleanly is … never emitted incoherent"; "no new
+> contradictions"; A3's P2), it does not change it. Reported as a deviation.
+
+**Why.** Aryan's by-eye review of the 15 pairs (`texts/r3_review_pairs.md`) found contradictions
+that the automatic checks (`rules.coherence_problems`, one statement at a time) cannot see:
+**between** statements of the same report — pair 3 (week 6 = 14.2B, week 7 = 14.5B, "2.1% lower
+than the previous week"), pair 13 ("decreasing 10%" for 17.0 → 16.9; "+83.0%" beside "an 8.5%
+increase"), pair 15 ("+19.0%" beside "a 1.50% change"), pair 11 (June recomputed to $74.9B beside
+a stated 3-month average of $43.2B) — and the 3 Health_US A3 texts of §8 "R3" item 2.
+
+**What changes.** `src/attacks/consistency_r3.py` scans **every** attacked A1 / A2 / A3 text (val +
+test) and writes `results/r3_text_exclusions.csv`. A flagged (attack, window) is **treated as not
+attacked**: dropped from that attack's attacked set in every R3 metric (DSS, Flip Rate, damage,
+gate shares, FBR on A1 windows). **No re-run, no text changed** — the texts, the input CSV
+(`136a1416…`) and the Kaggle answers stay as they are. Families, m (105 / 105 / 75 / 75), SESOI,
+tests and decision rules are **unchanged**; a cell left with < 6 non-zero terms is "too few
+windows" as §10f already says. A problem the **real** report already has is not blamed on the
+attack (a text is flagged only for problems new relative to its real report; no genuine val/test
+report trips C1–C4/C7). Checks — tolerances are rounding only (half a unit of every printed digit),
+except C3 (data-driven) and C4 (§10f's plausibility convention):
+
+| Check | Contradiction |
+|---|---|
+| C1 | a stated week-over-week change vs the two weekly levels the report states (Traffic VMT; Health_US ILI) |
+| C2 | "S% (T billion …)" vs the level V in the same sentence: S ≠ T / (V − T) (Traffic) |
+| C3 | Traffic unadjusted vs seasonally adjusted YoY change of the same month: gap > the largest in any genuine report (2.40 pp), or opposite signs |
+| C4 | Economy 3-month average with the current and previous month stated implies a third month outside [0.5·min, 2·max] of genuine goods-and-services deficits (18.7–219.6) |
+| C5 | Economy Δdeficit ≠ Δimports − Δexports beyond the real report's own rounding gap carried through the edit |
+| C6 | the attack's own edit moved a level "<verb> … to V" **opposite to the claimed direction** ("decreased sharply to 5.3%" from a real 2.4%) — the 3 Health_US A3 texts + 1 A1 level-mirror ("decreased slightly to 4.7%" → "increased slightly to 1.0%"). **Uses only the text and its edit, never the lookback series:** a fake that merely disagrees with the real series is the lie itself (excluding it would remove exactly what TextGuard is built to catch); a verb-only flip that keeps the genuine level stays attacked |
+| C7 | **§10f's own P2 as written** ("by Y … to X" implies a start > 0): the generator's implementation missed verbs followed by the "sharply" A3 had just inserted, "-ing" verbs, and the same statement without "by" — e.g. "deficit increased sharply by $64.0 billion to $42.6 billion" (start −21.4) |
+
+**Rule for every check (Aryan, 2026-10-11):** exclude a text only if (a) its stated numbers
+contradict each other, or (b) the attack's edit moved a stated number opposite to the claimed
+direction. **C2 is strict** (rounding only, no materiality floor; 9 C2-only flags miss by
+0.05–0.19 pp beyond rounding — keeping them would give A1 test 46, A3 test 99; the with-all-texts
+robustness tables cover the sensitivity).
+
+**Result (test; val in the CSV):** A1 **60 → 42** attacked windows (Traffic 22 → 5, Health_US
+4 → 3); A2 **253 → 253** (nothing flagged); A3 **128 → 98** (Traffic 28 → 4, Economy 61 → 58,
+Health_US 16 → 13). Per attack × domain × split: `python -m src.attacks.consistency_r3`.
+
+**Robustness (pre-stated now):** every R3 table is also computed **with all attacked texts** (the
+§10f sets before this amendment) and reported beside, labelled descriptive, outside the families —
+so a reader can see whether the exclusions drive any conclusion.
+
+**Cosmetic, left unchanged (noted in the paper):** A2's separator after a report ending in
+Time-MMD's `**` gives "…**. The … is expected to …" (test 41 + 1 after ")"; val 30). The A2
+appended sentence always has its leading space, and A3's inserted "sharply" / "well" always have
+theirs (0 / 215 glued) — "sharplyto" in the review file is the word-diff renderer, not the text.
+
+**Disclosure — P3's texts have the same class of problem.** Scanned for disclosure only: 47 / 251
+attacked test `flipped` texts and 51 / 250 `exaggerated` would be flagged (flipped: Traffic 38,
+Health_US 9; exaggerated: Traffic 41, Health_US 9, SocialGood 1 — mostly C1/C2 in Traffic, C6 in
+Health_US).
+**P5 and P6 are frozen and not changed** (rule); this goes into the paper's limitations, and P3's
+within-run reference rows in R3 stay as §10f defines them. **Exploratory check, pre-stated here
+(labelled exploratory, outside every family, P5/P6 conclusions not re-decided by it):** P5's M5
+`flipped` DSS and Flip Rate and P6's TextGuard primary numbers recomputed with the flagged P3 texts
+excluded (`scan("flipped")`, `scan("exaggerated")`), reported beside the frozen values with
+whether each headline conclusion still holds.
 
 ### 10c. Open issues
 
