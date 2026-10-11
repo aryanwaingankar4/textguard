@@ -1,0 +1,43 @@
+{
+ "model_id": "Qwen/Qwen2.5-1.5B-Instruct",
+ "revision": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+ "dtype": "float16",
+ "batch_size": 1,
+ "judge": "scored answers (teacher forcing), confidence renormalised over 3",
+ "answer_tokens": {
+  "up": [
+   454
+  ],
+  "down": [
+   2923
+  ],
+  "none": [
+   6697
+  ],
+  "above": [
+   48432
+  ],
+  "below": [
+   53177
+  ]
+ },
+ "max_new_tokens_probe": 24,
+ "max_new_tokens_judge": 4,
+ "gpu": "Tesla T4",
+ "torch": "2.11.0+cu128",
+ "transformers": "5.16.1",
+ "inputs": "r3_inputs.csv",
+ "platform": "kaggle",
+ "input_path": "/kaggle/input/datasets/aryanwaingankar/abcdef/r3_inputs.csv",
+ "input_sha256": "136a1416093568e753e65e91e0b4fd45755580ca287fd31f520128213a237ec4",
+ "gpu_count_visible": 1,
+ "started": "2026-10-10T23:29:27.511007+00:00",
+ "setup": "Tesla T4 | torch 2.11.0+cu128 | transformers 5.16.1 | Qwen/Qwen2.5-1.5B-Instruct@989aa7980e4cf806f80c7fef2b1adb7bc71aa306 | kaggle",
+ "probe_n": 40,
+ "probe_mismatches": 0,
+ "probe_ok": true,
+ "same_setup_string_as_p5": false,
+ "rows_expected": 2411,
+ "finished": "2026-10-10T23:35:58.272559+00:00",
+ "rows": 2411
+}

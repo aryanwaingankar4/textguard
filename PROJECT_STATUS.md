@@ -107,7 +107,7 @@ Health_US; P6's judge prompt and revision) — never re-tuned (rule below).
        Aryan pending** — two items flagged there, §8 "R3"); one input CSV
        `results/qwen/r3_inputs.csv` (sha256 `136a1416…`); **three Kaggle notebooks** (§7e).
    * [ ] **Kaggle runs** (§7e steps): `r3_m5_kaggle` ✅ (verified, backed up — §7e run 1),
-         `r3_judge_kaggle` ⬜, `r3_qwen7b_kaggle` ⬜ → download
+         `r3_judge_kaggle` ✅ (verified, backed up — §7e run 2), `r3_qwen7b_kaggle` ⬜ → download
          the six output files into `results/qwen/` → verify → back up with `git add -f`.
    * [ ] FinBERT heads (CPU, local): FinBERT-embed the new texts, R1 runner on `a2_forward` /
          `a3_magnitude` (A1 = P3 `flipped` texts — R1 already has those predictions). Needs
@@ -1159,6 +1159,18 @@ modules, y_true = inputs, y_pred = parse(raw_output), identical prompts answered
 (4135 distinct). **Consistency vs P2.4 / P5 (descriptive, §10f): 2853 / 2853 byte-identical p5
 prompts give the identical answer** (real, none, flipped, exaggerated, and the A1 / A2 / A3 rows
 whose text equals a P3 text).
+
+**Run 2 — `r3_judge_kaggle` (Kaggle T4, 2026-10-10 23:29–23:36 UTC, 7 min), backed up with `git add -f`:**
+a first committed version failed only because Internet was off (no model download, no output);
+this rerun started fresh. `r3_judge_kaggle_run_meta.json`: setup `Tesla T4 | torch 2.11.0+cu128 |
+transformers 5.16.1 | Qwen/Qwen2.5-1.5B-Instruct@989aa79… | kaggle`; input sha256 `136a1416…`;
+1 visible GPU; same answer tokens as P6. **Probe 40/40** (recorded only). Verified locally (no
+metric computed): P6's own loader `load_judgements` accepts the file — all 2411 exported questions
+answered exactly once, every fingerprint recomputed with today's `judge_prompt.py`, one setup =
+the meta's; probabilities finite, sum to 1 and equal the softmax of the stored log-probs; answer =
+the most likely of the three; confidence = its probability. **Consistency vs P6 (descriptive,
+§10f): 1652 / 1652 byte-identical questions give the identical answer, confidence identical to
+the last digit (max |diff| 0)**; 759 questions are new (A2 / A3 texts).
 
 **After the runs (next session):** loader + verification (fingerprints, one setup per file, test
 complete, consistency vs P5 / R2 / P6 answers on byte-identical prompts), back up with
@@ -3002,6 +3014,11 @@ change-flip domains (as §10b). Anything else is exploratory and labelled so.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-11 — R3: judge Kaggle run back, verified, backed up (2 of 3)
+* `r3_judge_kaggle_*` (rerun after a first attempt with Internet off): probe 40/40; P6's loader
+  accepts it (2411 answers, fingerprints, one setup); 1652/1652 questions shared with P6 give the
+  identical answer and confidence (§7e). Not analysed — waiting for the Qwen-7B run.
 
 ### 2026-10-11 — R3: M5 Kaggle run back, verified, backed up (1 of 3)
 * `r3_m5_fp16_kaggle_*`: probe 40/40, test + val complete, determinism 20/20, 0 parse failures;
