@@ -107,7 +107,7 @@ Health_US; P6's judge prompt and revision) — never re-tuned (rule below).
        Aryan pending** — two items flagged there, §8 "R3"); one input CSV
        `results/qwen/r3_inputs.csv` (sha256 `136a1416…`); **three Kaggle notebooks** (§7e).
    * [ ] **Kaggle runs** (§7e steps): `r3_m5_kaggle` ✅ (verified, backed up — §7e run 1),
-         `r3_judge_kaggle` ✅ (verified, backed up — §7e run 2), `r3_qwen7b_kaggle` ⬜ → download
+         `r3_judge_kaggle` ✅ (verified, backed up — §7e run 2), `r3_qwen7b_kaggle` ✅ (verified, backed up — §7e run 3) → download
          the six output files into `results/qwen/` → verify → back up with `git add -f`.
    * [ ] FinBERT heads (CPU, local): FinBERT-embed the new texts, R1 runner on `a2_forward` /
          `a3_magnitude` (A1 = P3 `flipped` texts — R1 already has those predictions). Needs
@@ -1171,6 +1171,19 @@ the meta's; probabilities finite, sum to 1 and equal the softmax of the stored l
 the most likely of the three; confidence = its probability. **Consistency vs P6 (descriptive,
 §10f): 1652 / 1652 byte-identical questions give the identical answer, confidence identical to
 the last digit (max |diff| 0)**; 759 questions are new (A2 / A3 texts).
+
+**Run 3 — `r3_qwen7b_kaggle` (Kaggle T4, 2026-10-11 00:24–01:29 UTC, 65 min), backed up with `git add -f`:**
+`r3_qwen7b_nf4_kaggle_run_meta.json`: setup `Tesla T4 | torch 2.11.0+cu128 | transformers 5.16.1 |
+nf4 bitsandbytes 0.50.2 | Qwen/Qwen2.5-7B-Instruct@a09a354… | kaggle` — **identical to R2's Q7
+run**; input sha256 `136a1416…`; 1 visible GPU. **Smoke test 0/20 unparseable**; test + val
+complete; **determinism 20/20, 0 parse failures**. Verified locally (no metric computed): 6409
+rows = expected (p5 3451, sk 2958; test 4238), no duplicates, one setup, every prompt fingerprint
+recomputed from the inputs, y_true = inputs, y_pred = parse(raw_output), identical prompts
+answered identically (4135 distinct). **Consistency vs R2's Q7 (descriptive, §10f): 2853 / 2853
+byte-identical p5 prompts give the identical answer.**
+
+**All three R3 runs are in (2026-10-11).** Each reproduces its earlier counterpart exactly on
+every shared prompt (M5 vs P2.4/P5, judge vs P6, Q7 vs R2).
 
 **After the runs (next session):** loader + verification (fingerprints, one setup per file, test
 complete, consistency vs P5 / R2 / P6 answers on byte-identical prompts), back up with
@@ -3014,6 +3027,13 @@ change-flip domains (as §10b). Anything else is exploratory and labelled so.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-11 — R3: Qwen-7B Kaggle run back, verified, backed up → all three runs in
+* `r3_qwen7b_nf4_kaggle_*`: smoke test 0/20, test + val complete, determinism 20/20, 0 parse
+  failures; all row-level checks pass; same setup string as R2's Q7 run and 2853/2853
+  byte-identical prompts reproduce R2's answers (§7e). Not analysed yet.
+* **Next:** FinBERT heads on the R3 texts (CPU), an R3 loader, then the analysis against §10f.
+  Aryan's by-eye review of `texts/r3_review_pairs.md` (two flagged items, §8 "R3") is still open.
 
 ### 2026-10-11 — R3: judge Kaggle run back, verified, backed up (2 of 3)
 * `r3_judge_kaggle_*` (rerun after a first attempt with Internet off): probe 40/40; P6's loader
