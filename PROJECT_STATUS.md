@@ -5,7 +5,7 @@
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
 **Current phase:** R4 — TextGuard v2 (P0–P6, R1–R3 complete; research extensions R4–R7 before P8; P7 optional)
-**Last updated:** 2026-10-11
+**Last updated:** 2026-10-12
 
 > 👤 **Solo project.** All work by Aryan.
 > 📌 **Phase-gated, no deadlines.** See `PHASES.md`.
@@ -92,11 +92,12 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
 6. **FBR:** v1's 14.4% is over the 10% budget; A1 windows show 40% genuine reports gated.
 
 **Steps:**
-1. [ ] **Data checks on candidate held-out domains (allowed before freezing):** Energy, Health_AFR,
-       Climate if feasible — directional %, timing (`check_timing`), coverage. **Known from P1 (§6):**
-       Energy is 100% directional but **351/354 reports contain the forecast target** (needs lag 2 —
-       issue #14); Health_AFR has 44.7% text coverage, no `start_date`, 49% null `fact` fields. Decide
-       which domains are usable and how (lag, period) **before** any model output exists on them.
+1. [x] **Data checks + freeze (2026-10-12):** held-out domains **Energy (lag 2)** and **FNSPID**
+       (10 stocks, weekly Benzinga bundles) frozen before any model output on them; Climate,
+       Health_AFR, Environment, Agriculture dropped; FinBERT heads out of R4. §6 "R4 held-out
+       domains", §6 "R4 FNSPID", §10g "Held-out freeze". **Open before §10g:** FNSPID σ (520 vs 104
+       weeks); Market Signal Injection's anchoring as an R4 baseline; Aryan's spot-check of the 50
+       FNSPID labels (before the analysis).
 2. [ ] **Pre-register R4 (§10g) and commit it alone** — before any v2 test result and before any model
        output on the held-out domains: held-out domains frozen; v2's design space and the **val-only**
        development protocol (what may be tuned, on which data); test = held-out domains once (v1 and
@@ -253,15 +254,29 @@ Colab notebooks in `notebooks/` are only needed to re-generate them.
 
 ## 3. Novelty claim
 
-> We present the first study of **semantically misleading text attacks on numerical
-> multimodal time-series forecasters**, introduce **DSS** to measure directional
-> manipulation, and propose **TextGuard** — a **training-free, inference-time, black-box**
-> defense.
+> We study **visible, meaning-inverting edits of genuine reports** that feed **multimodal
+> time-series forecasters** (models that read report text alongside the numbers), introduce
+> **DSS** to measure directional manipulation of the forecast, and propose **TextGuard** — a
+> **training-free, inference-time, black-box claim-vs-evidence consistency gate**.
+
+*(Revised 2026-10-12: the earlier "first study of semantically misleading text attacks on
+numerical multimodal TSF" and "training-free, inference-time defense" were no longer accurate —
+see the two new rows in CLAUDE.md §4a.)*
 
 Every word is load-bearing:
-- "semantically misleading" excludes PA-RNet (zero-mean noise only)
-- "numerical multimodal TSF" excludes Corroboration Illusion (RAG events) and AutoRedTrader (trading agents)
-- "training-free, inference-time, black-box" excludes CFA (trained) and PA-RNet (architecture change)
+- "visible, meaning-inverting edits of genuine reports" excludes PA-RNet (zero-mean noise) and
+  *Adversarial News and Lost Profits* (arXiv 2601.13082: imperceptible homoglyph / hidden-text
+  injections into headlines feeding an LLM-sentiment → LSTM trading system). **We do not claim
+  the first headline attack on a price forecaster.**
+- "multimodal time-series forecasters" excludes Corroboration Illusion (RAG events),
+  AutoRedTrader (trading agents) and *Market Signal Injection* (arXiv 2609.18357: LLM pricing agents)
+- "training-free, inference-time, black-box" excludes CFA (trained) and PA-RNet (architecture
+  change) — but **not** Market Signal Injection's defences, which are also training-free and
+  inference-time
+- "claim-vs-evidence consistency gate" is what separates TextGuard from those: input
+  canonicalization deletes the text, decision boundary anchoring bounds the output — both
+  regardless of whether the text is true; TextGuard keeps text that agrees with the numbers.
+  **No "first defence" wording.**
 
 Competing-work detail lives in **CLAUDE.md §4a**. Confirm the claim holds when writing
 Related Work in P8, and re-run the arXiv search then.
@@ -544,6 +559,92 @@ the k weeks before each row. We default to **`report`**. **If our P2 numbers don
 published MM-TSFlib numbers, check this first** — rerun with `source='search'` before debugging
 anything else. Also: MM-TSFlib's Economy CSV is unsorted (starts 2024, ends 1989) and it splits
 by row position, so its Economy train/test split is **not chronological**.
+
+### R4 held-out domains — step 1 data checks (2026-10-12, before any model output on them)
+
+No forecast, judge answer, embedding or metric exists on any candidate. Checks used only the
+reports and the numbers (scratch scripts; `check_timing`, `inspect_domains`, the P3/R3 rule engine
+with a scratch Energy subject, the R3 consistency scan). **Decisions (Aryan, 2026-10-12):**
+
+| Candidate | Decision | Why |
+|---|---|---|
+| **Energy** | ✅ **held-out, lag 2** | 353 text weeks (53% of the window — reports exist only in even years: 2011–12, 14, 16, 18, 20, 22, 24); 93% (329/353) have a directional headline; median 169 chars (max 401); 957 weeks of history before the text window |
+| Climate | ❌ dropped | Monthly reports on a weekly series (23% coverage); ~1–2 / 25 sampled reports make a direct up/down claim about the target (% of area not in drought); ~10 / 25 state precipitation above/below average — a different quantity, whose sign for the target is an assumed causal link; only 4 weeks of history before the text window (no pre-text σ) |
+| Health_AFR | ❌ dropped | 205 / 248 reports are "no information about …" filler (only `NA` was filtered) → ~43 with content, mostly levels; the numeric series contains `inf` |
+| Environment | ❌ dropped | 80 text days (9.5%); press releases and next-day air-quality advisories, no directional claims about the AQI; advisories are forecasts of the target day (26 content flags at lag 1) |
+| Agriculture | ❌ dropped | 52 text months in total; "prices steady to firm" (weak direction); concatenated monthly text median 2,602 chars, max 11,779 |
+
+**Energy timing (closes issue #14).** Every report quotes the price on the Monday **7 days after**
+its `start_date` — Time-MMD dates them one week early. At lag 1, 351/354 texts state the forecast
+target. **Lag 2** feeds each window the latest report really published before it (no freshness
+lost); `check_timing` then flags one report, `2020-08-03` (quotes Aug 17, 14 days on), now in
+`loader.KNOWN_LEAKERS` → **0 violations** (regression test `test_energy_lag2_no_leakage`). One year
+typo, kept (content right, points to the past): 2023-12-25's "January 1, 2023" ($3.089 is Jan 2024's).
+
+**⚠️ Energy is an "easy case" — state it up front in R4.** The report's regular-grade price change
+matches the target (all-grades US price, ≈ report + $0.09) in sign 99.4% of weeks (corr 1.0); at
+lag 2 the text restates the **last lookback step** (plus a year-over-year comparison). Every claim
+is checkable against the numbers: genuine headlines agree with the last step 98.5%, but with v1's
+OLS-6 slope only 71% (FBR risk for v1). A v2 that checks the claim's own frame would catch nearly
+every flip — Energy alone cannot carry "v2 generalises" (hence FNSPID as the second held-out domain).
+
+**Energy attack feasibility with the current engine** (scratch subject regex, R3 scan + a scratch
+Energy check "headline verb vs the last-week comparator"): flip 328 attacked, **226 self-contradictory**
+→ 102 clean (the engine leaves "$0.099 per gallon **less** than last week" / "$0.025 **above** last
+week's price" unflipped); A1 (w = 6) 95 → 34 clean; A2 329 → 327; ×3 / ×10 exaggeration 329 → 327
+but mostly wording only ("sharply" added; the change is scaled only in "higher/lower than" phrasing).
+**Needed before any Energy text is generated (R4 step 3):** an Energy subject + lexicon extension
+(comparators after "$X per gallon", above/below/over/under "last week's price"), the Energy
+contradiction check added to the scan, an A2 subject, and an A3 plausibility rule (31 / 325 ×10
+weekly changes exceed the largest pre-text weekly move, $0.46).
+
+**Test design (decided):** every Energy text period is a test period — 665 windows, 353 with text,
+329 directional (vs 133 / 69 / 67 in a 70/10/20 test block). Valid because the R4 targets (M5,
+Qwen2.5-7B) are zero-shot and TextGuard v1 (frozen) / v2 (developed on the **original** domains' val
+only) are training-free. **σ = std of the 10 years (520 weeks) before the text window** (0.742;
+all 957 pre-text weeks give 0.807). **FinBERT heads (M3-F, M4-F) are dropped from R4**: they need
+training on held-out text, which this design does not have, and they can never be evaluated on the
+original test split.
+
+### R4 FNSPID — step 1 data checks (2026-10-12; **frozen** 2026-10-12 — §10g "Held-out freeze")
+
+No model output exists on FNSPID. **Downloaded only:** the Benzinga headline block of
+`All_external.csv` (332 MB of FNSPID's ~29 GB; streamed, kept date/ticker/title/publisher/url),
+~10 MB of byte-range probes, and 15 price files read out of `full_history.zip` by range (5.5 MB).
+Cache lives in the session scratchpad, not in the repo. Licence CC BY-NC-4.0 (README at release).
+
+* **Layout:** three ticker-sorted blocks — Benzinga headlines (2009-02 → 2020-06-11, 1.41 M rows,
+  6,204 tickers), a second block (2018–20, mostly GuruFocus fund-holdings lists), Nasdaq.com
+  articles (17.8 GB, to 2023-12, 1.5–7 k chars, multi-company, noisy tags) — plus untagged Reuters /
+  Russian general news. **Source chosen: Benzinga headlines.**
+* **Selection (rule applied as pre-stated):** NFLX, GOOGL, MRK, NVDA, PFE, JNJ, MU, FDX, PCG, LLY;
+  reserve GILD, BMY, QCOM, BAC, XOM. Selected stocks' prices **inside** the period not opened
+  (read truncated at 2018-06-01; only their date column checked for coverage).
+* **Frequency → weekly.** 96% of 2018–19 headlines carry a date only (no time), so a daily design
+  needs a 1-day gap; weekly bundles cover 98% of stock-weeks (1,031 / 1,050; GOOGL's price file
+  ends 2020-04-01 → ~9 weeks fewer). Bundle k = headlines dated Fri(k−1) … Thu(k), all published
+  before the Friday close that is the forecast origin; target = next Friday close; lookback 24.
+  Bundles: median 7 headlines (p90 17, max 65), median 706 chars (max 7,677).
+* **Timing / leakage (reserve only):** price-move headlines dated d match the sign of day d's
+  return 91% (d−1 52%, d+1 49%) → dates are right, no Energy-style shift. Weekly net direction vs
+  the **target** week 58% (placebo target+1 51%, chance 51%); not from Thursday headlines (56%) or
+  COVID (57% without Feb–May 2020); concentrated in fundamental headlines (beats / guidance: 68%,
+  n = 76) — consistent with post-earnings drift (a real signal), not a dating error.
+* **Directional claims:** 50-headline stratified sample, Claude's labels (Aryan to confirm):
+  **19/50 = 38%** clear up/down about the tagged stock; **13/50 are about another company** and 9
+  are market-wide lists (3 sector moves); scratch lexicon agrees with these labels 40/50
+  (`results/summary_directional_fnspid.csv`).
+  Scratch lexicon: 26% of headlines; 60% of weekly bundles have a net direction (42% unanimous).
+  Kinds: price moves (trading higher/lower, 52-week highs), analyst actions (up/downgrades,
+  raised/lowered targets), fundamentals (beats/misses, guidance).
+* **Trend agreement (reserve):** real bundle direction agrees with v1's OLS-6 evidence 61% → v1
+  FBR risk; a flipped bundle would agree 39% (A1-selectable share).
+* **σ history:** ≥ 720 weeks before the period for every selected stock (GOOGL since its 2004
+  IPO). **Stock levels trend hard** (NFLX $4.49 → $352 over the 10 pre-period years), so σ_10y is
+  mostly trend: a typical weekly move = 0.05–0.15 σ_10y vs 0.09–0.35 σ_2y (104 weeks).
+* **Prices:** `close` is split-adjusted as of each file's download — NVDA is adjusted for its 2021
+  4:1 split, so headlines' nominal targets ("$425 price target") would sit 4× above the series
+  (cf. issue #27 unit slips); GOOGL's file predates its 2022 split.
 
 ### 6a. Forecaster interface (P2.1, decided 2026-10-02)
 
@@ -3216,6 +3317,70 @@ within-run reference rows in R3 stay as §10f defines them. **Exploratory check,
 excluded (`scan("flipped")`, `scan("exaggerated")`), reported beside the frozen values with
 whether each headline conclusion still holds.
 
+### 10g. Pre-registered plan (R4 — TextGuard v2) — ⚠️ DRAFT; only the HELD-OUT FREEZE below is binding
+
+> **Held-out freeze — binding, committed 2026-10-12** (commit "R4: freeze held-out domains …"),
+> before any model, judge, embedding or metric output exists on either domain. The rest of this
+> subsection is a **draft**: the R4 pre-registration proper is a later commit, alone, and will
+> replace this draft. Items agreed (Aryan, 2026-10-12):
+
+* **Held-out domains — FROZEN:** **Energy** at lag 2 (+ known leaker 2020-08-03; §6 "R4 held-out
+  domains") and **FNSPID** (Benzinga headlines, weekly bundles, the selection rule below; §6 "R4
+  FNSPID"). Climate, Health_AFR, Environment, Agriculture dropped (§6).
+* **Test design:** every text period of a held-out domain is a test period, for M5, Qwen2.5-7B,
+  TextGuard v1 (frozen) and v2 (developed on the **original** domains' val only). No held-out
+  training split. **FinBERT heads (M3-F, M4-F) dropped from R4.**
+* **FNSPID windows:** bundle = headlines dated Fri(k−1) … Thu(k) (all published before the
+  Friday close = forecast origin); target = the next Friday close; lookback 24 weekly closes.
+  GOOGL's price file ends 2020-04-01 → its windows stop there (rule kept as written).
+* **FNSPID prices as traded:** FNSPID's `close` is adjusted for every split / Yahoo split-type
+  adjustment up to the file's download. Within the period, prices are converted back to as-traded
+  so headline price targets and the numbers share units: × the product of adjustments dated after
+  the period and up to the file's end — **NVDA × 4** (4:1, 2021-07-20; confirmed: 11 pre-period
+  headline price quotes / FNSPID close, median 3.999), **MRK × 1.048** (Organon, 2021-06-03),
+  **PFE × 1.054** (Viatris, 2020-11-17) — MRK / PFE factors from stocksplithistory.com; FNSPID's
+  series is smooth across both dates, i.e. already adjusted; re-checked against in-period price
+  quotes at build time (a constant factor leaves DSS unchanged: σ scales with it). **No split falls
+  inside any lookback or target window** (2017-12 → 2020-06; split histories of all 10 stocks) → no
+  window excluded.
+* **Attacks:** Energy — flip, A1, A2, A3. **FNSPID — flip, A1, A2; A3 dropped** (only ~2% of
+  headlines state a % move; a price target cannot be scaled without the previous target).
+* **COVID:** every held-out result also **without the Feb–May 2020 weeks** (descriptive; FNSPID —
+  Energy's text years include 2020 too).
+* **Memorisation:** R2's check runs on both held-out domains; memorisation is listed as a
+  limitation (famous stocks; public gasoline prices). **No name-masking run.**
+* **Directional-label spot-check:** Claude's labels of the 50 sampled FNSPID headlines are in
+  `results/summary_directional_fnspid.csv` (`manual` column for Aryan) — checked before the analysis.
+* **σ:** Energy = std of the 520 weeks before its text window. **FNSPID: OPEN** — 520 weeks
+  (consistent with Energy) or the 104 weeks before the period (stock levels trend: a typical weekly
+  move is 0.05–0.15 σ_10y vs 0.09–0.35 σ_2y; §6 "R4 FNSPID").
+* **Market Signal Injection baselines: OPEN** (analysis in the session log 2026-10-12 and
+  CLAUDE.md §4a) — input canonicalization ≈ `never_trust` (already a baseline); decision boundary
+  anchoring's output projection (±15% change bound around the last value) ≈ `clip` anchored on
+  y_last — candidate fixed, untuned R4 baseline, Aryan to decide.
+* **v1 on a new weekly domain:** trend window w = 6, as Health_US (P6's frozen weekly value).
+* **Energy is an "easy case", stated up front:** its reports restate the target numerically
+  (sign agreement 99.4%), so every claim is checkable against the numbers.
+* **R2's memorisation check runs on both held-out domains.**
+* **FNSPID stock-selection rule — FROZEN as written (written 2026-10-12 before it was applied, and
+  before any FNSPID price, return or model output was looked at; accepted by Aryan 2026-10-12).
+  Result: NFLX, GOOGL, MRK, NVDA, PFE, JNJ, MU, FDX, PCG, LLY; reserve GILD, BMY, QCOM, BAC, XOM:**
+  1. *Text source:* FNSPID's Benzinga headline block (`Stock_news/All_external.csv`, the
+     ticker-sorted rows at bytes 0–331,521,297; 1,407,328 headlines, 2009-02 → 2020-06-11). Not the
+     Nasdaq articles (long, multi-company, few claims about the tagged stock) and not the
+     second tagged block (mostly fund-holdings lists).
+  2. *Period:* 2018-06-01 → 2020-05-31 (the last two full years before the block ends).
+  3. *Universe:* S&P 500 members on 2018-06-01 (fja05680/sp500 snapshot of that date, 506
+     tickers); one share class per company (the one with more news days).
+  4. *Counted headlines:* stock-specific ones — a headline is excluded if it matches the fixed
+     list/market-wide pattern (`^\d+ (Biggest|Stocks|Companies)`, "Stocks Moving / That Hit / To
+     Watch", Mid-Day, Pre-Market, After-Hours, Movers, Earnings Scheduled, Picks, Must Watch,
+     "Benzinga's Top", Market Wrap, "Biggest Price Target").
+  5. *Rank:* distinct calendar days in the period with ≥ 1 counted headline; ties → more counted
+     headlines → ticker A–Z. **Selected = ranks 1–10 (N = 10).** Ranks 11–15 = **reserve**: the
+     price-dependent data checks (timing/leakage, trend agreement, A1 feasibility) run on the
+     reserve only, so the selected stocks' prices inside the period stay unopened until the freeze.
+
 ### 10c. Open issues
 
 | # | Issue | Phase | Status |
@@ -3233,7 +3398,7 @@ whether each headline conclusion still holds.
 | 11 | Timing: `anchor="end"` default + drop 5 real leakers | P1 | ✅ Done — check passes |
 | 12 | SocialGood: 41% off-topic influenza text | P1 | ✅ Filtered (131 dropped, 13 header-stripped) |
 | 13 | Directional claims concentrated in Economy/Traffic | P3 | ✅ change-flip (Economy, Traffic, SocialGood) + level-flip (Health_US); coverage 84% (§8) |
-| 14 | Swap SocialGood (56% directional, 61% coverage) for Energy (100% directional, but 351/354 reports contain the forecast target; needs lag 2)? | P1→P2 | ⬜ Open — needs decision |
+| 14 | Swap SocialGood (56% directional, 61% coverage) for Energy (100% directional, but 351/354 reports contain the forecast target; needs lag 2)? | P1→P2 | ✅ Closed 2026-10-12: SocialGood stays in P1–R3; Energy becomes R4's held-out domain at **lag 2** + 1 known leaker (§6 "R4 held-out domains") |
 | 15 | Generalise TextGuard gate to "text claim vs numerical evidence" (change + level branches); update CLAUDE.md §8 | P6 | ✅ P6a: change + level evidence, g = min over claims; CLAUDE.md §8 updated |
 | 16 | Direction classifier must be Qwen-based (heuristic only 72% vs humans); validate on the 100 hand labels | P6 | ✅ P6b: 68% vs 50 human labels (Economy 92, Traffic 100, SocialGood 62, **Health_US 17%** — change question reads level claims); 94–100% vs known fake directions (§9 P6.0) |
 | 17 | NaN pairing: drop a sample from both sides if either is NaN; report parse-failure rate per model × condition (§6a) | P4 | ✅ Built into every metric; `failure_rates` per model × condition |
@@ -3256,6 +3421,28 @@ whether each headline conclusion still holds.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-12 — R4 step 1: held-out domains checked and **frozen**; related work updated
+- Data checks on Energy, Climate, Health_AFR, Environment, Agriculture (§6); Energy kept at lag 2
+  (leaker 2020-08-03 added to `loader.KNOWN_LEAKERS`, test `test_energy_lag2_no_leakage`; issue #14
+  closed), the other four dropped. FNSPID step 1 (§6 "R4 FNSPID"): only the Benzinga block + range
+  reads downloaded; selection rule written into §10g before it was applied; price checks on the
+  reserve stocks only. Freeze recorded in §10g; FNSPID labels for Aryan in
+  `results/summary_directional_fnspid.csv`.
+- Related work: *Adversarial News and Lost Profits* (2601.13082) and *Market Signal Injection*
+  (2609.18357, read in full) added to CLAUDE.md §4/§4a/§16/§17; novelty claim (§3) narrowed — no
+  "first headline attack on a price forecaster", no "first training-free / inference-time defence";
+  TextGuard = claim-vs-evidence consistency gate. **MSI defences vs ours:** input canonicalization
+  deletes the injected "Market signal:" lines and normalises number formats — in our setting the
+  text *is* the genuine report, so deleting it is exactly `never_trust` (already a P6 baseline).
+  Decision boundary anchoring = prompt constraints + output projection Π (cost floor; |p − p_prev|
+  ≤ 15% of the previous price; clip to a fixed $1.00–$2.50 band containing the Nash and monopoly
+  prices). The projection is a clip — anchored on the **previous value** with a **relative** bound,
+  where our `clip` is anchored on the **no-text forecast A** with a **σ-scaled** bound (k = 0.5).
+  The price band needs equilibrium knowledge forecasting does not have (a historical range would be
+  the analogue). The prompt half is a caution prompt, closest to R2's skeptical prompt `sk`.
+- Next: Aryan decides FNSPID σ and whether anchoring becomes an R4 baseline; then R4 step 2
+  (pre-registration §10g, committed alone).
 
 ### 2026-10-11 — R3: wording approved → **R3 complete**
 * Aryan approved the wording; **C8 not adopted** (found after metrics; sensitivity only). Headline: A2

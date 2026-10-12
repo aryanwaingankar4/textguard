@@ -152,6 +152,13 @@ KNOWN_LEAKERS: dict[str, list[tuple[str, str, str]]] = {
         ("2020-12-28", "2020-01-03", "week 53 to Jan 3 2021; end_date stored a year early"),
         ("2021-12-27", "2021-01-02", "week 52 to Jan 2 2022; end_date stored a year early"),
     ],
+    # R4 held-out domain, used at lag 2 (every Energy report quotes the price on the Monday 7 days
+    # after its start_date, i.e. the next period). This one quotes a date 14 days on, so even lag 2
+    # would feed it to the very week whose price it states. Found by check_timing, 2026-10-12.
+    "Energy": [
+        ("2020-08-03", "2020-08-07", "quotes the price on Aug 17 2020 (14 days on, not 7); "
+                                     "at lag 2 it states the forecast target"),
+    ],
 }
 
 # SocialGood: Time-MMD's summariser used the influenza prompt on 41% of unemployment reports.

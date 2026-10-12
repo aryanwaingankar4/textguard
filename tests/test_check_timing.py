@@ -21,3 +21,13 @@ def test_no_leakage_with_default_alignment(domain):
     r = check_domain(domain)
     assert r["metadata_violations"] == 0
     assert r["content_violations"] == 0
+
+
+@pytest.mark.skipif(not (DEFAULT_ROOT / "numerical").exists(), reason="Time-MMD not downloaded")
+def test_energy_lag2_no_leakage():
+    """R4 held-out domain: lag 1 leaks (351/354 reports quote the next week's price); lag 2 plus
+    the one known leaker is clean — the condition R4's Energy freeze rests on."""
+    assert check_domain("Energy", lag=1)["content_violations"] > 300
+    r = check_domain("Energy", lag=2)
+    assert r["metadata_violations"] == 0
+    assert r["content_violations"] == 0

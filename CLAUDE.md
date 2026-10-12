@@ -58,17 +58,30 @@ and a deployable defense.
 
 ## 4. Research gaps we fill (VERIFIED 2026-09-28)
 
-1. **Semantic directional text attacks on numerical multimodal forecasters are untested.**
-   PA-RNet proves error reduction under *zero-mean* perturbations only. Liu & Jiang
+1. **Visible, meaning-inverting edits to genuine reports feeding multimodal forecasters are
+   untested.** PA-RNet proves error reduction under *zero-mean* perturbations only. Liu & Jiang
    (arXiv 2412.08099) attack the **numerical** input (2% of dataset mean), not text.
    Corroboration Illusion attacks **RAG event forecasters** (probability judgments), not
-   numerical TSF. AutoRedTrader attacks **trading agents**. Our target — Time-MMD-style
-   numeric forecasters under meaning-inverted text — is unoccupied.
+   numerical TSF. AutoRedTrader attacks **trading agents**. *Adversarial News and Lost Profits*
+   (arXiv 2601.13082, updated 2026-10-12) **does** attack a price forecaster through headlines —
+   but with **imperceptible** injections (Unicode homoglyphs, hidden-text clauses) into an
+   LLM-sentiment → LSTM trading pipeline, scored as lost returns. **We do not claim the first
+   headline attack on a price forecaster.** Our target — Time-MMD-style forecasters that read
+   report text, under **visible, minimal, meaning-inverting edits of genuine reports**, measured
+   as directional forecast displacement (DSS) — is still unoccupied.
 2. **No directional manipulation metric.** Existing work reports MSE degradation, which
    cannot distinguish "wrong" from "wrong in the direction the attacker wanted". DSS does.
 3. **No cross-fusion-type vulnerability comparison** under semantic text attack.
-4. **No training-free, inference-time defense.** CFA trains low-rank adapters; PA-RNet is
-   an architecture. TextGuard requires neither retraining nor model access.
+4. **No defence weighs a report by whether its claims agree with the numbers.** CFA trains
+   low-rank adapters; PA-RNet is an architecture. **Training-free, inference-time defences DO
+   exist** (updated 2026-10-12): *Market Signal Injection* (arXiv 2609.18357) defends LLM pricing
+   agents by **input canonicalization** (delete the injected commentary lines, normalise number
+   formats) and **decision boundary anchoring** (prompt constraints + projecting the output onto
+   a cost floor, a ±15% change bound and a fixed price band). Both act **regardless of whether the
+   text is true**: one throws the text away, the other caps how far it can move the output.
+   TextGuard is a **claim-vs-evidence consistency gate**: it keeps text whose claims agree with
+   the numerical evidence and discounts text that contradicts it, using only black-box
+   `predict()` access. Do **not** say "first training-free / inference-time defence".
 5. Embedding-drift detection exists for LLM prompt injection, not for text streams feeding
    forecasters.
 
@@ -87,6 +100,8 @@ and a deployable defense.
 | **Plug-In Adversarial Detection for Time-Series LLMs** (arXiv 2512.12154) | Plug-in adversarial detection in our space | Check whether their attack is numeric or textual when writing P8. If textual, reposition TextGuard as *gated fusion* vs their *detection* |
 | **Liu & Jiang (2024)** arXiv 2412.08099 | Adversarial attacks on LLM time-series forecasters | Attacks the **numerical** channel (2% of dataset mean), not text. Supports our motivation that adversarial > random noise |
 | **Zhu et al. (2025)** *PA-RNet* | Robustness to textual perturbation | Proves error reduction under **zero-mean** perturbations only. Meaning-inverted text is a different threat model — **this is our core gap** |
+| **Rizvani, Apruzzese & Laskov (2026)** *Adversarial News and Lost Profits* (arXiv 2601.13082, SaTML) | Attacks a price forecaster (LSTM + LLM-derived sentiment) through stock headlines; directional; 14 months of real stock data; up to −17.7 pp annual return; no defence | **Imperceptible** attacks (homoglyphs, hidden-text clauses), not visible meaning inversion of genuine reports; sentiment-score pipeline, not a forecaster that reads the report; returns, not DSS; no defence. **We do not claim the first headline attack on a price forecaster** — relevant to R4's FNSPID domain. Read in full in P8 (only the abstract read so far) |
+| ***Market Signal Injection*** (arXiv 2609.18357) | Directional text injection ("Market signal: demand is weakening") into LLM **pricing agents** (simulated Bertrand markets); **training-free inference-time defences**: input canonicalization, decision boundary anchoring; white-box activation probes (detection only) | Agents setting prices, not forecasters; injected commentary is uninformative by construction (fixed demand), so deleting it costs nothing — in our setting the text is the genuine report. Their defences ignore the text's truth (delete it / bound the output); TextGuard checks the claim against the numbers. Canonicalization ≈ our `never_trust`; anchoring's ±15% change bound ≈ our `clip` anchored on the last value — see PROJECT_STATUS §10g draft for whether it becomes an R4 baseline |
 
 Also relevant to the optional FNSPID phase: *AutoRedTrader* (arXiv 2605.09185) and
 *Adversarial manipulation of LLM-based trading agents via financial news headlines* —
@@ -398,9 +413,11 @@ TEA-Mamba · SpecTF · Dual-Forecaster · TriAlignNet · TTCA · TeR
 **Drift monitor (only if P7.4):**
 Sekar et al. (2026) *ZEDD* · Greco et al. (2024) *DriftLens*
 
-**Financial attacks (only if P7.6):**
-*AutoRedTrader* (arXiv 2605.09185) · *Adversarial manipulation of LLM-based trading agents
-via financial news headlines*
+**Financial attacks (R4 uses FNSPID — these are now required reading for P8):**
+*AutoRedTrader* (arXiv 2605.09185) · Rizvani et al. (2026) *Adversarial News and Lost Profits*
+(arXiv 2601.13082) · *Market Signal Injection* (arXiv 2609.18357) · found, not yet read:
+*TradeTrap* (arXiv 2512.02261), *Poisoning Agentic Alpha* (arXiv 2608.24069), *SoK: Trading
+Agents or Market Crashers?* (arXiv 2609.19705)
 
 > Gap claims verified 2026-09-28. **Re-run the arXiv search in P8 before submitting** —
 > this field publishes weekly.
@@ -415,7 +432,10 @@ via financial news headlines*
 - Do not write results into the paper before the experiments have actually run.
 - **Do not claim the text-usage screening as a novel contribution.** Sridhar et al. (2026)
   did it. We replicate and cite. Novelty = adversarial text + DSS + training-free defense.
-- **Do not describe TextGuard as "the first plug-in fusion control."** CFA exists. The
-  precise claim is "training-free, inference-time, black-box."
+- **Do not describe TextGuard as "the first plug-in fusion control."** CFA exists. Nor as
+  "the first training-free / inference-time defence" — Market Signal Injection (arXiv
+  2609.18357) has two. The precise claim is "a training-free, inference-time, black-box
+  **claim-vs-evidence consistency gate**."
+- **Do not claim the first headline attack on a price forecaster** — arXiv 2601.13082.
 - Do not treat DSS ≈ 0 on late-fusion models as a failed experiment — see §4a.
 - Do not block a build phase on reading papers. Literature work lives in P8.
