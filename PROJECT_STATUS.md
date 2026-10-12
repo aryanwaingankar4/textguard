@@ -97,7 +97,10 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
        Health_AFR, Environment, Agriculture dropped; FinBERT heads out of R4. §6 "R4 held-out
        domains", §6 "R4 FNSPID", §10g "Held-out freeze". **Open before §10g:** FNSPID σ (520 vs 104
        weeks); Market Signal Injection's anchoring as an R4 baseline; Aryan's spot-check of the 50
-       FNSPID labels (before the analysis).
+       FNSPID labels (before the analysis). *(σ and anchoring decided 2026-10-12 — §10g.)*
+1a. [x] **Held-out attack texts (2026-10-12):** engines + scan + coverage — §8 "R4 held-out
+       attacks". Energy flip / A1 / A2 / A3 = 345 / 102 / 345 / 218 clean; FNSPID flip / A1 / A2 =
+       192 / 65 / 537. **Pending: Aryan's by-eye review of `texts/r4_review_pairs.md`.**
 2. [ ] **Pre-register R4 (§10g) and commit it alone** — before any v2 test result and before any model
        output on the held-out domains: held-out domains frozen; v2's design space and the **val-only**
        development protocol (what may be tuned, on which data); test = held-out domains once (v1 and
@@ -170,6 +173,8 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
 | R3 FinBERT heads | `python -m src.run_r3_finbert` (R1's outputs asserted byte-identical) | ~10 min CPU |
 | R3 analysis + figure | `python -m src.analyze_r3`, `python -m src.figures_r3` (answers verified by `models/r3_answers.py`) | ~10 min CPU |
 | P5/P6 recheck without flagged P3 texts (exploratory) | `python -m src.explore_p3_exclusions` | ~2 min |
+| R4 FNSPID data (Benzinga block + 15 price files; asserts the frozen selection) | `python -m src.data.fnspid` | ~3 min |
+| R4 held-out texts → scan → coverage + review pairs | `python -m src.attacks.heldout` | ~1 min |
 | Tests | `python -m pytest -q` (386) | ~90 s |
 
 Model 5 / judge answers: `results/qwen/*_predictions.csv` + `*_run_meta.json` (in git); the
@@ -1451,6 +1456,60 @@ A1/A2/A3 text; flagged texts are excluded from the attacked sets (test A1 60 →
    *against* the claimed direction ("decreased sharply to 5.3%", pair 14). Inherited from P3's
    engine (same at ×3). Option: an amendment marking these 3 "not attacked" — no re-run needed
    (the analysis would just drop them).
+
+### R4 held-out attacks — generation + validation (2026-10-12, before any model or judge output on them)
+
+`python -m src.data.fnspid` (fetch; re-derives and **asserts** the frozen selection) →
+`python -m src.attacks.heldout` → `texts/r4/*.csv` (gitignored), `results/r4_text_exclusions.csv`,
+`results/summary_r4_attack_coverage.csv`, `texts/r4_review_pairs.md`. Windows:
+`src/data/heldout.py`; engines: `src/attacks/heldout_rules.py`; scan: `src/attacks/consistency_r4.py`.
+**P3/R3 code untouched** (`rules.py`, `adaptive.py`, `consistency_r3.py`: no diff) — the held-out
+engines are separate modules reusing their conventions.
+
+**Engines.** *Energy:* the claim is the price sentence's week-over-week comparator; flip = swap
+the verb + comparator only (level, size of change, year-over-year clause and other sentences kept);
+A3 ×10 the change + "sharply", **plausible only if the new weekly change ≤ the largest pre-text
+weekly move ($0.464)** and the implied last-week price > 0; A2 appends "The national average retail
+regular gasoline price is expected to {rise|fall} next week." *FNSPID:* a cue counts only if it is
+about the stock (company named in the main clause / its own clause, or a Benzinga "Shares of
+several …" sector line; roundups split per item; market/macro subordinate clauses never edited);
+flip reverses every such cue with coupled numbers / ratings ("from $A to $B" incl. ranges, "$A Beats
+$B", "from Neutral to Buy", "to Neutral" → one notch the other way); **a bundle is not attacked if
+any headline about the stock holds a directional word the engine cannot reverse** (broad stem net),
+a direction inside a quote, a directional market clause, or a ≥ 100% raise; A2 appends "{Company}
+shares are expected to {rise|fall} next week." as a new line. A1 = the flip only where TextGuard
+v1's change evidence (w = 6) agrees with the claim (neither domain states a baseline).
+
+**Coverage after the scan** (attacked → clean; `summary_r4_attack_coverage.csv`, per stock there):
+
+| | texts | flip | A1 | A2 | A3 |
+|---|---|---|---|---|---|
+| **Energy** (665 windows) | 352 | 345 → **345** | 102 → **102** | 345 → **345** | 218 → **218** |
+| **FNSPID** (10 stocks, 1,031 windows) | 1,006 | 195 → **192** | 65 → **65** | 537 → **537** | — (dropped) |
+
+FNSPID flips per stock 13–26; A1 per stock **2–9** (small — per-stock cells will be underpowered).
+FNSPID not flipped (811 texts): no net direction about the stock 469, unhandled directional word
+196, directional market clause 116, direction inside a quote 29, ≥ 100% raise 1. Scan flags: 3 (F6,
+near-duplicate headline left unedited) — all FNSPID flips; nothing else flagged (E1/E2, F2–F5, C6–C8).
+Bookkeeping asserted (every run): same windows as `real`; unattacked = real text; `synthetic` =
+`attacked`; A1 ⊆ flip with identical texts; A2 = real text as an exact prefix + a sentence that
+parses back to `claimed_direction` = −`real_direction`. Energy A1 102 / 345 (30%) and FNSPID 65 / 192
+(34%) ≈ the reserve-stock estimate (39%).
+
+**How the FNSPID word list was built (disclosed):** six by-eye audits of random flips (seeds 7,
+11, 23, 99, 5, 31) before any model output on FNSPID; each found defects (a cue the list missed —
+"Fallen", "better-than-expected"; a cause clause about the market flipped — "oil prices gained to
+historic lows"; another company's claim flipped in a roundup; an unswapped range; "Raises … By
+200%"; a period swapped with a number; "Advanced Solid Tumors") — every fix **blocks or corrects**,
+none deletes text. Each fix is a test in `tests/test_r4_attacks.py` (30 tests, incl. a timing test:
+every bundled headline has a dated occurrence in [previous origin, origin)).
+**Limitation (paper):** lexical and numeric contradictions are prevented / scanned; *semantic* ones
+are not — a flipped move can keep a cause that no longer fits ("… trading higher after the Phase 3
+study did not meet its primary endpoint", "… as the pandemic takes its toll"). Same class as P3's
+"leftover side sentences" limitation, larger here because headlines state causes.
+
+**For Aryan's by-eye review:** `texts/r4_review_pairs.md` — 15 scan-clean pairs, seed 0 (Energy:
+flip 2, A1 2, A2 2, A3 2; FNSPID: flip 3, A1 2, A2 2). Problems found there → a dated amendment.
 
 ## 9. Results
 
@@ -3351,13 +3410,20 @@ whether each headline conclusion still holds.
   limitation (famous stocks; public gasoline prices). **No name-masking run.**
 * **Directional-label spot-check:** Claude's labels of the 50 sampled FNSPID headlines are in
   `results/summary_directional_fnspid.csv` (`manual` column for Aryan) — checked before the analysis.
-* **σ:** Energy = std of the 520 weeks before its text window. **FNSPID: OPEN** — 520 weeks
-  (consistent with Energy) or the 104 weeks before the period (stock levels trend: a typical weekly
-  move is 0.05–0.15 σ_10y vs 0.09–0.35 σ_2y; §6 "R4 FNSPID").
-* **Market Signal Injection baselines: OPEN** (analysis in the session log 2026-10-12 and
-  CLAUDE.md §4a) — input canonicalization ≈ `never_trust` (already a baseline); decision boundary
-  anchoring's output projection (±15% change bound around the last value) ≈ `clip` anchored on
-  y_last — candidate fixed, untuned R4 baseline, Aryan to decide.
+* **σ (decided, Aryan 2026-10-12):** Energy = std of the 520 weeks before its text window.
+  **FNSPID = std of the 104 weekly closes (as traded) before the period**, per stock — a 10-year σ
+  is mostly trend for stocks (a typical weekly move is 0.05–0.15 σ_10y vs 0.09–0.35 σ_2y; §6 "R4
+  FNSPID"). **Sensitivity table: every FNSPID result also with σ = the 520 weeks before the period**
+  (descriptive).
+* **Market Signal Injection baselines (decided, Aryan 2026-10-12):**
+  * **Input canonicalization** is reported as **≈ `never_trust`** (deleting the report is the only
+    analogue when the text is the genuine report); no separate run.
+  * **`anchor15` — their output projection, added as an R4 baseline:** final = B projected onto
+    [y_last·(1 − 0.15), y_last·(1 + 0.15)] (y_last = the last lookback value), **exactly 15%, no
+    tuning**, computed post-hoc on the forecasts (no GPU); A untouched; B NaN → A as everywhere.
+    The prompt-constraint half is not run (closest to R2's `sk`). **Expectation stated now: it
+    rarely binds on weekly forecasting** (typical weekly moves are a few percent in both held-out
+    domains), so it should be close to undefended — reported as such, not tuned.
 * **v1 on a new weekly domain:** trend window w = 6, as Health_US (P6's frozen weekly value).
 * **Energy is an "easy case", stated up front:** its reports restate the target numerically
   (sign agreement 99.4%), so every claim is checkable against the numbers.
@@ -3421,6 +3487,16 @@ whether each headline conclusion still holds.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-12 — R4 step (a): held-out attack texts generated, scanned, coverage reported
+- Decided (Aryan): FNSPID σ = 104 weeks before the period (+ 520-week sensitivity table); MSI's
+  output projection `anchor15` added as an untuned R4 baseline (expected to rarely bind); input
+  canonicalization reported as ≈ never_trust (§10g).
+- Built `src/data/fnspid.py`, `src/data/heldout.py`, `src/attacks/heldout_rules.py`,
+  `consistency_r4.py`, `heldout.py`; 30 new tests (417 total pass). Coverage in §8 "R4 held-out
+  attacks". No model or judge output on the held-out domains.
+- Next: Aryan reviews `texts/r4_review_pairs.md` (+ the 50 FNSPID labels); then R4 step 2 — the
+  pre-registration (§10g) committed alone.
 
 ### 2026-10-12 — R4 step 1: held-out domains checked and **frozen**; related work updated
 - Data checks on Energy, Climate, Health_AFR, Environment, Agriculture (§6); Energy kept at lag 2

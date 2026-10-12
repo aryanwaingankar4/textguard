@@ -1,0 +1,4 @@
+attack,domain,series,sample_id,checks,detail
+flipped,FNSPID,FDX,2019-06-28,F6,edited line 5 has an unedited near-copy (line 4) with a direction word
+flipped,FNSPID,LLY,2018-08-03,F6,edited line 7 has an unedited near-copy (line 8) with a direction word
+flipped,FNSPID,NFLX,2019-08-16,F6,edited line 3 has an unedited near-copy (line 6) with a direction word
