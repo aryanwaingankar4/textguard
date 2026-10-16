@@ -44,6 +44,11 @@ OUT_DIR = common.TEXTS_DIR / "r4"
 EXCLUSIONS = common.ROOT / "results" / "r4_text_exclusions.csv"
 COVERAGE = common.ROOT / "results" / "summary_r4_attack_coverage.csv"
 REVIEW = common.TEXTS_DIR / "r4_review_pairs.md"
+REVIEW_2 = common.TEXTS_DIR / "r4_review_pairs_2.md"
+# (series, sample_id) of the FNSPID windows Aryan reviewed in round 1 (2026-10-16), pairs 9-15
+SHOWN_1 = frozenset({("MU", "2019-02-15"), ("PFE", "2018-12-28"), ("PCG", "2020-04-24"), ("FDX", "2019-05-24"),
+                     ("PFE", "2019-10-25"), ("NVDA", "2019-02-01"), ("PCG", "2019-10-18")})
+PAIRS_2 = [("FNSPID", "flipped", 3), ("FNSPID", "a1_selective", 1), ("FNSPID", "a2_forward", 1)]
 V1_WEEKLY_WINDOW = 6                  # TextGuard v1's frozen weekly window (Health_US), §10g
 A3_FACTOR = 10.0
 ATTACKS = ["flipped", "a1_selective", "a2_forward", "a3_magnitude"]
@@ -133,23 +138,27 @@ PAIRS = [("Energy", "flipped", 2), ("Energy", "a1_selective", 2), ("Energy", "a2
          ("FNSPID", "a2_forward", 2)]
 
 
-def review_pairs(tables, real, excl, w) -> str:
-    """15 attacked, scan-clean pairs (seed 0): Energy 2 per attack, FNSPID flip 3, A1 2, A2 2."""
+def review_pairs(tables, real, excl, w, pairs=None, seed: int = 0, skip=frozenset(),
+                 title: str = "15 before/after pairs for review by eye (seed 0)") -> str:
+    """Attacked, scan-clean pairs. Round 1 (seed 0, ``PAIRS``): Energy 2 per attack, FNSPID flip 3,
+    A1 2, A2 2. Round 2 (``PAIRS_2``, seed 1): 5 FNSPID pairs not shown in round 1 (``SHOWN_1``)."""
+    pairs = PAIRS if pairs is None else pairs
     r = real.set_index(c4.KEYS)["text"]
     lb = w.set_index(c4.KEYS)["lookback"]
     bad = set(map(tuple, excl[["attack"] + c4.KEYS].values))
-    out = ["# R4 — 15 before/after pairs for review by eye (seed 0)", "",
+    out = [f"# R4 — {title}", "",
            f"> Fake texts are {common.SYNTHETIC_NOTE}", "",
            "Edits are shown inline as `[old -> new]`; headlines of a bundle are separated by ` / `.",
            "Check: is the lie fluent and coherent, is the claimed direction right, are the numbers",
            "plausible, does any headline left unedited contradict an edited one? Problems found here",
            "become a dated amendment (R3 rule).", ""]
     i = 0
-    for dom, attack, n in PAIRS:
+    for dom, attack, n in pairs:
         df = tables[attack]
         a = df[df.attacked & (df.domain == dom)]
-        a = a[[(attack, *k) not in bad for k in a[c4.KEYS].itertuples(index=False, name=None)]]
-        pick = a.sample(min(n, len(a)), random_state=0)
+        a = a[[(attack, *k) not in bad and k[1:] not in skip
+               for k in a[c4.KEYS].itertuples(index=False, name=None)]]
+        pick = a.sample(min(n, len(a)), random_state=seed)
         out += [f"## {dom} — {attack}", ""]
         for x in pick.itertuples():
             i += 1
@@ -159,8 +168,18 @@ def review_pairs(tables, real, excl, w) -> str:
             if attack == "a1_selective":
                 vals = ", ".join(f"{v:,.4g}" for v in lb.loc[k][-V1_WEEKLY_WINDOW:])
                 out.append(f"*TextGuard v1's evidence (last {V1_WEEKLY_WINDOW} values, oldest first): {vals}*")
-            out += ["", clean(diff(r.loc[k], x.text)), ""]
+            out += ["", _shown(r.loc[k], x.text, attack, dom), ""]
     return "\n".join(out) + "\n"
+
+
+def _shown(real: str, fake: str, attack: str, domain: str) -> str:
+    """The review rendering. A2 is real + one appended claim, shown as an addition: on FNSPID as its
+    own headline (`` / [+ …]``) — a word diff would drop the line break and glue the new headline to
+    the last real one (the text itself has it on its own line; review pair 15, 2026-10-16)."""
+    if attack == "a2_forward" and fake.startswith(real.rstrip()):
+        added = fake[len(real.rstrip()):].strip()
+        return clean(real) + (" / " if domain == "FNSPID" else " ") + f"[+ {added}]"
+    return clean(diff(real, fake))
 
 
 FORWARD = re.compile(r"(?P<subject>.+?) (?:is|are) expected to (?P<verb>rise|fall) next week\.$")
@@ -201,6 +220,9 @@ def main() -> int:
     cov = coverage(tables, excl)
     cov.to_csv(COVERAGE, index=False)
     REVIEW.write_text(review_pairs(tables, real, excl, w), encoding="utf-8")
+    REVIEW_2.write_text(review_pairs(tables, real, excl, w, PAIRS_2, seed=1, skip=SHOWN_1,
+                                     title="round 2: 5 new FNSPID pairs after the 2026-10-16 engine fixes (seed 1)"),
+                        encoding="utf-8")
     print(cov.to_string(index=False))
     print("\nflags by check:\n" + (excl.assign(c=excl.checks.str.split(",")).explode("c").groupby(["attack", "c"]).size()
                                    .to_string() if len(excl) else "  none"))

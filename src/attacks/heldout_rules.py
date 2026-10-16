@@ -262,7 +262,12 @@ def _cue_ok(h: str, m: re.Match) -> bool:
     w = m.group().lower()
     before, after = h[max(0, m.start() - 25):m.start()].lower(), h[m.end():m.end() + 60]
     if w in ("up", "down"):
-        return bool(NUM_AHEAD.match(after)) or bool(re.search(r"(?:shares?|stock|trading|moves?|edges?|is|are|now)\s+$", before))
+        if NUM_AHEAD.match(after) or re.search(r"(?:shares?|stock|trading|edges?|is|are|now)\s+$", before):
+            return True
+        # "Moves Up" is a price move only when nothing follows but a clause end or a cause —
+        # "Moves Up Anticipated Completion Dates" is about a schedule (review round 2, 2026-10-16)
+        return bool(re.search(r"\bmov(?:es?|ed|ing)\s+$", before)) and bool(
+            re.match(r"\s*(?:$|[;:,.]|(?:on|after|as|following|amid|in|with|despite)\b)", after, re.I))
     if w in ("higher", "lower"):      # a move of the stock, or a comparison ("Higher Than Expected")
         return bool(re.search(r"(?:trad(?:ing|es?|ed)|shares?|stock|mov(?:es?|ing|ed)|edg(?:es?|ing|ed)|"
                               r"clos(?:es?|ing|ed)|open(?:s|ing|ed)?|sharply|spik\w+|%)\s+$", before)) \
@@ -275,6 +280,9 @@ def _cue_ok(h: str, m: re.Match) -> bool:
         return False                      # the rating "Strong Buy", not a claim
     if w == "solid" and re.match(r"\s+tumou?rs?\b", after, re.I):
         return False                      # "Advanced Solid Tumors" — a medical term
+    if w in ("drop", "drops", "dropped", "dip", "dips", "jump", "jumps") and re.match(
+            r"\s+(?:in|by|out|off)\b", after, re.I):
+        return False                      # phrasal verbs: "Drop In On A Meeting" (review round 2)
     if w == "tops":
         return bool(re.match(r"\s+(?:\$|\d|estimates?|expectations|consensus|views?|street)", after, re.I))
     if w in ("above", "below"):
@@ -333,8 +341,16 @@ def headline_cues(h: str, ticker: str) -> list[re.Match]:
             and m.group().lower() in FLIP and _cue_ok(h, m)]
 
 
+MOVE_ITEM = re.compile(r"\b(?:Up|Down)\s+\d+(?:\.\d+)?%", re.I)
+
+
 def _unflippable(h: str, ticker: str) -> str:
     spans = _target_spans(h, ticker)
+    # "Other Semi Stocks Fall …: NVIDIA Shares Down 2.7%, AMD Down 2.5%, …, Micron Down 2.1%" — a list
+    # of several companies' moves under one framing: flipping the stock's item would contradict the
+    # framing, flipping the clause would edit other companies (review round 2, 2026-10-16)
+    if spans and len(MOVE_ITEM.findall(h)) >= 2:
+        return "multi-company move list"
     for a, b in spans:
         seg = h[a:b]
         for w in UNHANDLED:
@@ -419,8 +435,75 @@ def _flip_headline(h: str, ticker: str) -> str:
     return E.apply(h)
 
 
-def fnspid_edit(text: str | None, ticker: str) -> EditResult:
-    """Flip a week's headline bundle (see the module docstring)."""
+# Company-event news (Aryan's by-eye review, 2026-10-16, pair 10: one Pfizer headline flipped while
+# "Raises Qtr. Dividend" and "$10B Buyback" stayed). Such items are directional — the market reads a
+# buyback or a failed trial as good / bad news — but the engine has no reversal for them, so an
+# unedited one next to a flipped headline leaves the bundle pulling both ways. A bundle with one
+# **outside the edited headlines** (in a part about the stock) is not attacked. Fixed before any
+# model or judge output on FNSPID; an edited headline may hold one (it was reversed with its cue).
+EVENTS = [
+    ("dividend change", re.compile(r"\bdividend\b.*\b(?:rais|increas|hik|boost|cut|slash|suspend|eliminat|"
+                                   r"reduc|lower)\w*|\b(?:rais|increas|hik|boost|cut|slash|suspend|eliminat|"
+                                   r"reduc|lower)\w*\b.*\bdividend\b", re.I)),
+    ("buyback", re.compile(r"\b(?:buy-?backs?|(?:share|stock) repurchases?|repurchase (?:program|plan|authori[sz]\w*))\b",
+                           re.I)),
+    ("approval", re.compile(r"\b(?:approv\w*|authori[sz]ation|clearance|cleared|CHMP|accelerated approval|"
+                            r"breakthrough therapy)\b", re.I)),
+    ("analyst initiation", re.compile(r"\b(?:Initiat|Reinstat|Resum)\w*\b.{0,60}?\b(?:Strong Buy|Strong Sell|Buy|Sell|"
+                                      r"Overweight|Underweight|Outperform|Underperform)\b", re.I)),
+    ("trial result", re.compile(r"\b(?:trials?|stud(?:y|ies)|phase\s*(?:[123]|i{1,3})\w*|topline|pivotal)\b.*\b(?:results?|"
+                                r"data|endpoints?|met|meets|miss\w*|fail\w*|success\w*|readout|discontinu\w*|halt\w*|"
+                                r"stopp?\w*|terminat\w*)\b|\b(?:results?|data|readout|discontinu\w*)\b.*\b(?:trials?|"
+                                r"stud(?:y|ies)|phase\s*(?:[123]|i{1,3})\w*|topline)\b", re.I)),
+    ("discontinuation", re.compile(r"\bdiscontinu\w*\b", re.I)),
+    ("recall", re.compile(r"\brecall\w*\b", re.I)),
+    ("lawsuit", re.compile(r"\b(?:lawsuits?|sues|sued|suing|litigation|class action|verdict|jury|settle\w*|"
+                           r"fined|penalt\w*|indict\w*|plea|judge|judgments?|judgements?|rulings?|appeal\w*)\b", re.I)),
+    ("guidance", re.compile(r"\b(?:guidance|outlook|(?:sales|revenue|earnings|EPS|profit)\s+forecasts?|"
+                            r"forecasts?\s+(?:sales|revenue|earnings|EPS|profit))\b", re.I)),
+]
+
+
+# A sector / peer move left unedited next to a flipped one ("Shares of semiconductor companies are
+# trading higher after …" beside a flipped "Shares of several semiconductor companies are trading
+# lower …"; review round 2, 2026-10-16): the bundle would say both. Blocks like a company event.
+SECTOR_MOVE = re.compile(r"\b(?:shares|stocks)\b.{0,80}?\b(?:trad(?:ing|es?|ed)|mov(?:ing|es?|ed))\s+"
+                         r"(?:sharply\s+)?(?:higher|lower|up|down)\b", re.I)
+# a sector-level analyst call ("Goldman Sachs Upgrades Semis, Is 'More Positive' On Memory Stocks")
+SECTOR_RATING = re.compile(r"\b(?:upgrad|downgrad)\w*\b.{0,40}?\b(?:semis|semiconductors|stocks|sector|space|"
+                           r"industry|group|names|utilities|biotechs?|pharma|airlines|tech)\b", re.I)
+
+
+# Subsidiaries whose news is the stock's news (event check only — they never become flip targets):
+# "FDA Approves Janssen Pharmaceuticals' Xarelto" is a J&J approval (review round 2, 2026-10-16).
+SUBSIDIARIES = {"JNJ": r"Janssen|Ethicon|DePuy|Actelion|Neutrogena", "GOOGL": r"YouTube|Waymo|DeepMind|Verily|Fitbit",
+                "MRK": r"\bMSD\b", "PFE": r"Hospira|Upjohn|Array BioPharma", "LLY": r"Loxo|Dermira",
+                "FDX": r"TNT Express", "PCG": r"Pacific Gas", "NVDA": r"Mellanox", "MU": r"Crucial", "NFLX": r"(?!)"}
+
+
+# "Stocks That Made New 52-Week Highs … Include: …, Eli Lilly, …" — a price move of the stock in a list
+# the engine never targets (review round 2, 2026-10-16)
+EXTREME_LIST = re.compile(r"\b(?:52-week|all-time|record)\s+(?:highs?|lows?)\b", re.I)
+
+
+def company_event(h: str, ticker: str) -> str:
+    """The first company-event kind in a part of ``h`` about the stock (or a subsidiary), or ''."""
+    segs = [h[a:b] for a, b in _target_spans(h, ticker)]
+    if not segs and re.search(SUBSIDIARIES[ticker], h):
+        segs = [h]
+    for seg in segs:
+        for kind, rx in EVENTS:
+            if rx.search(seg):
+                return kind
+    return ""
+
+
+def fnspid_edit(text: str | None, ticker: str, refuse_events: bool = True) -> EditResult:
+    """Flip a week's headline bundle (see the module docstring).
+
+    ``refuse_events``: not attacked if an unedited headline about the stock reports a company
+    event (``EVENTS``) — default since 2026-10-16 (§10g); ``False`` reproduces the 2026-10-12 engine.
+    """
     if not isinstance(text, str) or not text.strip():
         return EditResult(text, False, "no text", 0, 0, "")
     d = bundle_direction(text, ticker)
@@ -440,6 +523,15 @@ def fnspid_edit(text: str | None, ticker: str) -> EditResult:
             return EditResult(text, False, f"cannot flip: {e}", d, 0, "headlines")
         n += new != h
         out.append(new)
+    if refuse_events:
+        for h, new in zip(lines, out):
+            kind = company_event(h, ticker) if new == h else ""
+            if kind:
+                return EditResult(text, False, f"unedited company-event news: {kind}", d, 0, "headlines")
+            if new == h and (SECTOR_MOVE.search(h) or SECTOR_RATING.search(h)):
+                return EditResult(text, False, "unedited sector move", d, 0, "headlines")
+            if new == h and EXTREME_LIST.search(h) and re.search(ALIASES[ticker], h):
+                return EditResult(text, False, "unedited high/low list naming the stock", d, 0, "headlines")
     fake = "\n".join(out)
     if bundle_direction(fake, ticker) != -d:
         return EditResult(text, False, "headline check failed", d, 0, "headlines")

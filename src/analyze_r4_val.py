@@ -17,12 +17,15 @@ Two judges:
 Grid (fixed before any v2 answer existed): window fraction f ∈ {¼, ½, 1} (v1's grid), confidence
 floor c₀ ∈ {0, 0.6, 0.8}, τ ∈ {0, 0.5}, cap k ∈ {0.25, 0.5, 1, ∞} → 72 configs, Model 5, pooled.
 
-Proposed selection rule (Aryan to approve before freezing): among configs with val FBR ≤ 10%
-(§10b's budget), the lowest **mean |DSS|** over flipped, a2_forward, exaggerated, a3_magnitude
-(|·|: over-correction — the defended forecast pushed *away* from the lie, as v1 did on val — is a
-distortion too, not a win); ties → lower FBR, smaller τ, larger k (less intervention), smaller c₀,
+Selection rule (approved by Aryan 2026-10-16): among configs with val FBR ≤ 10% (§10b's budget),
+the lowest ``obj`` = mean over the four attacks (flipped, a2_forward, exaggerated, a3_magnitude) of
+**|pooled DSS|** — each attack's DSS is first pooled (mean over its attacked windows), then its
+absolute value is taken, then the four are averaged. Not the mean of per-window |DSS|, which would
+count noise as manipulation. Why |·|: the goal is neutralising, not over-correcting (a defended
+forecast pushed *away* from the lie, as v1 did on val, is a distortion too; same logic as rejecting
+signed-DSS tie-breaks in P6). Ties → lower FBR, smaller τ, larger k (less intervention), smaller c₀,
 smaller f. None within budget → the lowest-FBR config, reported as "budget not met". A1 is
-descriptive (36 val windows). Q7 descriptive at the chosen config.
+descriptive (34 val windows). Q7 descriptive at the chosen config.
 
 Run: ``python -m src.analyze_r4_val [v1j|v2]`` → ``results/summary_r4_val_grid_<judge>.csv``,
 ``results/summary_r4_val_compare_<judge>.csv`` (+ ``summary_r4_val_judge_human.csv`` for v2).

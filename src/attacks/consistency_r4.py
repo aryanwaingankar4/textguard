@@ -21,6 +21,9 @@ New checks for the held-out text styles:
 * **F4 rating_from_to** — "Upgrades … from R1 to R2" needs R2 above R1 on the rating ladder.
 * **F5 leftover_direction** — an edited headline still holds a directional word the engine does
   not reverse (it would contradict the flipped words next to it).
+* **F7 conflicting_targets** (2026-10-16) — the bundle's headlines about the stock state more
+  distinct final price targets than the real bundle did (one analyst action reported twice, only one
+  copy carrying a swappable "from $A to $B").
 * **F6 near_duplicate** — an edited headline and an unedited one in the same bundle are near
   copies (word overlap ≥ 0.6, e.g. the same analyst action reported twice) and the unedited one
   holds a directional word — the bundle would say the same thing both ways.
@@ -135,7 +138,22 @@ def headline_problems(fake: str, real: str, ticker: str) -> dict[str, str]:
             if wi and wj and len(wi & wj) / len(wi | wj) >= 0.6 and _directional_words(rl[j]):
                 # locator only — the exclusion list is committed, FNSPID text is CC BY-NC (R3 rule: no text)
                 out[f"F6 lines {i},{j}"] = f"edited line {i} has an unedited near-copy (line {j}) with a direction word"
+    # F7 (review round 2, 2026-10-16): the bundle's headlines about the stock state more distinct final
+    # price targets than the real bundle did — two reports of one analyst action no longer agree
+    # ("lowered … from $56 to $40" next to "Lowers Price Target to $56")
+    if len(_final_targets(fl, ticker)) > len(_final_targets(rl, ticker)):
+        out["F7 bundle"] = "edited headlines state conflicting final price targets"
     return out
+
+
+_PT_TO = re.compile(r"\b(?:price target|PT|target)\b(?:[^$;]{0,40}?\bfrom\s+\$\d[\d,]*(?:\.\d+)?)?"
+                    r"[^$;]{0,40}?\bto\s+\$(\d[\d,]*(?:\.\d+)?)", re.I)
+
+
+def _final_targets(lines: list[str], ticker: str) -> set[float]:
+    """Final price targets ("… target … to $X") stated in headlines that name the stock."""
+    alias = re.compile(hr.ALIASES[ticker])
+    return {float(v.replace(",", "")) for h in lines if alias.search(h) for v in _PT_TO.findall(h)}
 
 
 def new_problems(fake: str | None, real: str | None, domain: str, series: str) -> dict[str, str]:

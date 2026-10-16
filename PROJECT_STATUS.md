@@ -100,13 +100,16 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
        FNSPID labels (before the analysis). *(σ and anchoring decided 2026-10-12 — §10g.)*
 1a. [x] **Held-out attack texts (2026-10-12):** engines + scan + coverage — §8 "R4 held-out
        attacks". Energy flip / A1 / A2 / A3 = 345 / 102 / 345 / 218 clean; FNSPID flip / A1 / A2 =
-       192 / 65 / 537. **Pending: Aryan's by-eye review of `texts/r4_review_pairs.md`.**
-       Checked 2026-10-16 after the laptop shutdown: tree clean, `python -m src.attacks.heldout`
-       regenerates every R4 text / exclusion / coverage file **byte-identical**, 417 tests pass.
+       192 / 65 / 537. Checked 2026-10-16 after the laptop shutdown: regenerates byte-identical.
+       **Reviewed by Aryan 2026-10-16 → generator fixes (company-event refusal, A2 rendering) + Claude's
+       round-2 fixes; final FNSPID flip / A1 / A2 = 108 / 31 / 538** (Energy unchanged) — §8, §10g.
+       **Pending: Aryan's look at round 2, `texts/r4_review_pairs_2.md` (5 FNSPID pairs)**, and the
+       50 FNSPID labels (`results/summary_directional_fnspid.csv`).
 1b. [x] **Semantic-mismatch flags (2026-10-16, text only):** FNSPID flip / A1 bundles whose edited
-       headline holds a causal connector — `python -m src.attacks.connectors_r4` → §8 "R4 held-out
-       attacks", pre-stated in §10g. **Open for Aryan:** keep the broad rule as specified (flags
-       138 / 192 flips — "on" in "Maintains Buy on Merck" is not a cause) or the narrow one (102 / 192).
+       headline holds a causal connector — `python -m src.attacks.connectors_r4`. **Narrow rule**
+       (Aryan): flip 52 / 108, A1 13 / 31 flagged; with/without reporting pre-stated in §10g.
+1d. [ ] **Held-out judge subjects** (v1 `QUESTIONS`, v2 `SUBJECTS`) — proposed in §10g; Aryan to
+       confirm, plus the Energy mixed-frame question (§10g) — then they go into the pre-registration.
 1c. [ ] **TextGuard v2 design — BEFORE the pre-registration, so its settings are frozen inside it
        (order decided by Aryan 2026-10-16).** Developed on the **original domains' val split only**;
        no held-out data, no original-domain test data. Status:
@@ -117,8 +120,10 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
        * [ ] **Kaggle: v2 judge on val** — `notebooks/r4_v2_val_judge_kaggle.ipynb`, input
          `results/qwen/r4v2_val_inputs.csv` (2,898 questions, sha256 `a155c85c…`), ~10 min on T4;
          back up answers with `git add -f`;
-       * [ ] `python -m src.analyze_r4_val v2` → full val grid → **Aryan reviews, approves the
-         selection rule and the chosen settings** → only then freeze (inside §10g, step 2).
+       * [x] selection rule approved (Aryan 2026-10-16): lowest mean over attacks of |pooled DSS|
+         under FBR ≤ 10% (§10g);
+       * [ ] `python -m src.analyze_r4_val v2` → full val grid → **Aryan reviews the chosen
+         settings** → only then freeze (inside §10g, step 2).
 2. [ ] **Pre-register R4 (§10g) and commit it alone** — before any v2 test result and before any model
        output on the held-out domains: held-out domains frozen; v2's design space and the **val-only**
        development protocol (what may be tuned, on which data); test = held-out domains once (v1 and
@@ -196,7 +201,7 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
 | R4 FNSPID semantic-mismatch flags | `python -m src.attacks.connectors_r4` | seconds |
 | R4 v2 val judge input → Kaggle notebook | `python -m src.textguard.export_v2_inputs`, `python notebooks/build_r4_v2_judge_notebook.py` | seconds |
 | R4 v2 val grid (interim / with v2's judge) | `python -m src.analyze_r4_val v1j` / `… v2` | ~15 s |
-| Tests | `python -m pytest -q` (439) | ~100 s |
+| Tests | `python -m pytest -q` (445) | ~3 min |
 
 Model 5 / judge answers: `results/qwen/*_predictions.csv` + `*_run_meta.json` (in git); the
 Colab notebooks in `notebooks/` are only needed to re-generate them.
@@ -228,7 +233,9 @@ Colab notebooks in `notebooks/` are only needed to re-generate them.
    is not shown); memorisation risk for Qwen (issue #24); repro column far from published MSE
    (#21); TextGuard induces a small directional effect on Model 3; **R4 FNSPID flips can keep a
    cause that no longer fits the flipped move** (semantic mismatch — results with/without the
-   connector-flagged bundles, §8 / §10g).
+   connector-flagged bundles, §8 / §10g); **TextGuard v2 needs the series' history beyond the
+   model's lookback** (passed explicitly — black-box w.r.t. the model, but an input requirement);
+   **Economy's residual FBR is a target/report series mismatch v2 cannot fix** (§10g).
 6. **Release** (PHASES §8.3): README (install, 5-minute example with `TextGuard` around any
    `predict(numbers, text)`, results, licence), MIT licence, fake-text benchmark labelled
    research-only (CLAUDE.md §14 ethics), tag, **arXiv as soon as the draft is solid**, venue.
@@ -1508,16 +1515,49 @@ v1's change evidence (w = 6) agrees with the claim (neither domain states a base
 | | texts | flip | A1 | A2 | A3 |
 |---|---|---|---|---|---|
 | **Energy** (665 windows) | 352 | 345 → **345** | 102 → **102** | 345 → **345** | 218 → **218** |
-| **FNSPID** (10 stocks, 1,031 windows) | 1,006 | 195 → **192** | 65 → **65** | 537 → **537** | — (dropped) |
+| **FNSPID** (10 stocks, 1,031 windows) | 1,006 | 109 → **108** | 31 → **31** | 538 → **538** | — (dropped) |
 
-FNSPID flips per stock 13–26; A1 per stock **2–9** (small — per-stock cells will be underpowered).
-FNSPID not flipped (811 texts): no net direction about the stock 469, unhandled directional word
-196, directional market clause 116, direction inside a quote 29, ≥ 100% raise 1. Scan flags: 3 (F6,
-near-duplicate headline left unedited) — all FNSPID flips; nothing else flagged (E1/E2, F2–F5, C6–C8).
-Bookkeeping asserted (every run): same windows as `real`; unattacked = real text; `synthetic` =
-`attacked`; A1 ⊆ flip with identical texts; A2 = real text as an exact prefix + a sentence that
-parses back to `claimed_direction` = −`real_direction`. Energy A1 102 / 345 (30%) and FNSPID 65 / 192
-(34%) ≈ the reserve-stock estimate (39%).
+*(2026-10-16, after the review fixes below; was flip 195 → 192, A1 65, A2 537 on 2026-10-12.)*
+
+| FNSPID clean, per stock | NFLX | GOOGL | MRK | NVDA | PFE | JNJ | MU | FDX | PCG | LLY | **All** |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| flip | 12 | 8 | 7 | 13 | 12 | 3 | 10 | 17 | 15 | 11 | **108** |
+| A1 | 1 | 2 | 4 | 4 | 5 | 0 | 3 | 6 | 4 | 2 | **31** |
+| A2 | 66 | 45 | 43 | 80 | 42 | 42 | 71 | 43 | 57 | 49 | **538** |
+
+Per-stock flip / A1 cells are small (A1: 0–6; JNJ has none) — per-stock results are descriptive.
+FNSPID not flipped (897 texts): no net direction about the stock 468, unhandled directional word
+190, directional market clause 113, direction inside a quote 28, **unedited company-event news 64**
+(approval 24, lawsuit 12, trial result 12, guidance 8, analyst initiation 5, recall 2, dividend
+change 1), **multi-company move list 19, unedited sector move / sector rating 11, unedited
+52-week-high/low list naming the stock 3**, ≥ 100% raise 1. Scan flags: 1 (**F7**, FDX 2019-12-20).
+Energy, `real` and A3 texts are byte-identical to 2026-10-12; A2 gains 1 FNSPID window (GOOGL
+2018-10-26 — the cue fixes change one bundle's net direction from 0). Bookkeeping asserted (every
+run): same windows as `real`; unattacked = real text; `synthetic` = `attacked`; A1 ⊆ flip with
+identical texts; A2 = real text as an exact prefix + a sentence that parses back to
+`claimed_direction` = −`real_direction`. Energy A1 102 / 345 (30%), FNSPID 31 / 108 (29%).
+
+**Generator fixes from the by-eye review (2026-10-16, before any model or judge output on either
+held-out domain — ordinary generator fixes, recorded in §10g).** Aryan's review of
+`texts/r4_review_pairs.md`: Energy pairs 1–8 fine ("but" after the flip in pairs 1–2 reads oddly —
+cosmetic, left); pairs 11–12 (cause no longer fits) → covered by the connector flags; **pair 10**
+(PFE: one headline flipped while "Raises Qtr. Dividend" and "$10B Buyback" stayed) → **company-event
+refusal**: a bundle is not attacked if a headline about the stock **outside the edited headlines**
+reports a dividend change, buyback, approval / authorisation, trial result / discontinuation, recall,
+lawsuit / ruling, guidance or (added in round 2) an analyst initiation with a non-neutral rating
+(`heldout_rules.EVENTS`; subsidiaries such as Janssen count for the event check only). Flip coverage
+stayed ≥ ~100 (Aryan's threshold), so refusal — not the stratified fallback — applies. **Pair 15**:
+the A2 sentence *was* its own headline in the text; the review renderer's word diff dropped the line
+break — the renderer now shows it as ` / [+ …]` (`heldout._shown`); texts unchanged.
+Claude's audit of round 2 (`texts/r4_review_pairs_2.md`, seed 1, windows not shown in round 1)
+found and fixed, iteratively, before showing it: a multi-company move list ("…: NVIDIA Shares Down
+2.7%, AMD Down 2.5%, … Micron Down 2.1%") having every company's move flipped → **blocked**; "Moves
+Up Anticipated Completion Dates" (a schedule) read as a price move and "Drop In On A Meeting" as a
+drop → **not cues**; an unedited peer sector line ("Shares of semiconductor companies are trading
+higher …") or sector rating ("Goldman Sachs Upgrades Semis") beside a flipped one → **blocked**; an
+unedited "New 52-Week Highs … Include: …, Eli Lilly" → **blocked**; two reports of one analyst action
+disagreeing on the final price target after a "from $A to $B" swap → new scan check **F7**. Every fix
+blocks or corrects; none deletes text. Tests in `tests/test_r4_attacks.py` (6 new).
 
 **How the FNSPID word list was built (disclosed):** six by-eye audits of random flips (seeds 7,
 11, 23, 99, 5, 31) before any model output on FNSPID; each found defects (a cue the list missed —
@@ -1535,29 +1575,32 @@ a fluent attacker, and v2's "catch" on these bundles could partly be the mismatc
 
 **Semantic-mismatch flags (2026-10-16, before any model output on FNSPID; Aryan's request).**
 `python -m src.attacks.connectors_r4` → `results/r4_connector_flags.csv` (per bundle, gitignored),
-`results/summary_r4_connector_flags.csv`. Rule (as specified): a clean attacked bundle is flagged if
-an **edited** headline (a line that differs from the real bundle's same line) contains a causal
-connector — after, on, following, amid, as, due to (whole words, any case). A1 ⊆ flip, same texts.
+`results/summary_r4_connector_flags.csv`. Rule: a clean attacked bundle is flagged if an **edited**
+headline (a line that differs from the real bundle's same line) contains a causal connector —
+after, on, following, amid, as, due to (whole words, any case) — **NARROW version (Aryan,
+2026-10-16):** the "on" of Benzinga's analyst template ("<Bank> Maintains <Rating> on <Company>,
+Lowers Price Target to $X", also Upgrades / Downgrades / Initiates / Reiterates / Assumes / Resumes
+/ Reinstates) does not count when it is the line's only "on" — it names the stock, it states no
+cause. A1 ⊆ flip, same texts. On the final texts (2026-10-16):
 
-| | NFLX | GOOGL | MRK | NVDA | PFE | JNJ | MU | FDX | PCG | LLY | **All** |
+| narrow: flagged / clean | NFLX | GOOGL | MRK | NVDA | PFE | JNJ | MU | FDX | PCG | LLY | **All** |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| flip: flagged / clean | 11/13 | 9/14 | 14/20 | 18/22 | 12/20 | 15/16 | 12/17 | 12/19 | 18/25 | 17/26 | **138/192** |
-| A1: flagged / clean | 1/2 | 2/5 | 6/7 | 6/8 | 4/9 | 4/4 | 5/7 | 4/7 | 6/8 | 4/8 | **42/65** |
+| flip | 10/12 | 4/8 | 2/7 | 9/13 | 6/12 | 1/3 | 7/10 | 5/17 | 6/15 | 2/11 | **52/108** |
+| A1 | 0/1 | 1/2 | 2/4 | 2/4 | 2/5 | 0/0 | 2/3 | 2/6 | 2/4 | 0/2 | **13/31** |
 
-By connector (flip): on 93, after 74, as 15, following 13, amid 9, due to 1. **The rule over-flags,
-mostly through "on":** Benzinga's analyst template "<Bank> Maintains <Rating> on <Company>, Lowers
-Price Target to $X" puts a non-causal "on" in every edited price-target headline. A narrower
-variant (drop "on" when it is the only connector and sits in a Maintains / Upgrades / Downgrades /
-Initiates / Reiterates / Assumes / Resumes / Reinstates … on <Company> template) flags **102 / 192**
-flips and **34 / 65** A1 (per stock 6–16 / 1–6). Many flagged causes stay coherent because the engine
-flips the cause's own evaluative word too ("trading higher after … better-than-expected Q4"); the
-mismatch cases are causes without one ("trading higher after Trump criticized China's trade
-policies"). Without the flagged bundles, per-stock A1 cells fall to 0–5 windows (broad) — the
-"without" result is pooled-only in practice. Which rule the pre-registration uses: **Aryan to decide**
-(1b in §1a).
+By connector (flip): after 36, on 22, as 12, following 5, amid 5, due to 0. The broad rule (template
+"on" counted, reference only) would flag 73 / 108 and 16 / 31. Many flagged causes stay coherent
+because the engine flips the cause's own evaluative word too ("trading higher after … better-than-
+expected Q4"); the mismatch cases are causes without one ("trading higher after China released a
+tariff exemptions list"). Without the flagged bundles: flip 56, A1 18 — pooled only in practice.
+**Residual not caught by any connector** (round 2, pair 4): "Hearing Evercore Out With A [Negative
+→ Positive] Note On PG&E, Say That California Lawmakers Are Abandoning Efforts To Shield Electrical
+Utilities From Financial Liability" — the cause follows "Say That" (or "tied to", "related to" in
+other bundles). Part of the stated semantic limitation; not patched.
 
-**For Aryan's by-eye review:** `texts/r4_review_pairs.md` — 15 scan-clean pairs, seed 0 (Energy:
-flip 2, A1 2, A2 2, A3 2; FNSPID: flip 3, A1 2, A2 2). Problems found there → a dated amendment.
+**By-eye review:** round 1 `texts/r4_review_pairs.md` (15 pairs, seed 0 — reviewed by Aryan
+2026-10-16; the file regenerates with the current engine, so its FNSPID picks now differ); round 2
+`texts/r4_review_pairs_2.md` (5 new FNSPID pairs, seed 1, none shown in round 1) — for Aryan.
 
 ## 9. Results
 
@@ -3499,9 +3542,37 @@ whether each headline conclusion still holds.
   clip / anchor15 contrasts) is reported **with and without** the bundles flagged by
   `connectors_r4` (edited headline holds after / on / following / amid / as / due to) — a robustness
   check for the cause-no-longer-fits limitation (§8). Pooled is the comparison; per-stock "without"
-  cells are descriptive (A1: 0–5 windows per stock). Flag counts: §8. Broad vs narrow rule: open (§1a 1b).
-* **Held-out judge subjects (both v1 and v2) — still to fix here**, before any judge output on
-  Energy / FNSPID: v1's `QUESTIONS` and v2's `SUBJECTS` cover only the original four domains.
+  cells are descriptive. **Rule: NARROW** (Aryan, 2026-10-16 — the analyst-template "on" does not
+  count; refined before any model output, so not a deviation). Final counts: flip 52 / 108, A1 13 / 31
+  flagged (§8).
+* **Generator fixes from the by-eye review — 2026-10-16, before any model or judge output on Energy
+  or FNSPID (ordinary generator fixes, not amendments):** company-event refusal (Aryan, pair 10);
+  A2 review rendering (pair 15; texts were already correct); round-2 fixes (multi-company move lists,
+  "moves up <schedule>" / phrasal "drop in", unedited sector lines / sector ratings, unedited
+  52-week-high lists, subsidiary events, analyst initiations, scan check F7). Details and the final
+  coverage table: §8 "R4 held-out attacks". **Flip coverage 108 ≥ ~100 → refusal applies; the
+  stratified fallback (by share of stock-specific directional headlines edited) is not used.**
+  Final clean counts: Energy flip / A1 / A2 / A3 345 / 102 / 345 / 218 (unchanged); FNSPID flip / A1 /
+  A2 108 / 31 / 538.
+* **Held-out judge subjects — PROPOSED 2026-10-16 (Aryan to confirm; fixed in the pre-registration,
+  before any judge output on either domain):**
+  * **v1** (frozen prompt and code; only a `QUESTIONS` entry per new domain, v1's own convention —
+    the claim's frame goes into the subject, as for Traffic): Energy → change, "the U.S. national
+    average retail price of regular gasoline compared with the previous week" (the attacked claim
+    is week-over-week); FNSPID → change, "the share price of {Company} stock" per stock ({Company}
+    = `heldout_rules.COMPANY`, e.g. "the share price of Pfizer stock"). POLARITY +1 for both. No
+    level question (neither domain states a baseline). Expected and stated now: v1's "did it go up
+    or go down?" will answer *none* for many analyst-action headlines — that is v1 as designed.
+  * **v2** (`SUBJECTS`; frame read from the unit): Energy → "the U.S. national average retail price
+    of regular gasoline"; FNSPID → "the share price of {Company} stock" per stock. The `outlook`
+    question then covers analyst targets / ratings ("Raises Price Target to $X" predicts up).
+  * **Open design question (noticed from Energy's text format, not from any output):** Energy's
+    price sentence states both comparisons in one unit ("… $0.099 per gallon less than last week
+    and $0.590 under a year ago"); `units.frame` returns *yoy* for it, so v2 would check the
+    week-over-week claim against year-over-year evidence. No original-domain val unit mixes the two
+    (checked), so val cannot inform it. Options: (a) pre-register the generic rule "a unit that also
+    names a short-term comparison (last / previous week or month) is checked against the trend",
+    disclosed as motivated by Energy's format; (b) leave v2 as is and report the mismatch.
 
 #### TextGuard v2 — proposed design (DRAFT, 2026-10-16; **nothing frozen** — Aryan reviews first)
 
@@ -3520,11 +3591,23 @@ units.py`, `judge_prompt_v2.py`, `v2.py`; v1's modules unchanged.
 
 Judge: Qwen2.5-1.5B @ P5's revision, P6's scoring code, v2's prompts (`judge_prompt_v2.py`). Grid
 (fixed before any v2 answer exists): f ∈ {¼, ½, 1} (v1's), c₀ ∈ {0, 0.6, 0.8}, τ ∈ {0, 0.5},
-k ∈ {0.25, 0.5, 1, ∞} → 72 configs. **Proposed rule:** M5, val, pooled — among FBR ≤ 10%, the lowest
-mean |DSS| over flipped, A2, exaggerated, A3 (|·| because v1's negative val DSS is over-correction,
-not protection); ties → lower FBR, smaller τ, larger k, smaller c₀, smaller f; none in budget →
-lowest FBR, "budget not met". A1 (34 val windows) and Q7 descriptive. *Alternatives Aryan may
-prefer:* P6's signed DSS; flipped + A2 only (the cap then has to earn its place on FBR alone).
+k ∈ {0.25, 0.5, 1, ∞} → 72 configs. **Selection rule — APPROVED (Aryan, 2026-10-16):** M5, val —
+among configs with pooled FBR ≤ 10%, the lowest **mean over the four attacks (flipped, A2,
+exaggerated, A3) of |pooled DSS|**: each attack's DSS is pooled first (mean over its attacked
+windows), then made absolute, then the four are averaged — *not* the mean of per-window |DSS|, which
+would count noise as manipulation. Reason: neutralising, not over-correcting, is the goal (same logic
+as rejecting signed-DSS tie-breaks in P6, Amendment 2). Ties → lower FBR, smaller τ, larger k,
+smaller c₀, smaller f; none in budget → lowest FBR, "budget not met". A1 (34 val windows) and Q7
+descriptive. (`analyze_r4_val.metrics_row` computes `obj` exactly this way.)
+
+**For the paper (recorded 2026-10-16, Aryan):**
+* **v2 needs the series' history beyond the model's lookback** (year-over-year claims; passed
+  explicitly to `TextGuardV2.predict(numbers, text, history=…)`). It stays black-box with respect to
+  the **model** — only `predict()` is called — but it is a stated **input requirement** on the
+  deployer, unlike v1, which needs only the lookback.
+* **Economy's residual FBR (8.6% on val) is a target / report series mismatch v2 cannot fix:** the
+  reports state month-over-month changes of the goods-*and-services* deficit while the target is the
+  goods balance (§10b Amendment 1); no evidence frame computed from the target can verify them.
 
 **Interim val results (2026-10-16) — v1's answers, NOT v2's judge** (`python -m src.analyze_r4_val
 v1j`): v1's whole-report claims run through v2's evidence + cap (Traffic's claim in the yoy frame —
@@ -3549,8 +3632,9 @@ same as clip): catching it needs v2's own judge (`outlook`). The cap costs Healt
 genuine Health_US text effects exceed 1σ) and halves A2. Q7 (descriptive): v1 +0.259 → v2-interim
 +0.111 on A2, FBR 3.1%.
 
-**Next:** Kaggle v2 judge on val → `python -m src.analyze_r4_val v2` (grid, chosen config, judge
-checks: human labels, A2 caught, false outlook claims on genuine text) → Aryan approves → frozen here.
+**Next:** Kaggle v2 judge on val → `python -m src.analyze_r4_val v2` (grid, chosen config by the
+approved rule, judge checks: human labels, A2 caught, false outlook claims on genuine text) → Aryan
+reviews the chosen settings → frozen here, in the pre-registration commit.
 
 ### 10c. Open issues
 
@@ -3592,6 +3676,17 @@ checks: human labels, A2 caught, false outlook claims on genuine text) → Aryan
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-16 (later) — R4: Aryan's decisions + review fixes; held-out coverage final; pushed
+- Decided (Aryan): narrow connector rule; v2 selection rule = lowest mean over attacks of |pooled
+  DSS| under FBR ≤ 10%; paper notes (v2's history requirement; Economy's unfixable FBR) — §10g.
+- Review of `r4_review_pairs.md` → company-event refusal (pair 10) and A2 review rendering (pair 15,
+  texts were correct). Claude's round-2 audit → multi-company move lists, schedule "moves up" /
+  "drop in", unedited sector lines / ratings / 52-week lists, subsidiary events, analyst
+  initiations, scan F7. FNSPID flip / A1 / A2 = 108 / 31 / 538 (was 192 / 65 / 537); Energy
+  unchanged. Connector flags (narrow) 52 / 108, 13 / 31. 6 new tests.
+- Proposed held-out judge subjects + an Energy mixed-frame question (§10g) — for Aryan.
+- Next: Aryan runs the Kaggle v2 val judge; looks at round-2 pairs; confirms subjects.
 
 ### 2026-10-16 — R4: integrity check, semantic-mismatch flags, TextGuard v2 design (val only)
 - After the laptop shutdown: tree clean at `69635b4`, R4 texts regenerate byte-identical, 417 tests pass.

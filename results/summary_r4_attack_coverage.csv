@@ -1,29 +1,29 @@
 attack,domain,series,windows,with_text,attacked,flagged,clean
 flipped,Energy,Energy,665,352,345,0,345
-flipped,FNSPID,NFLX,104,104,14,1,13
-flipped,FNSPID,GOOGL,95,88,14,0,14
-flipped,FNSPID,MRK,104,104,20,0,20
-flipped,FNSPID,NVDA,104,103,22,0,22
-flipped,FNSPID,PFE,104,104,20,0,20
-flipped,FNSPID,JNJ,104,102,16,0,16
-flipped,FNSPID,MU,104,103,17,0,17
-flipped,FNSPID,FDX,104,98,20,1,19
-flipped,FNSPID,PCG,104,97,25,0,25
-flipped,FNSPID,LLY,104,103,27,1,26
+flipped,FNSPID,NFLX,104,104,12,0,12
+flipped,FNSPID,GOOGL,95,88,8,0,8
+flipped,FNSPID,MRK,104,104,7,0,7
+flipped,FNSPID,NVDA,104,103,13,0,13
+flipped,FNSPID,PFE,104,104,12,0,12
+flipped,FNSPID,JNJ,104,102,3,0,3
+flipped,FNSPID,MU,104,103,10,0,10
+flipped,FNSPID,FDX,104,98,18,1,17
+flipped,FNSPID,PCG,104,97,15,0,15
+flipped,FNSPID,LLY,104,103,11,0,11
 a1_selective,Energy,Energy,665,352,102,0,102
-a1_selective,FNSPID,NFLX,104,104,2,0,2
-a1_selective,FNSPID,GOOGL,95,88,5,0,5
-a1_selective,FNSPID,MRK,104,104,7,0,7
-a1_selective,FNSPID,NVDA,104,103,8,0,8
-a1_selective,FNSPID,PFE,104,104,9,0,9
-a1_selective,FNSPID,JNJ,104,102,4,0,4
-a1_selective,FNSPID,MU,104,103,7,0,7
-a1_selective,FNSPID,FDX,104,98,7,0,7
-a1_selective,FNSPID,PCG,104,97,8,0,8
-a1_selective,FNSPID,LLY,104,103,8,0,8
+a1_selective,FNSPID,NFLX,104,104,1,0,1
+a1_selective,FNSPID,GOOGL,95,88,2,0,2
+a1_selective,FNSPID,MRK,104,104,4,0,4
+a1_selective,FNSPID,NVDA,104,103,4,0,4
+a1_selective,FNSPID,PFE,104,104,5,0,5
+a1_selective,FNSPID,JNJ,104,102,0,0,0
+a1_selective,FNSPID,MU,104,103,3,0,3
+a1_selective,FNSPID,FDX,104,98,6,0,6
+a1_selective,FNSPID,PCG,104,97,4,0,4
+a1_selective,FNSPID,LLY,104,103,2,0,2
 a2_forward,Energy,Energy,665,352,345,0,345
 a2_forward,FNSPID,NFLX,104,104,66,0,66
-a2_forward,FNSPID,GOOGL,95,88,44,0,44
+a2_forward,FNSPID,GOOGL,95,88,45,0,45
 a2_forward,FNSPID,MRK,104,104,43,0,43
 a2_forward,FNSPID,NVDA,104,103,80,0,80
 a2_forward,FNSPID,PFE,104,104,42,0,42
@@ -33,6 +33,6 @@ a2_forward,FNSPID,FDX,104,98,43,0,43
 a2_forward,FNSPID,PCG,104,97,57,0,57
 a2_forward,FNSPID,LLY,104,103,49,0,49
 a3_magnitude,Energy,Energy,665,352,218,0,218
-flipped,FNSPID,(10 stocks),1031,1006,195,3,192
-a1_selective,FNSPID,(10 stocks),1031,1006,65,0,65
-a2_forward,FNSPID,(10 stocks),1031,1006,537,0,537
+flipped,FNSPID,(10 stocks),1031,1006,109,1,108
+a1_selective,FNSPID,(10 stocks),1031,1006,31,0,31
+a2_forward,FNSPID,(10 stocks),1031,1006,538,0,538

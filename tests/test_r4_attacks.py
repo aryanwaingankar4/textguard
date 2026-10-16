@@ -167,3 +167,62 @@ def test_heldout_windows_timing():
                 prev = weeks.index[weeks.index.get_loc(r.origin) - 1]
                 inside = set(heads[(heads.day >= prev) & (heads.day < r.origin)].t)
                 assert set(r.text.split("\n")) <= inside
+
+
+# --- review fixes, 2026-10-16 (Aryan's pair 10 + Claude's round-2 audit) ---------------------------
+
+PFE_MIXED = ("Pfizer Raises Qtr. Dividend From $0.34 To $0.36/Share\nPfizer Reports $10B Buyback\n"
+             "Pfizer Reports Received Positive CHMP Opinion For ZIRABEV")
+
+
+def test_unedited_company_event_blocks_the_flip():
+    r = hr.fnspid_edit("Pfizer Reports $10B Buyback\nPfizer Shares Trading Higher After Strong Q3", "PFE")
+    assert not r.attacked and r.reason == "unedited company-event news: buyback"
+    old = hr.fnspid_edit("Pfizer Reports $10B Buyback\nPfizer Shares Trading Higher After Strong Q3", "PFE",
+                         refuse_events=False)
+    assert old.attacked                                   # the 2026-10-12 engine flipped it
+    assert not hr.fnspid_edit(PFE_MIXED, "PFE").attacked
+
+
+def test_subsidiary_events_and_sector_lines_block():
+    b = "FDA Approves Janssen Pharmaceuticals' Xarelto\nMorgan Stanley Maintains Equal-Weight on Johnson & Johnson, Raises Price Target to $153"
+    assert hr.fnspid_edit(b, "JNJ").reason == "unedited company-event news: approval"
+    s = ("Shares of several semiconductor companies are trading higher after China news.\n"
+         "Shares of semiconductor companies are trading higher after a tweet.")
+    assert not hr.fnspid_edit(s, "NVDA").attacked
+    g = "Goldman Sachs Upgrades Semis, Is 'More Positive' On Memory Stocks\nGoldman Sachs Upgrades Micron Technology to Buy"
+    assert hr.fnspid_edit(g, "MU").reason == "unedited sector move"
+
+
+def test_move_lists_and_phrasal_verbs_are_not_flipped():
+    lst = ("Other Semi Stocks Fall Following Concerning Earnings From Intel: NVIDIA Shares Down 2.7%, "
+           "AMD Down 2.5%, Micron Down 2.1%")
+    assert hr._unflippable(lst, "MU") == "multi-company move list"
+    sched = "Pfizer and Astellas Amend Protocols, Moves Up Anticipated Completion Dates"
+    assert hr.headline_cues(sched, "PFE") == []
+    assert [m.group() for m in hr.headline_cues("Pfizer Stock Moves Up 3%", "PFE")] == ["Up"]
+    assert hr.headline_cues("Trump Is Expected To Drop In On Meeting With Micron", "MU") == []
+    hi = "Stocks That Made New 52-Week Highs So Far Today Include: Ameren, Eli Lilly\nBMO Upgrades Eli Lilly to Outperform"
+    assert hr.fnspid_edit(hi, "LLY").reason == "unedited high/low list naming the stock"
+
+
+def test_f7_conflicting_price_targets():
+    real = ("Micron shares are trading higher after Goldman raised the price target from $40 to $56.\n"
+            "Goldman Sachs Upgrades Micron Technology to Buy, Raises Price Target to $56")
+    fake = ("Micron shares are trading lower after Goldman lowered the price target from $56 to $40.\n"
+            "Goldman Sachs Downgrades Micron Technology to Hold, Lowers Price Target to $56")
+    assert "F7 bundle" in c4.headline_problems(fake, real, "MU")
+    assert "F7 bundle" not in c4.headline_problems(real, real, "MU")
+
+
+def test_review_shows_a2_headline_as_its_own_item():
+    from src.attacks.heldout import _shown
+    assert _shown("A\nB", "A\nB\nPfizer shares are expected to fall next week.", "a2_forward", "FNSPID") == \
+        "A / B / [+ Pfizer shares are expected to fall next week.]"
+
+
+def test_narrow_connector_rule_drops_the_analyst_template_on():
+    from src.attacks.connectors_r4 import connectors_in
+    pt = "Citigroup Maintains Neutral on Johnson & Johnson, Lowers Price Target to $147"
+    assert connectors_in(pt) == [] and connectors_in(pt, narrow=False) == ["on"]
+    assert connectors_in("Merck Shares Trading Higher On Report") == ["on"]

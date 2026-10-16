@@ -8,11 +8,13 @@ may discount it. The scan (``consistency_r4``) cannot see this: it checks words 
 whether a cause fits a move (PROJECT_STATUS §8 "R4 held-out attacks", limitation).
 
 We cannot judge "fits" automatically without a reader, so we flag the *possibility* with a fixed,
-broad, text-only rule (Aryan, 2026-10-16, written before any model output on FNSPID): an
+text-only rule (Aryan, 2026-10-16, written before any model output on FNSPID): an
 **edited** headline (a line of the fake that differs from the same line of the real bundle)
 containing a causal connector — ``after``, ``on``, ``following``, ``amid``, ``as``, ``due to``
-(whole words, any case). It over-flags on purpose ("on CNBC", "as CEO" are not causes): the
-robustness table drops every possibly-mismatched fake, so the "without" result is conservative.
+(whole words, any case). **Narrow rule (Aryan, 2026-10-16):** the "on" of Benzinga's analyst
+template ("Maintains Buy on Merck, Lowers Price Target …") does not count — it names the stock, not
+a cause. It still over-flags ("on CNBC", "as CEO"): the "without" result is conservative. The broad
+count (that "on" included) is kept as ``flagged_broad`` for reference only.
 
 Pre-stated use (§10g): every FNSPID ``flipped`` and ``a1_selective`` result is reported **with and
 without** the flagged bundles. A1 ⊆ flip with identical texts, so its flags are the flip's.
@@ -50,8 +52,20 @@ def edited_lines(real: str, fake: str) -> list[str]:
     return [b for a, b in zip(r, f) if a != b]
 
 
-def connectors_in(line: str) -> list[str]:
-    return [c for c in CONNECTORS if CONNECTOR_RE[c].search(line)]
+# Benzinga's analyst template "<Bank> Maintains <Rating> on <Company>, Lowers Price Target to $X":
+# its "on" names the stock, it states no cause. NARROW rule (Aryan, 2026-10-16, before any model
+# output on FNSPID): such an "on" does not count when it is the line's only "on".
+ANALYST_ON = re.compile(r"\b(?:Maintains|Upgrades|Downgrades|Initiates|Reiterates|Assumes|Resumes|Reinstates)\b"
+                        r".*?\bon\b", re.I)
+
+
+def connectors_in(line: str, narrow: bool = True) -> list[str]:
+    """Causal connectors in a headline. ``narrow`` (the pre-registered rule) drops the analyst-
+    template "on"; ``narrow=False`` is the broad rule as first specified (reported for reference)."""
+    hits = [c for c in CONNECTORS if CONNECTOR_RE[c].search(line)]
+    if narrow and "on" in hits and ANALYST_ON.search(line) and len(CONNECTOR_RE["on"].findall(line)) == 1:
+        hits.remove("on")
+    return hits
 
 
 def flags() -> pd.DataFrame:
@@ -69,9 +83,10 @@ def flags() -> pd.DataFrame:
             lines = edited_lines(real[(s, sid)], text)
             hits = [connectors_in(x) for x in lines]
             found = sorted({c for h in hits for c in h}, key=CONNECTORS.index)
+            broad = any(connectors_in(x, narrow=False) for x in lines)
             rows.append({"attack": attack, "series": s, "sample_id": sid,
                          "edited_lines": len(lines), "lines_with_connector": sum(bool(h) for h in hits),
-                         "connectors": "|".join(found), "flagged": bool(found)})
+                         "connectors": "|".join(found), "flagged": bool(found), "flagged_broad": broad})
     return pd.DataFrame(rows)
 
 
@@ -79,7 +94,7 @@ def summary(f: pd.DataFrame) -> pd.DataFrame:
     out = []
     for (attack, s), g in f.groupby(["attack", "series"], sort=False):
         row = {"attack": attack, "series": s, "clean_attacked": len(g), "flagged": int(g.flagged.sum()),
-               "kept_without_flagged": int((~g.flagged).sum())}
+               "kept_without_flagged": int((~g.flagged).sum()), "flagged_broad": int(g.flagged_broad.sum())}
         for c in CONNECTORS:
             row[f"has_{c.replace(' ', '_')}"] = int(g.connectors.str.split("|").map(lambda x: c in x).sum())
         out.append(row)
