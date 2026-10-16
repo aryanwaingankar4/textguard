@@ -271,9 +271,20 @@ key comparisons (TextGuard vs undefended, and vs each baseline defense).
 
 ---
 
-## 11. Audit Report contents
+## 11. Audit Report contents (answers "what does a model provider get?")
 
-Moved to the `audit-report` skill (`.claude/skills/audit-report/SKILL.md`) — load it for P7.1.
+The provider supplies their model (`predict(numbers, text)`) + their dataset. We return:
+
+1. **Health check** — traffic-light table: uses text? fooled? notices irrelevant text?
+2. **Fault breakdown** — scores split by domain, forecast horizon, and attack type
+3. **Worst failure cases** — top 10 samples with real vs fake text, prediction before/after, true value (reproducible bug reports)
+4. **Diagnosis + fixes** — each fault mapped to a recommended correction
+5. **With-TextGuard comparison** — before/after table including False Block Rate
+6. **Drift monitor setup** — reference centroid + alert threshold for their data
+
+**Key framing for the viva:** a developer only sees accuracy on their own clean test data.
+That cannot reveal text collapse, leakage, or adversarial vulnerability, because those
+situations never appear in the test set. This is a crash test, not a speed test.
 
 ---
 
@@ -295,7 +306,34 @@ the notebook instead.
 
 ## 13. Repo structure
 
-See the tree itself (`ls`, `git remote -v`). `data/` and `texts/` are gitignored.
+```
+textguard/
+├── CLAUDE.md               # this file — project context
+├── PHASES.md               # build plan, P0–P8
+├── PROJECT_STATUS.md       # living progress log — UPDATE AT EVERY PHASE BOUNDARY
+├── README.md
+├── requirements.txt
+├── data/                   # Time-MMD (+ FNSPID if P7.6) — gitignored
+├── texts/                  # generated text conditions — gitignored
+├── src/
+│   ├── data/               # loader.py, splits.py, inspect_domains.py, check_*.py
+│   ├── models/             # base.py, dlinear.py, patchtst.py, *_bert.py,
+│   │                       # qwen_forecaster.py, dummy.py
+│   ├── attacks/            # empty, shuffled, cross_domain, time_shifted,
+│   │                       # flipped, exaggerated, validate_attacks.py
+│   ├── textguard/          # trend_detector.py, text_direction.py, gate.py, textguard.py
+│   ├── metrics.py          # MSE, MAE, Text Usage Gap, DSS, Flip Rate, False Block Rate
+│   ├── auditor.py          # P7
+│   └── run_experiments.py
+├── notebooks/              # Colab GPU runs (Qwen)
+├── results/                # raw predictions (CSV) + aggregated metrics
+├── app/                    # Streamlit demo (P7)
+├── tests/                  # pytest
+└── paper/                  # LaTeX draft, figures
+```
+
+**Local:** `C:\Users\Aryan\textguard`
+**Remote:** `https://github.com/aryanwaingankar4/textguard`
 
 ---
 
@@ -352,8 +390,37 @@ See the tree itself (`ls`, `git remote -v`). `data/` and `texts/` are gitignored
 
 ## 16. Key literature — for writing Related Work in P8
 
-Moved to the `related-work` skill (`.claude/skills/related-work/SKILL.md`). **Re-run the arXiv
-search in P8 before submitting** — this field publishes weekly.
+**Directly competing** (see §4a for the "how we differ" table):
+Sridhar et al. (2026) *Semantics or Structure?* · Lee et al. (2026) *CFA* ·
+*Corroboration Illusion* (arXiv 2609.22246) ·
+*Plug-In Adversarial Detection for Time-Series LLMs* (arXiv 2512.12154) ·
+Liu & Jiang (2024) arXiv 2412.08099 · Zhu et al. (2025) *PA-RNet*
+
+**Foundational:**
+Liu et al. (2024) *Time-MMD* — NeurIPS 37, our dataset ·
+Nie et al. (2023) *PatchTST* — ICLR · Zeng et al. (2023) *DLinear* — AAAI ·
+Yang et al. (2024) *Qwen2.5 Technical Report* — arXiv:2412.15115
+
+**Supporting the motivation:**
+Nguyen et al. (2026) *Does Text Actually Help? / text collapse* ·
+Zhang et al. (2025) *When Does Multimodality Lead to Better Forecasting?* ·
+Liu et al. (2026) *TimesX* · Williams et al. (2024) *Context is Key* ·
+Kim et al. (2024) *Hybrid-MMF* (negative result)
+
+**Field-is-accuracy-focused evidence** (abstracts enough):
+TEA-Mamba · SpecTF · Dual-Forecaster · TriAlignNet · TTCA · TeR
+
+**Drift monitor (only if P7.4):**
+Sekar et al. (2026) *ZEDD* · Greco et al. (2024) *DriftLens*
+
+**Financial attacks (R4 uses FNSPID — these are now required reading for P8):**
+*AutoRedTrader* (arXiv 2605.09185) · Rizvani et al. (2026) *Adversarial News and Lost Profits*
+(arXiv 2601.13082) · *Market Signal Injection* (arXiv 2609.18357) · found, not yet read:
+*TradeTrap* (arXiv 2512.02261), *Poisoning Agentic Alpha* (arXiv 2608.24069), *SoK: Trading
+Agents or Market Crashers?* (arXiv 2609.19705)
+
+> Gap claims verified 2026-09-28. **Re-run the arXiv search in P8 before submitting** —
+> this field publishes weekly.
 
 ---
 
