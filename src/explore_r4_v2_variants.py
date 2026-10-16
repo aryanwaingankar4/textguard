@@ -47,7 +47,7 @@ def post(claims, domain, level):
 
 def main():
     w = R.frames(); x = w["M5"]; hist = R.histories(x); tx = R.texts()
-    base = R.claims_v2(x, tx)
+    base = R.claims_v2(x, tx, consolidated=False)   # raw claims: the variants post-process them
     groups = {"pooled": R.DOMAINS, **{d: (d,) for d in R.DOMAINS}}
     rows = []
     for lev in range(5):

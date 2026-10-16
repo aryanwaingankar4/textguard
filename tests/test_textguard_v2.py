@@ -116,6 +116,22 @@ def test_yoy_claim_uses_history_not_the_lookback_trend():
     assert ev == V.NO_EVIDENCE                                  # no history → no evidence
 
 
+def test_v3_consolidate_keeps_level_only_and_drops_copied_outlooks():
+    lvl_unit = "ILI was 2.9%, above the national baseline of 2.1%."
+    cl = [V.ClaimV2("change", 1, .9, unit=lvl_unit), V.ClaimV2("outlook", 1, .9, unit=lvl_unit),
+          V.ClaimV2("level", 1, .95, reference=2.1, unit=lvl_unit),
+          V.ClaimV2("change", -1, .9, unit="Travel fell."), V.ClaimV2("outlook", -1, .9, unit="Travel fell."),
+          V.ClaimV2("change", 0, .5, unit="X will rise."), V.ClaimV2("outlook", 1, .9, unit="X will rise.")]
+    out = V.consolidate(cl)
+    assert [(c.kind, c.direction, c.unit[:6]) for c in out] == [
+        ("level", 1, "ILI wa"), ("change", -1, "Travel"), ("change", 0, "X will"), ("outlook", 1, "X will")]
+
+
+def test_multi_month_average_is_unchecked_after_the_bug_fix():
+    assert frame("The average goods and services deficit decreased $0.1 billion to $43.2 billion for the "
+                 "three months ending in October.") == "unchecked"
+
+
 # --- defend: block + cap ---------------------------------------------------------------------------
 
 def test_defend_blocks_caps_and_reports_the_applied_weight():
@@ -210,8 +226,10 @@ def test_notebook_loop_and_loader_serve_every_claim(tmp_path):
     assert len(fwd) == 1 and fwd[0].direction == 1          # deficit to fall = balance up
     past = [c for c in econ if c.kind == "change" and c.direction]
     assert past and past[0].direction == -1                 # deficit up = balance down
-    hus = V.JudgeV2("Health_US", ans)(HUS)
-    assert [c.kind for c in hus] == ["change", "outlook", "level"] and hus[2].reference == 2.1
+    raw = V.JudgeV2("Health_US", ans, consolidated=False)(HUS)
+    assert [c.kind for c in raw] == ["change", "outlook", "level"] and raw[2].reference == 2.1
+    hus = V.JudgeV2("Health_US", ans)(HUS)                  # V3: a baseline-stating unit -> level only
+    assert [c.kind for c in hus] == ["level"]
     with pytest.raises(KeyError):
         V.JudgeV2("Economy", ans)("A sentence that was never exported.")
 

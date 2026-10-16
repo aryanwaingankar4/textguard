@@ -123,7 +123,9 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
          under FBR ≤ 10% (§10g);
        * [x] `python -m src.analyze_r4_val v2` — **as built, budget not met (FBR 17.0%)**; the judge
          does not separate outlook from change; dev-round-2 variants V1–V4 (§10g);
-       * [ ] **Aryan chooses V0 / V3 / V4** → frozen inside §10g (step 2), dev iteration disclosed.
+       * [x] **Aryan chose V3 (2026-10-16)** → implemented (`v2.consolidate`), tuned by the approved
+         rule, **frozen** in `results/summary_r4_v2_frozen.json` (f ½, c₀ 0.8, τ 0, k 1); human-label
+         agreement recomputed like for like (64–68% v2 vs 65–68% v1) — §10g.
 2. [ ] **Pre-register R4 (§10g) and commit it alone** — before any v2 test result and before any model
        output on the held-out domains: held-out domains frozen; v2's design space and the **val-only**
        development protocol (what may be tuned, on which data); test = held-out domains once (v1 and
@@ -201,7 +203,7 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
 | R4 FNSPID semantic-mismatch flags | `python -m src.attacks.connectors_r4` | seconds |
 | R4 v2 val judge input → Kaggle notebook | `python -m src.textguard.export_v2_inputs`, `python notebooks/build_r4_v2_judge_notebook.py` | seconds |
 | R4 v2 val grid (interim / with v2's judge) | `python -m src.analyze_r4_val v1j` / `… v2` | ~15 s |
-| Tests | `python -m pytest -q` (448) | ~3 min |
+| Tests | `python -m pytest -q` (450) | ~4 min |
 
 Model 5 / judge answers: `results/qwen/*_predictions.csv` + `*_run_meta.json` (in git); the
 Colab notebooks in `notebooks/` are only needed to re-generate them.
@@ -3648,9 +3650,40 @@ P2.4 → same setup class as P5; answers backed up with `git add -f`). `python -
   1.5B judge does **not** make the distinctions v2's questions ask for — `outlook` = `change` on
   94–100% of units, it almost never answers *none* (Economy / Traffic: 0 of 1,778 answers; level
   question: 0 of 122), so off-subject sentences ("Exports decreased …, while imports increased …")
-  get confident claims; 99.4% of genuine texts carry an outlook claim; report-level agreement with
-  the P1 human labels **38.7%** (v1 68%; Health_US 8%). **What catches A2 is the per-unit split, not
-  the question wording.**
+  get confident claims; 99.4% of genuine texts carry an outlook claim (15.7% after V3). **What catches
+  A2 is the per-unit split, not the question wording.**
+* **Human labels — like for like (Aryan's check, 2026-10-16; `summary_r4_val_human_v2.csv`).** The
+  38.7% first reported was **not comparable**: P1's labels are report-level (up / down / none), v2
+  judges sentences, and that basis called any report whose sentences point both ways "mixed" — a
+  label no human used. Comparable report-level readings of v2's sentence claims, with v1 on the
+  same reports:
+
+| basis | 75 reports (P1 50 + SocialGood 25) | P1 sample (50) | Eco / SG / Tra / HUS (75) |
+|---|---|---|---|
+| v2 raw — union of sentence claims (first reported; not comparable) | 38.7% | 48% | 46 / 32 / 83 / 8 |
+| v2 raw — confidence-weighted majority of sentence claims | 61.3% | 64% | 85 / 58 / 92 / 17 |
+| v2 raw — first sentence with a claim (headline) | 62.7% | 66% | 92 / 58 / 92 / 17 |
+| v2 V3 — majority | 62.7% | 66% | 85 / 58 / 92 / 25 |
+| v2 V3 — first claim | 64.0% | 68% | 92 / 58 / 92 / 25 |
+| **v1 — whole-report answer (P6 run)** | **65.3%** | **68%** (= P6's) | 92 / 61 / 100 / 17 |
+
+  On a comparable basis v2's judge reads reports about as well as v1's (64–68% vs 65–68%); both fail
+  Health_US (humans label most of those reports "no change claim"). The paper reports both bases.
+* **Decision (Aryan, 2026-10-16): freeze V3.** Smallest change that fixes the diagnosed failure and
+  keeps **every** domain under the 10% FBR budget; V4 scores slightly better pooled but blocks 18.5%
+  of genuine Traffic and 13.6% of Health_US reports. **Framing:** iterating designs on val is
+  development, not a pre-registration violation — val exists for this; the held-out domains stay
+  untouched and decide. **Disclosed:** V3 was chosen after V0 missed the budget on val; 5 variants
+  were compared on 159 genuine val texts, so val overstates v2. **Paper:** report the path V0 →
+  diagnosis → V3; the supported finding is that the 1.5B judge does not separate change from outlook
+  claims and v2's gain comes from judging each sentence separately (A2's sentence 133 / 133), not
+  from the new question types.
+* **Frozen (`results/summary_r4_v2_frozen.json`, `python -m src.analyze_r4_val freeze`; refuses to
+  rewrite different values):** V3 claim rules (`v2.consolidate`, `units` bug fix); approved rule over
+  72 configs → **f ½ (window 4 monthly, 12 weekly — 12 on both held-out domains), c₀ 0.8, soft gate
+  τ 0, cap k 1σ**; period 12 / 52. Val (M5, pooled): FBR 6.3% (Eco 8.6 / HUS 7.6 / SG 0 / Tra 7.4),
+  DSS flip +0.001, A2 +0.032, exagg −0.024, A3 −0.010, A1 +0.035; real MSE 0.546 (undefended 0.625).
+  Q7 (descriptive): FBR 5.7%, A2 +0.081. Judge answers sha256 `fe5d3306…`, inputs `a155c85c…`.
 * **Diagnosis of V0's 27 false blocks (val, f ¼, c₀ 0.8):** 20 from an `outlook` claim copying a
   past-fact unit's reading (Health_US level sentences 10, Traffic year-over-year sentences 9, Economy
   1) — checked against the short trend, it reintroduces exactly the level / year-over-year failures
@@ -3675,8 +3708,7 @@ P2.4 → same setup class as P5; answers backed up with `git add -f`). `python -
   the approved rule (it picks settings within one design) — open for Aryan. Caveat: 5 variants were
   compared on 159 genuine val texts after seeing V0, so val overstates v2; the held-out test decides.
 
-**Next:** Aryan chooses V0 / V3 / V4 (or another option) → the choice and its settings are frozen
-here, in the pre-registration commit, with this dev iteration disclosed.
+**Next:** the R4 pre-registration (below this draft, replacing it), committed alone.
 
 ### 10c. Open issues
 
@@ -3718,6 +3750,14 @@ here, in the pre-registration commit, with this dev iteration disclosed.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-16 (night, 2) — R4: V3 frozen; human-label comparison corrected
+- Aryan chose V3. Implemented in code (`v2.consolidate`; `units` multi-month-average bug fix);
+  reproduces the exploratory V3 exactly; frozen by the approved rule: f ½, c₀ 0.8, τ 0, k 1
+  (`summary_r4_v2_frozen.json`).
+- Human-label check like for like: the 38.7% was a "mixed"-counting artefact; report-level v2 64–68%
+  vs v1 65–68% (`summary_r4_val_human_v2.csv`).
+- Next: R4 pre-registration (§10g) committed alone; then the held-out build.
 
 ### 2026-10-16 (night) — R4: v2 val judge back; as built misses the FBR budget; variants for Aryan
 - Kaggle v2 val judge verified (fingerprints, one setup, complete, probe 40 / 40) and backed up.

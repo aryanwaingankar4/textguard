@@ -202,16 +202,51 @@ def load_answers(predictions: Path | str, inputs: Path | str, meta: Path | str) 
     return df.drop(columns=["_merge", "row_type"])
 
 
-class JudgeV2:
-    """Claims of every unit of a text, served from a table of answers (one domain)."""
+def consolidate(claims: list[ClaimV2]) -> list[ClaimV2]:
+    """V3 — the claim rules frozen for R4 (Aryan, 2026-10-16), per unit:
 
-    def __init__(self, domain: str, answers: pd.DataFrame):
-        self.domain = domain
+    * a unit that states a national baseline carries **only its level claim** (its change / outlook
+      answers are the judge reading the level twice — v1's Health_US failure);
+    * an **outlook claim equal to its unit's change claim is dropped**: on val the 1.5B judge gave the
+      same answer to both questions on 94–100% of units, so such an "outlook" is the past claim read a
+      second time — checked against the short trend it re-created the level / year-over-year false
+      blocks the frame routing had fixed (20 of 27 false blocks of the as-built v2, V0).
+
+    A forward-looking lie keeps its **change** claim (the judge reads the sentence's direction either
+    way: A2 caught 133 / 133 on val), so the per-unit split — not the outlook question — is what catches
+    it. Chosen after V0 missed the val FBR budget; disclosed in §10g.
+    """
+    by_unit: dict[str, list[ClaimV2]] = {}
+    for c in claims:
+        by_unit.setdefault(c.unit, []).append(c)
+    out = []
+    for cs in by_unit.values():
+        if any(c.kind == "level" for c in cs):
+            out += [c for c in cs if c.kind == "level"]
+            continue
+        ch = next((c for c in cs if c.kind == "change"), None)
+        out += [c for c in cs if not (c.kind == "outlook" and ch is not None and c.direction == ch.direction)]
+    return out
+
+
+class JudgeV2:
+    """Claims of every unit of a text, served from a table of answers (one domain).
+
+    ``consolidated=True`` (the frozen v2, V3) applies :func:`consolidate`; ``False`` gives the raw
+    per-question claims of the as-built design (V0) — reported, never used as v2.
+    """
+
+    def __init__(self, domain: str, answers: pd.DataFrame, consolidated: bool = True):
+        self.domain, self.consolidated = domain, consolidated
         a = answers[answers.domain == domain]
         self._a = {(q, t): (int(d), float(c)) for q, t, d, c in
                    zip(a.question, a.text, a.literal, a.confidence)}
 
     def __call__(self, text: str | None) -> list[ClaimV2]:
+        out = self.raw(text)
+        return consolidate(out) if self.consolidated else out
+
+    def raw(self, text: str | None) -> list[ClaimV2]:
         out = []
         for u in units(text):
             for kind in questions_for(u):

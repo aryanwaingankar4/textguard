@@ -97,7 +97,10 @@ _YOY_PHRASE = re.compile(
     r"12[- ]month (?:change|increase|decrease|decline|rise)|yoy|y/y)\b", re.I)
 _UNCHECKED = re.compile(
     r"\b(?:cumulative(?:ly)?|year[- ]to[- ]date|so far (?:this|in) (?:the )?year|ytd|"
-    r"(?:average|total) .{0,40}?for the (?:two|three|four|six|twelve|\d+) (?:months|weeks) ending|"
+    # bug fix (R4 dev round 2, 2026-10-16): no 40-character limit between "average" and "for the
+    # three months ending" — "The average goods and services deficit decreased $0.1 billion to
+    # $43.2 billion for the three months ending in …" is a multi-month-average claim
+    r"(?:average|total)\b.*?\bfor the (?:two|three|four|six|twelve|\d+) (?:months|weeks) ending|"
     r"(?:two|three|four|six|twelve|\d+)[- ]month (?:average|moving average))\b", re.I)
 
 

@@ -1,0 +1,35 @@
+{
+  "design": "V3 (consolidate: baseline-stating unit -> level claim only; outlook equal to its unit's change claim dropped; multi-month-average units unchecked)",
+  "decided": "Aryan 2026-10-16, after V0 missed the val FBR budget (disclosed dev iteration)",
+  "fixed_on": "val only (original domains, Model 5, pooled)",
+  "rule": "FBR <= 0.10, lowest mean over {flipped, a2_forward, exaggerated, a3_magnitude} of |pooled DSS|; ties: lower FBR, smaller tau, larger k, smaller c0, smaller f",
+  "n_configs": 72,
+  "budget_met": true,
+  "fraction": 0.5,
+  "conf_floor": 0.8,
+  "tau": 0.0,
+  "cap_k": 1.0,
+  "window": {
+    "Economy": 4,
+    "SocialGood": 4,
+    "Traffic": 4,
+    "Health_US": 12,
+    "held-out weekly (Energy, FNSPID; lookback 24)": 12
+  },
+  "period": {
+    "monthly": 12,
+    "weekly": 52
+  },
+  "val": {
+    "fbr": 0.06289308176100629,
+    "obj": 0.016729172794777755,
+    "mse_real": 0.5461714549986595,
+    "dss_flipped": 0.001044533422691321,
+    "dss_a2_forward": 0.03169444802441079,
+    "dss_exaggerated": -0.02399198610692813,
+    "dss_a3_magnitude": -0.010185723625080774,
+    "dss_a1_selective": 0.034546321538687266
+  },
+  "judge_answers_sha256": "fe5d330626bbabd928319dd1918cc730ee608ef4287fe7d27a41001055fa2598",
+  "judge_inputs_sha256": "a155c85c07667725a6a8467f480d56a259e772f9c5bf46c20eaa452e279ffa3c"
+}

@@ -34,6 +34,7 @@ Run: ``python -m src.analyze_r4_val [v1j|v2]`` → ``results/summary_r4_val_grid
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 from itertools import product
 
 import numpy as np
@@ -113,9 +114,10 @@ def texts() -> dict[str, pd.Series]:
 
 # --- claims per (condition, window) -----------------------------------------------------------
 
-def claims_v2(x: pd.DataFrame, tx: dict) -> dict[str, list[list[V.ClaimV2]]]:
+def claims_v2(x: pd.DataFrame, tx: dict, consolidated: bool = True) -> dict[str, list[list[V.ClaimV2]]]:
+    """v2's claims per condition and window — consolidated (V3, frozen) unless asked for V0's raw ones."""
     ans = V.load_answers(V2_ANSWERS, V2_VAL_INPUTS, V2_META)
-    judges = {d: V.JudgeV2(d, ans) for d in DOMAINS}
+    judges = {d: V.JudgeV2(d, ans, consolidated) for d in DOMAINS}
     return {c: [judges[d](tx[c].get((d, s), "")) for d, s in zip(x.domain, x.sample_id)]
             for c in CONDS}
 
@@ -239,29 +241,76 @@ def report_reading(claims: list[V.ClaimV2], kind: str = "change", literal: bool 
         frozenset(ds), "mixed")
 
 
-def judge_checks(tx: dict, x: pd.DataFrame, claims: dict) -> pd.DataFrame:
-    """v2 judge on VAL (descriptive): human labels, A2's forward sentence, false forward claims.
+def _sign_reading(claims: list[V.ClaimV2], domain: str, how: str) -> str:
+    """Report-level reading (literal subject) from unit change claims, comparable with P1's labels.
 
-    * human — P1's labelled reports (all pre-test): the change reading (literal subject) vs
-      ``manual`` (up / down / mixed / none).
-    * a2_caught — share of attacked A2 texts with an outlook claim in the claimed direction.
-    * real_outlook — share of genuine val texts with any non-none outlook claim (Time-MMD
-      reports state facts, so these are mostly judge mistakes that the gate will check).
+    ``majority``: sign of the confidence-weighted sum of the units' change directions (0 → none);
+    ``first``: the first unit (in report order) with a non-none change claim — the headline claim.
+    """
+    pol = V.POLARITY.get(domain, 1)
+    ch = [c for c in claims if c.kind == "change" and c.direction]
+    if not ch:
+        return "none"
+    if how == "first":
+        s = ch[0].direction
+    else:
+        s = float(np.sign(sum(c.direction * c.confidence for c in ch)))
+    return {1: "up", -1: "down", 0: "none"}[int(s * pol)]
+
+
+def human_agreement(ans: pd.DataFrame) -> pd.DataFrame:
+    """Agreement with P1's report-level human labels, on comparable bases (Aryan, 2026-10-16).
+
+    P1 labels say what a *whole report* claims (up / down / none about the literal subject); v2
+    judges *sentences*. ``union`` (any two directions → "mixed", which no label uses) is the basis
+    first reported (38.7%) and is not like-for-like. ``majority`` and ``first`` turn the sentence
+    claims into one report-level reading; ``v3`` uses the frozen consolidated claims (a baseline-
+    stating sentence → level only, so Health_US level reports read "none", as labelled). v1's
+    whole-report change answer (P6's judge run) is scored on the same reports.
     """
     from src.textguard.export_judge_inputs import HUMAN_LABELS
-    ans = V.load_answers(V2_ANSWERS, V2_VAL_INPUTS, V2_META)
+    from src.textguard.text_direction import load_judgements
+    j = load_judgements()
+    j = j[j.question == "change"].assign(key=lambda d: d.text.str.strip()).set_index(["domain", "key"])
     rows = []
     for p in HUMAN_LABELS:
         h = pd.read_csv(p, dtype=str)
         h = h[h.domain.isin(DOMAINS) & h.fact.notna()]
         for d, t, m in zip(h.domain, h.fact, h.manual):
-            rd = report_reading(V.JudgeV2(d, ans)(t), domain=d)
-            rows.append(dict(check="human", domain=d, value=float(rd == m), n=1))
+            raw = V.JudgeV2(d, ans, consolidated=False)(t)
+            v3 = V.consolidate(raw)
+            lit = int(j.loc[(d, t.strip()), "literal"])
+            reads = {"v2 raw — union (first reported)": report_reading(raw, domain=d),
+                     "v2 raw — majority": _sign_reading(raw, d, "majority"),
+                     "v2 raw — first claim": _sign_reading(raw, d, "first"),
+                     "v2 V3 — majority": _sign_reading(v3, d, "majority"),
+                     "v2 V3 — first claim": _sign_reading(v3, d, "first"),
+                     "v1 — whole report (P6 run)": {1: "up", -1: "down", 0: "none"}[lit]}
+            for basis, r in reads.items():
+                rows.append(dict(basis=basis, domain=d, source=Path(p).stem, agree=float(r == m)))
+    df = pd.DataFrame(rows)
+    out = [df.groupby("basis", sort=False).agree.agg(["mean", "size"]).reset_index().assign(domain="pooled (75)")]
+    p50 = df[df.source == "summary_directional_sample"]
+    out.append(p50.groupby("basis", sort=False).agree.agg(["mean", "size"]).reset_index().assign(domain="P1 sample (50)"))
+    out.append(df.groupby(["basis", "domain"], sort=False).agree.agg(["mean", "size"]).reset_index())
+    return pd.concat(out, ignore_index=True).rename(columns={"mean": "agreement", "size": "n"})
+
+
+def judge_checks(tx: dict, x: pd.DataFrame, claims: dict) -> pd.DataFrame:
+    """v2 judge on VAL (descriptive): A2's forward sentence, forward claims on genuine text.
+
+    * a2_caught — share of attacked A2 texts with a claim (change or outlook) in the claimed
+      direction (V3 keeps the change claim of A2's sentence).
+    * real_outlook — share of genuine val texts with any non-none outlook claim after V3.
+    Human-label agreement: :func:`human_agreement`.
+    """
+    rows = []
     has = x.has_text.to_numpy()
     d2 = x["d_a2_forward"].to_numpy()
     for i, dom in enumerate(x.domain):
         if d2[i]:
-            ok = any(c.kind == "outlook" and c.direction == d2[i] for c in claims["a2_forward"][i])
+            ok = any(c.kind in ("change", "outlook") and c.direction == d2[i] and "expected to" in c.unit
+                     for c in claims["a2_forward"][i])
             rows.append(dict(check="a2_caught", domain=dom, value=float(ok), n=1))
         if has[i]:
             fo = any(c.kind == "outlook" and c.direction for c in claims["real"][i])
@@ -298,16 +347,56 @@ def run(judge: str = "v1j", save: bool = True) -> dict[str, pd.DataFrame]:
            "chosen": pd.DataFrame([dict(judge=judge, budget_met=met, **best.drop("cap_k_desc"))])}
     if judge == "v2":
         out["judge"] = judge_checks(tx, x, claims)
+        out["human"] = human_agreement(V.load_answers(V2_ANSWERS, V2_VAL_INPUTS, V2_META))
     if save:
         for k, v in out.items():
             v.to_csv(RESULTS / f"summary_r4_val_{k}_{judge}.csv", index=False)
     return out
 
 
+FROZEN = RESULTS / "summary_r4_v2_frozen.json"
+
+
+def freeze() -> dict:
+    """Write TextGuard v2's frozen settings (V3, val-chosen by the approved rule) — once.
+
+    The R4 held-out analysis refuses to run without this file; it is never rewritten with other
+    values (a re-run must reproduce it exactly).
+    """
+    import hashlib
+    import json
+    out = run("v2", save=True)
+    c = out["chosen"].iloc[0]
+    sha = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
+    windows = {d: window_for(lookback_for(d), float(c.fraction)) for d in DOMAINS}
+    windows["held-out weekly (Energy, FNSPID; lookback 24)"] = window_for(24, float(c.fraction))
+    fz = {"design": "V3 (consolidate: baseline-stating unit -> level claim only; outlook equal to its "
+                    "unit's change claim dropped; multi-month-average units unchecked)",
+          "decided": "Aryan 2026-10-16, after V0 missed the val FBR budget (disclosed dev iteration)",
+          "fixed_on": "val only (original domains, Model 5, pooled)",
+          "rule": "FBR <= 0.10, lowest mean over {flipped, a2_forward, exaggerated, a3_magnitude} of |pooled DSS|; "
+                  "ties: lower FBR, smaller tau, larger k, smaller c0, smaller f",
+          "n_configs": int(len(out["grid"])), "budget_met": bool(c.budget_met),
+          "fraction": float(c.fraction), "conf_floor": float(c.conf_floor), "tau": float(c.tau),
+          "cap_k": float(c.cap_k), "window": windows, "period": V.PERIOD,
+          "val": {k: float(c[k]) for k in ("fbr", "obj", "mse_real", "dss_flipped", "dss_a2_forward",
+                                            "dss_exaggerated", "dss_a3_magnitude", "dss_a1_selective")},
+          "judge_answers_sha256": sha(V2_ANSWERS), "judge_inputs_sha256": sha(V2_VAL_INPUTS)}
+    text = json.dumps(fz, indent=2) + "\n"
+    if FROZEN.exists() and FROZEN.read_text(encoding="utf-8") != text:
+        raise SystemExit(f"{FROZEN.name} exists with different content — v2's settings are frozen")
+    FROZEN.write_text(text, encoding="utf-8")
+    return fz
+
+
 def main() -> None:
     judge = sys.argv[1] if len(sys.argv) > 1 else "v1j"
+    if judge == "freeze":
+        import json
+        print(json.dumps(freeze(), indent=2))
+        return
     if judge not in ("v1j", "v2"):
-        raise SystemExit("usage: python -m src.analyze_r4_val [v1j|v2]")
+        raise SystemExit("usage: python -m src.analyze_r4_val [v1j|v2|freeze]")
     out = run(judge)
     pd.set_option("display.width", 220)
     print(out["chosen"].T.to_string())
