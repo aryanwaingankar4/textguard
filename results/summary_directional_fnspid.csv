@@ -1,51 +1,51 @@
 domain,ticker,date,title,heuristic,claude,subject,note,manual
-FNSPID,NFLX,2019-12-19,"Pivotal Research Maintains Buy on Netflix, Raises Price Target to $425",up,up,self,raised price target,
-FNSPID,NFLX,2019-01-11,UPDATE: Morgan Stanley Lowers Netflix Price Target As Firm Factors 'in modestly lower long-term margins and the broader de-rating in the market'; Remains Bullish 'Netflix can thrive in a more crowded streaming market',none,down,self,lowered price target,
-FNSPID,NFLX,2019-01-18,"Nomura Maintains Neutral on Netflix, Raises Price Target to $320",up,up,self,raised price target,
-FNSPID,NFLX,2019-12-02,"Roku Falls On Morgan Stanley Downgrade, Analyst Thinks Revenue Growth Will Slow In 2020",down,none,other,"about Roku, not Netflix",
-FNSPID,NFLX,2018-07-17,Disappointing Netflix Subscriber Growth Appears To Weigh On Tech Sector,none,down,self,disappointing subscriber growth,
-FNSPID,GOOGL,2019-06-11,Morgan Stanley Says The Market Is Underappreciating Tesla's AV Business,none,none,other,about Tesla,
-FNSPID,GOOGL,2019-12-12,"Facebook, Google Are No Longer The Best Places To Work: Glassdoor",none,none,self,no direction,
-FNSPID,GOOGL,2018-10-19,From Earlier: 'Google app suite costs as much as $40 per phone under new EU Android deal' -The Verge,none,none,self,no direction,
-FNSPID,GOOGL,2020-02-27,Today's Pickup: Four In Five Americans View Foreign Trade As An Opportunity,none,none,market,,
-FNSPID,GOOGL,2020-02-25,"UPDATE: Morgan Stanley Maintains Overweight On Alphabet, Raises Target To $1.65K Notes 'New disclosure has arrived, which we see enabling investors to better value the growth/durability of GOOGL's assets'",none,up,self,raised target,
-FNSPID,MRK,2018-06-04,Merck Gives an Update on its Pivotal Trial of JAVELIN into ASCO,none,none,other,JAVELIN is Merck KGaA's trial - likely mis-tagged,
-FNSPID,MRK,2018-10-30,"The Daily Biotech Pulse: Pfizer And Allergan Earnings, CFO Departures At Acadia And Assertio",none,none,other,,
-FNSPID,MRK,2018-11-01,"Stocks Which Set New 52-Week High Yesterday, October 31st",up,up,market,"52-week-high list; weak, implied by the tag",
-FNSPID,MRK,2020-04-29,"Barclays Maintains Overweight on Merck & Co, Lowers Price Target to $90",down,down,self,lowered price target,
-FNSPID,MRK,2019-10-13,"The Week Ahead In Biotech: FDA Decisions, Johnson & Johnson Among Big Pharma Earnings",none,none,market,,
-FNSPID,NVDA,2019-05-30,Jim Cramer Tweets Building Stake in Nvidia in Charitable Trust,none,none,self,opinion (Cramer buying); ambiguous,
-FNSPID,NVDA,2020-02-27,Department Of Correction: Both DJIA And SPX On Verge Of 10% Decline From Peaks,none,none,market,,
-FNSPID,NVDA,2019-08-16,"A Look At Benzinga Pro's Most-Searched Tickers For August 16, 2019",none,none,market,,
-FNSPID,NVDA,2020-05-21,"Credit Suisse Reinstates Outperform on NVIDIA, Announces $425 Price Target",none,up,self,"reinstated Outperform; a rating level, not a change; ambiguous",
-FNSPID,NVDA,2019-03-19,ON Semiconductor Collaborates With NVIDIA On Cloud-Based Autonomous Vehicle Simulation,none,none,self,"partnership, no direction",
-FNSPID,PFE,2019-06-28,Meet The 3 Biggest Industries Investing In Cannabis,none,none,market,,
-FNSPID,PFE,2018-06-03,The Week Ahead In Biotech: ASCO Presentations Dominate The Headlines,none,none,market,,
-FNSPID,PFE,2019-11-21,"GSK's ViiV Healthcare Announces Exclusive Licensing Agreement With The National Institutes of Health For Investigational ""bNAb"" With Potential For Long-acting HIV Treatment And Prevention",none,none,other,about GSK,
-FNSPID,PFE,2019-05-15,PreMarket Prep Opening NYSE Imbalance Update: Disney 57k Shares To Buy; Pfizer 262k To Buy; P&G 22k To Buy; Square 22k To Buy; Macy's 60k To Buy; General Electric 331k To Sell,none,none,market,order-imbalance list,
-FNSPID,PFE,2019-06-20,GlaxoSmithKline Offered Concessions to Address EU Antitrust Concerns Over Planned JV With Pfizer's Consumer Health Business,none,none,other,about GSK / the JV,
-FNSPID,JNJ,2018-09-27,Geron Plunges As Johnson & Johnson Unit Discontinues Blood Cancer Drug Collaboration,none,none,other,about Geron,
-FNSPID,JNJ,2020-03-06,"Credit Suisse Maintains Outperform on Johnson & Johnson, Lowers Price Target to $159",down,down,self,lowered price target,
-FNSPID,JNJ,2020-03-13,Shares of several healthcare companies are trading higher as the market rebounds following Thursday's selloff. NOTE: Since the coronavirus outbreak the healthcare sector has been extremely volatile.,up,up,sector,healthcare names trading higher,
-FNSPID,JNJ,2020-05-05,"The Daily Biotech Pulse: Bio-Rad's Coronavirus Test Gets EUA, Beat-And-Raise Quarter From GenMark, Adverum's Positive Gene Therapy Readout",up,none,other,lexicon fired on another company's beat,
-FNSPID,JNJ,2018-12-14,Hearing Wells Fargo Out Negative on Bausch Health Off J&J Reuters Report,none,none,other,about Bausch Health,
-FNSPID,MU,2019-12-19,"UPDATE: Rosenblatt Maintains Buy On Micron, Raises Target To $100 Notes 'We have now entered the early phases of a memory cycle recovery with Micron's results and outlook last night'",none,up,self,raised target,
-FNSPID,MU,2019-07-24,Micron Technology Option Alert: Aug 2 $50 Calls Sweep (12) near the Ask: 514 @ $0.69 vs 1443 OI; Earnings 9/19 After Close [est] Ref=$47.725,none,none,self,options flow; ambiguous,
-FNSPID,MU,2019-09-26,A Preview Of Micron Technology Earnings,none,none,self,preview,
-FNSPID,MU,2020-05-18,"Shares of several technology companies are trading higher amid market strength as news from a Moderna trial stoked optimism about a potential coronavirus vaccine, which has raised hopes of an economic rebound.",up,up,sector,tech names trading higher,
-FNSPID,MU,2019-10-21,Shares of companies in the semiconductor space are trading higher amid US-China trade optimism. The sector has China exposure and has been highly affected by trade tensions this year.,up,up,sector,semiconductors trading higher,
-FNSPID,FDX,2019-02-21,Growing Forth Worth Logistics Hub Among BNSF's Capital Spending Plans For 2019,none,none,other,about BNSF,
-FNSPID,FDX,2019-05-07,"Jim Cramer Shares His Thoughts On Blackstone, General Dynamics, GW Pharma And More",none,none,other,,
-FNSPID,FDX,2019-08-07,FedEx Spokesperson Says Change Related To Amazon Ground Delivery Is Consistent With Strategy To Focus On Broader E-Commerce Market,none,none,self,no direction,
-FNSPID,FDX,2019-12-18,"UPDATE: Wells Fargo Maintains Overweight On FedEx, Lowers Target To $183 Notes 'While the cost challenges in Ground were a negative surprise in the quarter, we remain Overweight and continue to take the view that FY2020 earnings will be a likely bottom'",none,down,self,lowered target,
-FNSPID,FDX,2018-11-20,FedEx Freight To Operate Last-Mile Pilots In 5 Markets During First Half Of 2019,none,none,self,no direction,
-FNSPID,PCG,2018-06-21,PG&E Corp 8-K Shows Co. To Record Estimated Pre-Tax Charge Of $2.5B For Quarter Ending June 30 Related To Northern California Wildfires,none,down,self,$2.5B pre-tax charge,
-FNSPID,PCG,2019-10-10,UPDATE: PG&E Says 'Dangerous weather conditions are expected to continue in some parts of the Sierra Foothills and Bay Area until midday Thursday',none,none,self,no direction,
-FNSPID,PCG,2020-05-04,PG&E shares are trading higher after UBS upgraded the stock from Neutral to Buy.,up,up,self,trading higher on upgrade,
-FNSPID,PCG,2019-01-24,"UPDATE: PG&E Shares Pullback From Session High, Now Up 65%",none,up,self,now up 65%,
-FNSPID,PCG,2019-09-20,PG&E shares are trading lower after the company reached an agreement with wildfire victims. The agreement clears a path for the company's bankruptcy to be resolved by the June 2020 deadline.,down,down,self,trading lower,
-FNSPID,LLY,2018-08-06,"Stocks Which Set New 52-Week Highs Friday, August 3rd",up,up,market,"52-week-high list; weak, implied by the tag",
-FNSPID,LLY,2018-12-12,Lilly And AC Immune Announce License And Collaboration Agreement To Focus On Potential Alzheimers Treatment; AC Immune To Receive CHF80M Upfront And IS Eligible For Additional Milestones While Lilly Will Purchase A $50M Note Convertible Equity Position,none,none,self,"deal, no direction",
-FNSPID,LLY,2018-08-30,"French Biopharma Co. Focused On Treatment For Diabetes, Etc, Adocia, Issues Press Release Highlighting Update To Amount Of Damages In Case Against Eli Lilly To ~$1.8B",none,none,other,about Adocia,
-FNSPID,LLY,2020-02-06,"Mizuho Initiates Coverage On Eli Lilly with Neutral Rating, Announces $148 Price Target",none,none,self,initiated at Neutral,
-FNSPID,LLY,2020-01-23,"The Daily Biotech Pulse: Roche Reports Positive SMA Data Readout, Vir Biotech To Work On Virus Treatment",none,none,other,,
+FNSPID,NFLX,2019-12-19,"Pivotal Research Maintains Buy on Netflix, Raises Price Target to $425",up,up,self,raised price target,up
+FNSPID,NFLX,2019-01-11,UPDATE: Morgan Stanley Lowers Netflix Price Target As Firm Factors 'in modestly lower long-term margins and the broader de-rating in the market'; Remains Bullish 'Netflix can thrive in a more crowded streaming market',none,down,self,lowered price target,down
+FNSPID,NFLX,2019-01-18,"Nomura Maintains Neutral on Netflix, Raises Price Target to $320",up,up,self,raised price target,up
+FNSPID,NFLX,2019-12-02,"Roku Falls On Morgan Stanley Downgrade, Analyst Thinks Revenue Growth Will Slow In 2020",down,none,other,"about Roku, not Netflix",none
+FNSPID,NFLX,2018-07-17,Disappointing Netflix Subscriber Growth Appears To Weigh On Tech Sector,none,down,self,disappointing subscriber growth,down
+FNSPID,GOOGL,2019-06-11,Morgan Stanley Says The Market Is Underappreciating Tesla's AV Business,none,none,other,about Tesla,none
+FNSPID,GOOGL,2019-12-12,"Facebook, Google Are No Longer The Best Places To Work: Glassdoor",none,none,self,no direction,none
+FNSPID,GOOGL,2018-10-19,From Earlier: 'Google app suite costs as much as $40 per phone under new EU Android deal' -The Verge,none,none,self,no direction,none
+FNSPID,GOOGL,2020-02-27,Today's Pickup: Four In Five Americans View Foreign Trade As An Opportunity,none,none,market,,none
+FNSPID,GOOGL,2020-02-25,"UPDATE: Morgan Stanley Maintains Overweight On Alphabet, Raises Target To $1.65K Notes 'New disclosure has arrived, which we see enabling investors to better value the growth/durability of GOOGL's assets'",none,up,self,raised target,up
+FNSPID,MRK,2018-06-04,Merck Gives an Update on its Pivotal Trial of JAVELIN into ASCO,none,none,other,JAVELIN is Merck KGaA's trial - likely mis-tagged,none
+FNSPID,MRK,2018-10-30,"The Daily Biotech Pulse: Pfizer And Allergan Earnings, CFO Departures At Acadia And Assertio",none,none,other,,none
+FNSPID,MRK,2018-11-01,"Stocks Which Set New 52-Week High Yesterday, October 31st",up,up,market,"52-week-high list; weak, implied by the tag",none
+FNSPID,MRK,2020-04-29,"Barclays Maintains Overweight on Merck & Co, Lowers Price Target to $90",down,down,self,lowered price target,down
+FNSPID,MRK,2019-10-13,"The Week Ahead In Biotech: FDA Decisions, Johnson & Johnson Among Big Pharma Earnings",none,none,market,,none
+FNSPID,NVDA,2019-05-30,Jim Cramer Tweets Building Stake in Nvidia in Charitable Trust,none,none,self,opinion (Cramer buying); ambiguous,none
+FNSPID,NVDA,2020-02-27,Department Of Correction: Both DJIA And SPX On Verge Of 10% Decline From Peaks,none,none,market,,none
+FNSPID,NVDA,2019-08-16,"A Look At Benzinga Pro's Most-Searched Tickers For August 16, 2019",none,none,market,,none
+FNSPID,NVDA,2020-05-21,"Credit Suisse Reinstates Outperform on NVIDIA, Announces $425 Price Target",none,up,self,"reinstated Outperform; a rating level, not a change; ambiguous",up
+FNSPID,NVDA,2019-03-19,ON Semiconductor Collaborates With NVIDIA On Cloud-Based Autonomous Vehicle Simulation,none,none,self,"partnership, no direction",none
+FNSPID,PFE,2019-06-28,Meet The 3 Biggest Industries Investing In Cannabis,none,none,market,,none
+FNSPID,PFE,2018-06-03,The Week Ahead In Biotech: ASCO Presentations Dominate The Headlines,none,none,market,,none
+FNSPID,PFE,2019-11-21,"GSK's ViiV Healthcare Announces Exclusive Licensing Agreement With The National Institutes of Health For Investigational ""bNAb"" With Potential For Long-acting HIV Treatment And Prevention",none,none,other,about GSK,none
+FNSPID,PFE,2019-05-15,PreMarket Prep Opening NYSE Imbalance Update: Disney 57k Shares To Buy; Pfizer 262k To Buy; P&G 22k To Buy; Square 22k To Buy; Macy's 60k To Buy; General Electric 331k To Sell,none,none,market,order-imbalance list,none
+FNSPID,PFE,2019-06-20,GlaxoSmithKline Offered Concessions to Address EU Antitrust Concerns Over Planned JV With Pfizer's Consumer Health Business,none,none,other,about GSK / the JV,none
+FNSPID,JNJ,2018-09-27,Geron Plunges As Johnson & Johnson Unit Discontinues Blood Cancer Drug Collaboration,none,none,other,about Geron,none
+FNSPID,JNJ,2020-03-06,"Credit Suisse Maintains Outperform on Johnson & Johnson, Lowers Price Target to $159",down,down,self,lowered price target,down
+FNSPID,JNJ,2020-03-13,Shares of several healthcare companies are trading higher as the market rebounds following Thursday's selloff. NOTE: Since the coronavirus outbreak the healthcare sector has been extremely volatile.,up,up,sector,healthcare names trading higher,up
+FNSPID,JNJ,2020-05-05,"The Daily Biotech Pulse: Bio-Rad's Coronavirus Test Gets EUA, Beat-And-Raise Quarter From GenMark, Adverum's Positive Gene Therapy Readout",up,none,other,lexicon fired on another company's beat,none
+FNSPID,JNJ,2018-12-14,Hearing Wells Fargo Out Negative on Bausch Health Off J&J Reuters Report,none,none,other,about Bausch Health,none
+FNSPID,MU,2019-12-19,"UPDATE: Rosenblatt Maintains Buy On Micron, Raises Target To $100 Notes 'We have now entered the early phases of a memory cycle recovery with Micron's results and outlook last night'",none,up,self,raised target,up
+FNSPID,MU,2019-07-24,Micron Technology Option Alert: Aug 2 $50 Calls Sweep (12) near the Ask: 514 @ $0.69 vs 1443 OI; Earnings 9/19 After Close [est] Ref=$47.725,none,none,self,options flow; ambiguous,none
+FNSPID,MU,2019-09-26,A Preview Of Micron Technology Earnings,none,none,self,preview,none
+FNSPID,MU,2020-05-18,"Shares of several technology companies are trading higher amid market strength as news from a Moderna trial stoked optimism about a potential coronavirus vaccine, which has raised hopes of an economic rebound.",up,up,sector,tech names trading higher,up
+FNSPID,MU,2019-10-21,Shares of companies in the semiconductor space are trading higher amid US-China trade optimism. The sector has China exposure and has been highly affected by trade tensions this year.,up,up,sector,semiconductors trading higher,up
+FNSPID,FDX,2019-02-21,Growing Forth Worth Logistics Hub Among BNSF's Capital Spending Plans For 2019,none,none,other,about BNSF,none
+FNSPID,FDX,2019-05-07,"Jim Cramer Shares His Thoughts On Blackstone, General Dynamics, GW Pharma And More",none,none,other,,none
+FNSPID,FDX,2019-08-07,FedEx Spokesperson Says Change Related To Amazon Ground Delivery Is Consistent With Strategy To Focus On Broader E-Commerce Market,none,none,self,no direction,none
+FNSPID,FDX,2019-12-18,"UPDATE: Wells Fargo Maintains Overweight On FedEx, Lowers Target To $183 Notes 'While the cost challenges in Ground were a negative surprise in the quarter, we remain Overweight and continue to take the view that FY2020 earnings will be a likely bottom'",none,down,self,lowered target,down
+FNSPID,FDX,2018-11-20,FedEx Freight To Operate Last-Mile Pilots In 5 Markets During First Half Of 2019,none,none,self,no direction,none
+FNSPID,PCG,2018-06-21,PG&E Corp 8-K Shows Co. To Record Estimated Pre-Tax Charge Of $2.5B For Quarter Ending June 30 Related To Northern California Wildfires,none,down,self,$2.5B pre-tax charge,down
+FNSPID,PCG,2019-10-10,UPDATE: PG&E Says 'Dangerous weather conditions are expected to continue in some parts of the Sierra Foothills and Bay Area until midday Thursday',none,none,self,no direction,none
+FNSPID,PCG,2020-05-04,PG&E shares are trading higher after UBS upgraded the stock from Neutral to Buy.,up,up,self,trading higher on upgrade,up
+FNSPID,PCG,2019-01-24,"UPDATE: PG&E Shares Pullback From Session High, Now Up 65%",none,up,self,now up 65%,up
+FNSPID,PCG,2019-09-20,PG&E shares are trading lower after the company reached an agreement with wildfire victims. The agreement clears a path for the company's bankruptcy to be resolved by the June 2020 deadline.,down,down,self,trading lower,down
+FNSPID,LLY,2018-08-06,"Stocks Which Set New 52-Week Highs Friday, August 3rd",up,up,market,"52-week-high list; weak, implied by the tag",none
+FNSPID,LLY,2018-12-12,Lilly And AC Immune Announce License And Collaboration Agreement To Focus On Potential Alzheimers Treatment; AC Immune To Receive CHF80M Upfront And IS Eligible For Additional Milestones While Lilly Will Purchase A $50M Note Convertible Equity Position,none,none,self,"deal, no direction",none
+FNSPID,LLY,2018-08-30,"French Biopharma Co. Focused On Treatment For Diabetes, Etc, Adocia, Issues Press Release Highlighting Update To Amount Of Damages In Case Against Eli Lilly To ~$1.8B",none,none,other,about Adocia,none
+FNSPID,LLY,2020-02-06,"Mizuho Initiates Coverage On Eli Lilly with Neutral Rating, Announces $148 Price Target",none,none,self,initiated at Neutral,none
+FNSPID,LLY,2020-01-23,"The Daily Biotech Pulse: Roche Reports Positive SMA Data Readout, Vir Biotech To Work On Virus Treatment",none,none,other,,none

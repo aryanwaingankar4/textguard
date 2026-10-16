@@ -136,8 +136,8 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
        (R3's cells, asserted edits only), `tests/test_r4_heldout.py` (11, fake-model notebook runs).
 4. [ ] **Runs on Kaggle** — `r4_m5_kaggle`, `r4_qwen7b_kaggle`, `r4_judge_v1_kaggle`,
        `r4_judge_v2_kaggle` (one dataset holding `r4_heldout_inputs.csv`); outputs →
-       `results/qwen/`, verified, backed up with `git add -f`. **Then** Aryan's FNSPID 50-label
-       spot-check, then the analysis (loaders + tables exactly as §10g).
+       `results/qwen/`, verified, backed up with `git add -f`. **Then** the analysis (loaders + tables
+       exactly as §10g). FNSPID 50-label spot-check **done** 2026-10-16: 48 / 50, κ 0.92 (§10g).
 5. [ ] Analysis → §9 "R4" → `paper/sections/r4_textguard_v2.tex` → commit & push.
 
 **Constraints a fresh session must respect in R4:**
@@ -3517,6 +3517,19 @@ whether each headline conclusion still holds.
   limitation (famous stocks; public gasoline prices). **No name-masking run.**
 * **Directional-label spot-check:** Claude's labels of the 50 sampled FNSPID headlines are in
   `results/summary_directional_fnspid.csv` (`manual` column for Aryan) — checked before the analysis.
+  **Done 2026-10-16 (Aryan), before any held-out judge or model output existed:**
+  * **Aryan's labelling rule:** a sector headline saying the stock's group is trading higher / lower
+    counts as up / down; market-wide lists (e.g. 52-week-high lists) count as none; clearly good or
+    bad company news counts as up / down.
+  * **Revision (Aryan, same day, before any judge output):** NFLX 2018-07-17 ("Disappointing Netflix
+    Subscriber Growth Appears To Weigh On Tech Sector") and PCG 2018-06-21 ("PG&E Corp 8-K Shows Co. To
+    Record Estimated Pre-Tax Charge Of $2.5B …") changed none → **down** under the company-news part of
+    the rule. First pass agreed 46 / 50.
+  * **Final:** manual none 33 / up 10 / down 7 (34% directional); **Claude vs Aryan 48 / 50 (96%),
+    Cohen's κ 0.92.** The 2 disagreements are 52-week-high lists (MRK 2018-11-01, LLY 2018-08-06):
+    Claude up, Aryan none (market-wide list). Labels merged from Aryan's Excel export
+    (`fnspid_labels_manual.xlsx.csv`, matched on ticker + title, all 50; every other column verified
+    unchanged).
 * **σ (decided, Aryan 2026-10-12):** Energy = std of the 520 weeks before its text window.
   **FNSPID = std of the 104 weekly closes (as traded) before the period**, per stock — a 10-year σ
   is mostly trend for stocks (a typical weekly move is 0.05–0.15 σ_10y vs 0.09–0.35 σ_2y; §6 "R4
