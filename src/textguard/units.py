@@ -109,13 +109,21 @@ def _month_years(unit: str) -> list[tuple[str, int]]:
     return out
 
 
+# A unit that also names a short-term comparison ("… $0.099 per gallon less than last week and
+# $0.590 under a year ago") is checked against the TREND: its verb states the short-term move.
+# Decided by Aryan 2026-10-16 (option a) and pre-registered; prompted by Energy's text format (seen
+# in the R4 data checks), with no outcome data used — no original-domain val unit has both.
+_SHORT_TERM = re.compile(r"\b(?:(?:last|previous|prior|the preceding)\s+(?:week|month)'?s?|"
+                         r"week[- ]over[- ]week|month[- ]over[- ]month|a week (?:ago|earlier)|"
+                         r"a month (?:ago|earlier))\b", re.I)
+
+
 def frame(unit: str) -> str:
     """'yoy' | 'unchecked' | 'trend' — the reference frame of a unit's change claim (fixed rule)."""
     if _UNCHECKED.search(unit):
         return "unchecked"
-    if _YOY_PHRASE.search(unit):
-        return "yoy"
     my = _month_years(unit)
-    if any(m1 == m2 and y2 == y1 - 1 for m1, y1 in my for m2, y2 in my):
+    yoy = bool(_YOY_PHRASE.search(unit)) or any(m1 == m2 and y2 == y1 - 1 for m1, y1 in my for m2, y2 in my)
+    if yoy and not _SHORT_TERM.search(unit):
         return "yoy"
     return "trend"

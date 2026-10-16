@@ -108,8 +108,9 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
 1b. [x] **Semantic-mismatch flags (2026-10-16, text only):** FNSPID flip / A1 bundles whose edited
        headline holds a causal connector — `python -m src.attacks.connectors_r4`. **Narrow rule**
        (Aryan): flip 52 / 108, A1 13 / 31 flagged; with/without reporting pre-stated in §10g.
-1d. [ ] **Held-out judge subjects** (v1 `QUESTIONS`, v2 `SUBJECTS`) — proposed in §10g; Aryan to
-       confirm, plus the Energy mixed-frame question (§10g) — then they go into the pre-registration.
+1d. [x] **Held-out judge subjects** approved as proposed; Energy dual-comparison rule = option (a),
+       implemented in `units.frame` (0 val units affected); round-2 pairs accepted (Aryan 2026-10-16,
+       §10g). Subjects are coded with the held-out build (step 3), after the pre-registration.
 1c. [ ] **TextGuard v2 design — BEFORE the pre-registration, so its settings are frozen inside it
        (order decided by Aryan 2026-10-16).** Developed on the **original domains' val split only**;
        no held-out data, no original-domain test data. Status:
@@ -201,7 +202,7 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
 | R4 FNSPID semantic-mismatch flags | `python -m src.attacks.connectors_r4` | seconds |
 | R4 v2 val judge input → Kaggle notebook | `python -m src.textguard.export_v2_inputs`, `python notebooks/build_r4_v2_judge_notebook.py` | seconds |
 | R4 v2 val grid (interim / with v2's judge) | `python -m src.analyze_r4_val v1j` / `… v2` | ~15 s |
-| Tests | `python -m pytest -q` (445) | ~3 min |
+| Tests | `python -m pytest -q` (448) | ~3 min |
 
 Model 5 / judge answers: `results/qwen/*_predictions.csv` + `*_run_meta.json` (in git); the
 Colab notebooks in `notebooks/` are only needed to re-generate them.
@@ -3554,8 +3555,9 @@ whether each headline conclusion still holds.
   stratified fallback (by share of stock-specific directional headlines edited) is not used.**
   Final clean counts: Energy flip / A1 / A2 / A3 345 / 102 / 345 / 218 (unchanged); FNSPID flip / A1 /
   A2 108 / 31 / 538.
-* **Held-out judge subjects — PROPOSED 2026-10-16 (Aryan to confirm; fixed in the pre-registration,
-  before any judge output on either domain):**
+* **Held-out judge subjects — APPROVED as proposed (Aryan, 2026-10-16); fixed in the pre-registration,
+  before any judge output on either domain** (implemented with the held-out build, step 3 — v1's
+  `judge_prompt.py` is not edited; the held-out entries live in a separate module):
   * **v1** (frozen prompt and code; only a `QUESTIONS` entry per new domain, v1's own convention —
     the claim's frame goes into the subject, as for Traffic): Energy → change, "the U.S. national
     average retail price of regular gasoline compared with the previous week" (the attacked claim
@@ -3566,13 +3568,16 @@ whether each headline conclusion still holds.
   * **v2** (`SUBJECTS`; frame read from the unit): Energy → "the U.S. national average retail price
     of regular gasoline"; FNSPID → "the share price of {Company} stock" per stock. The `outlook`
     question then covers analyst targets / ratings ("Raises Price Target to $X" predicts up).
-  * **Open design question (noticed from Energy's text format, not from any output):** Energy's
-    price sentence states both comparisons in one unit ("… $0.099 per gallon less than last week
-    and $0.590 under a year ago"); `units.frame` returns *yoy* for it, so v2 would check the
-    week-over-week claim against year-over-year evidence. No original-domain val unit mixes the two
-    (checked), so val cannot inform it. Options: (a) pre-register the generic rule "a unit that also
-    names a short-term comparison (last / previous week or month) is checked against the trend",
-    disclosed as motivated by Energy's format; (b) leave v2 as is and report the mismatch.
+  * **Dual-comparison units — DECIDED: option (a) (Aryan, 2026-10-16), pre-registered:** a unit that
+    also names a short-term comparison (last / previous / prior week or month, week-over-week,
+    month-over-month, a week / month ago) is checked against the **trend**, even if it names a
+    year-over-year comparison too (`units.frame`, `_SHORT_TERM`). **Disclosure:** the rule was
+    prompted by Energy's text format ("… $0.099 per gallon less than last week and $0.590 under a
+    year ago"), seen in the R4 data checks; **no outcome data was used** — no model, judge or metric
+    output exists on Energy, and no original-domain val unit contains both comparisons (checked:
+    0 units affected), so val results are unchanged.
+* **Round-2 review pairs — accepted (Aryan, 2026-10-16).** Pair 4 (PCG A1, cause after "Say That")
+  is recorded as a residual of the semantic limitation (§8), not patched.
 
 #### TextGuard v2 — proposed design (DRAFT, 2026-10-16; **nothing frozen** — Aryan reviews first)
 
@@ -3676,6 +3681,14 @@ reviews the chosen settings → frozen here, in the pre-registration commit.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-16 (evening) — R4: subjects + dual-comparison rule decided; /doctor commit reverted
+- Aryan: held-out judge subjects approved; Energy dual-comparison units → trend (option a, disclosed
+  as prompted by Energy's format, no outcome data; 0 val units affected); round-2 pairs accepted.
+- `2804ea7` (CLAUDE.md §11/§13/§16 → skills) **reverted with `git revert`** (`b84cdb3`): it had moved a
+  constraint ("financial-attack papers are required reading for P8"), the audit-report scope and
+  the viva framing out of the always-loaded file. CLAUDE.md is back to its original text.
+- Next: wait for the Kaggle v2 val judge CSV.
 
 ### 2026-10-16 (later) — R4: Aryan's decisions + review fixes; held-out coverage final; pushed
 - Decided (Aryan): narrow connector rule; v2 selection rule = lowest mean over attacks of |pooled

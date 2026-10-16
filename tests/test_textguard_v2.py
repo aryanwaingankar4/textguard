@@ -58,6 +58,10 @@ def test_headline_bundle_gives_one_unit_per_line():
     ("The average deficit decreased $2.1 billion for the three months ending in November.", "unchecked"),
     ("The deficit was $42.4 billion in November 2015, down $2.2 billion from October 2015.", "trend"),
     ("ILI was 2.9%, above the national baseline of 2.1%.", "trend"),
+    # a unit naming a short-term comparison too is checked against the trend (Aryan, 2026-10-16)
+    ("The price decreased to $2.679, $0.099 per gallon less than last week and $0.590 under a year ago.", "trend"),
+    ("The price was $1.812, $0.041 lower than last week’s price and $1.029 under a year ago.", "trend"),
+    ("a -0.1% decline from February 2018, for February 2019", "yoy"),
 ])
 def test_frame(unit, expected):
     assert frame(unit) == expected
