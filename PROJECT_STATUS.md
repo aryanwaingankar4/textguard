@@ -126,17 +126,18 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
        * [x] **Aryan chose V3 (2026-10-16)** → implemented (`v2.consolidate`), tuned by the approved
          rule, **frozen** in `results/summary_r4_v2_frozen.json` (f ½, c₀ 0.8, τ 0, k 1); human-label
          agreement recomputed like for like (64–68% v2 vs 65–68% v1) — §10g.
-2. [ ] **Pre-register R4 (§10g) and commit it alone** — before any v2 test result and before any model
-       output on the held-out domains: held-out domains frozen; v2's design space and the **val-only**
-       development protocol (what may be tuned, on which data); test = held-out domains once (v1 and
-       v2 both, same targets), **including R3's adaptive attacks A1–A3 regenerated on the held-out
-       domains** (rule below: a modified TextGuard is never evaluated on the current test split); targets
-       (M5, Q7, M3-F, M4-F); SESOI (R2's: 0.05σ / 5 pp / 10%, FBR budget 10%); one Holm family per
-       question; decision rules incl. what "v2 improves on v1" means; robustness tables pre-stated.
-       Text-validity scan (`consistency_r3`, incl. C8) applied to any new attack text **before** runs.
-3. [ ] Build v2 on val; generate held-out-domain texts/attacks (P3 + R3 rules), validate, scan.
-4. [ ] Runs (GPU on Kaggle for M5/Q7/judge — §7e pattern: one input CSV, sha256 asserted, one setup
-       per file; FinBERT heads need training on the new domains — CPU), back up with `git add -f`.
+2. [x] **R4 pre-registered (§10g), committed alone and pushed — `1e13815` (2026-10-16)**, after v2 was
+       frozen as V3 (`0a58aba`). Targets M5 (primary) and Q7; FinBERT heads dropped (2026-10-12).
+3. [x] **Held-out build (2026-10-16):** `heldout_questions.py` (approved subjects, pasted verbatim
+       into the judge notebooks — v1/v2 prompt files untouched), `heldout.py` `history` column (texts
+       byte-identical), `export_r4_inputs.py` → `results/qwen/r4_heldout_inputs.csv` (refuses texts
+       other than the pre-registered sha256s; 9,145 forecast rows / 4,609 distinct prompts, 2,913 v1 +
+       21,312 v2 judge questions, 40 probe), `notebooks/build_r4_heldout_notebooks.py` → 4 notebooks
+       (R3's cells, asserted edits only), `tests/test_r4_heldout.py` (11, fake-model notebook runs).
+4. [ ] **Runs on Kaggle** — `r4_m5_kaggle`, `r4_qwen7b_kaggle`, `r4_judge_v1_kaggle`,
+       `r4_judge_v2_kaggle` (one dataset holding `r4_heldout_inputs.csv`); outputs →
+       `results/qwen/`, verified, backed up with `git add -f`. **Then** Aryan's FNSPID 50-label
+       spot-check, then the analysis (loaders + tables exactly as §10g).
 5. [ ] Analysis → §9 "R4" → `paper/sections/r4_textguard_v2.tex` → commit & push.
 
 **Constraints a fresh session must respect in R4:**
@@ -203,7 +204,9 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
 | R4 FNSPID semantic-mismatch flags | `python -m src.attacks.connectors_r4` | seconds |
 | R4 v2 val judge input → Kaggle notebook | `python -m src.textguard.export_v2_inputs`, `python notebooks/build_r4_v2_judge_notebook.py` | seconds |
 | R4 v2 val grid (interim / with v2's judge) | `python -m src.analyze_r4_val v1j` / `… v2` | ~15 s |
-| Tests | `python -m pytest -q` (450) | ~4 min |
+| R4 v2 freeze (refuses different values) / dev variants | `python -m src.analyze_r4_val freeze` / `python -m src.explore_r4_v2_variants` | ~1 min |
+| R4 held-out Kaggle input → notebooks | `python -m src.models.export_r4_inputs`, `python notebooks/build_r4_heldout_notebooks.py` | ~2 min |
+| Tests | `python -m pytest -q` (461) | ~2–4 min |
 
 Model 5 / judge answers: `results/qwen/*_predictions.csv` + `*_run_meta.json` (in git); the
 Colab notebooks in `notebooks/` are only needed to re-generate them.
@@ -3908,6 +3911,12 @@ notebooks, tests) → Kaggle runs → verification and backup → analysis exact
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-16 (night, 3) — R4 pre-registered (alone); held-out build ready for Kaggle
+- §10g pre-registration committed alone and pushed (`1e13815`): m = 79 per target, "v2 improves on
+  v1" four-part rule, "closes R3's A2 gap", expectations, robustness tables, disclosures.
+- Held-out build: subjects module, history column, export (sha-guarded), 4 Kaggle notebooks, 11 tests.
+- Next: Aryan runs the 4 Kaggle notebooks; then verification, FNSPID label spot-check, analysis.
 
 ### 2026-10-16 (night, 2) — R4: V3 frozen; human-label comparison corrected
 - Aryan chose V3. Implemented in code (`v2.consolidate`; `units` multi-month-average bug fix);

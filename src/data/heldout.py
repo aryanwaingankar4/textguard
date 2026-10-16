@@ -41,7 +41,10 @@ ENERGY_LAG = 2
 ENERGY_SIGMA_WEEKS = 520
 FNSPID_SIGMA_WEEKS, FNSPID_SIGMA_ALT_WEEKS = 104, 520
 COLUMNS = ["domain", "series", "sample_id", "origin", "target_date", "lookback", "y_true", "text",
-           "has_text", "sigma", "sigma_alt"]
+           "has_text", "sigma", "sigma_alt", "history"]
+# ``history`` (added 2026-10-16, R4 pre-registration): every value of the series before the target —
+# the longer past TextGuard v2 is given explicitly for year-over-year claims. It ends with
+# ``lookback``; nothing at or after the target is in it.
 
 
 def energy_windows() -> pd.DataFrame:
@@ -58,7 +61,8 @@ def energy_windows() -> pd.DataFrame:
                          origin=df["start_date"].iloc[t - 1], target_date=df["start_date"].iloc[t],
                          lookback=vals[t - LOOKBACK:t].copy(), y_true=float(vals[t]),
                          text=df["text"].iloc[t] if df["has_text"].iloc[t] else None,
-                         has_text=bool(df["has_text"].iloc[t]), sigma=sigma, sigma_alt=sigma_alt))
+                         has_text=bool(df["has_text"].iloc[t]), sigma=sigma, sigma_alt=sigma_alt,
+                         history=vals[:t].copy()))
     return pd.DataFrame(rows, columns=COLUMNS)
 
 
@@ -102,7 +106,8 @@ def fnspid_windows(tickers=fnspid.SELECTED) -> pd.DataFrame:
                              origin=o, target_date=tgt,
                              lookback=w["close"].iloc[k - LOOKBACK + 1:k + 1].to_numpy(float),
                              y_true=float(w["close"].iloc[k + 1]), text=text, has_text=text is not None,
-                             sigma=sigma, sigma_alt=sigma_alt))
+                             sigma=sigma, sigma_alt=sigma_alt,
+                             history=w["close"].iloc[:k + 1].to_numpy(float)))
     return pd.DataFrame(rows, columns=COLUMNS)
 
 
