@@ -118,13 +118,12 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
          §10g "TextGuard v2 — proposed design (DRAFT)";
        * [x] interim val results with v1's answers (judge-free parts only) —
          `python -m src.analyze_r4_val v1j`, §10g;
-       * [ ] **Kaggle: v2 judge on val** — `notebooks/r4_v2_val_judge_kaggle.ipynb`, input
-         `results/qwen/r4v2_val_inputs.csv` (2,898 questions, sha256 `a155c85c…`), ~10 min on T4;
-         back up answers with `git add -f`;
+       * [x] **Kaggle: v2 judge on val** — done 2026-10-16 (2,898 / 2,898, probe 40 / 40), backed up;
        * [x] selection rule approved (Aryan 2026-10-16): lowest mean over attacks of |pooled DSS|
          under FBR ≤ 10% (§10g);
-       * [ ] `python -m src.analyze_r4_val v2` → full val grid → **Aryan reviews the chosen
-         settings** → only then freeze (inside §10g, step 2).
+       * [x] `python -m src.analyze_r4_val v2` — **as built, budget not met (FBR 17.0%)**; the judge
+         does not separate outlook from change; dev-round-2 variants V1–V4 (§10g);
+       * [ ] **Aryan chooses V0 / V3 / V4** → frozen inside §10g (step 2), dev iteration disclosed.
 2. [ ] **Pre-register R4 (§10g) and commit it alone** — before any v2 test result and before any model
        output on the held-out domains: held-out domains frozen; v2's design space and the **val-only**
        development protocol (what may be tuned, on which data); test = held-out domains once (v1 and
@@ -3637,9 +3636,47 @@ same as clip): catching it needs v2's own judge (`outlook`). The cap costs Healt
 genuine Health_US text effects exceed 1σ) and halves A2. Q7 (descriptive): v1 +0.259 → v2-interim
 +0.111 on A2, FBR 3.1%.
 
-**Next:** Kaggle v2 judge on val → `python -m src.analyze_r4_val v2` (grid, chosen config by the
-approved rule, judge checks: human labels, A2 caught, false outlook claims on genuine text) → Aryan
-reviews the chosen settings → frozen here, in the pre-registration commit.
+**v2 val results with v2's own judge (2026-10-16)** — Kaggle run `r4v2_val_judge_kaggle`
+(T4, fp16, P5's revision, input sha `a155c85c…`, 2,898 / 2,898 answers, probe 40 / 40 identical to
+P2.4 → same setup class as P5; answers backed up with `git add -f`). `python -m src.analyze_r4_val v2`.
+
+* **As built (V0): budget NOT met.** No config reaches val FBR ≤ 10%; the pre-stated fallback (lowest
+  FBR) picks f ¼, c₀ 0.8, soft, no cap → **FBR 17.0%** (Eco 20.0 / HUS 16.7 / SG 0 / Tra 33.3) — worse
+  than v1 (11.3%). DSS: flip −0.019, **A2 +0.112** (undefended +0.382, v1 +0.337), exagg −0.045, A3
+  −0.005, A1 +0.043; real MSE 0.626 (undefended 0.625). Q7: A2 +0.169 (v1 +0.259), FBR 17.0%.
+* **Judge checks (val):** A2's appended sentence read in the claimed direction **133 / 133**; but the
+  1.5B judge does **not** make the distinctions v2's questions ask for — `outlook` = `change` on
+  94–100% of units, it almost never answers *none* (Economy / Traffic: 0 of 1,778 answers; level
+  question: 0 of 122), so off-subject sentences ("Exports decreased …, while imports increased …")
+  get confident claims; 99.4% of genuine texts carry an outlook claim; report-level agreement with
+  the P1 human labels **38.7%** (v1 68%; Health_US 8%). **What catches A2 is the per-unit split, not
+  the question wording.**
+* **Diagnosis of V0's 27 false blocks (val, f ¼, c₀ 0.8):** 20 from an `outlook` claim copying a
+  past-fact unit's reading (Health_US level sentences 10, Traffic year-over-year sentences 9, Economy
+  1) — checked against the short trend, it reintroduces exactly the level / year-over-year failures
+  v2's routing fixed; 3 Economy "average … for the three months ending" units (the `unchecked` regex
+  allows only 40 characters between "average" and "for the three months" — an implementation bug
+  against the stated design); 3 off-subject Economy units; 1 Health_US change-on-level.
+* **Dev round 2 — candidate fixes, chosen AFTER seeing V0 (disclosed val iteration; nothing adopted —
+  Aryan decides).** `python -m src.explore_r4_v2_variants` → `summary_r4_val_variants_v2.csv`;
+  cumulative, same answers, same grid, approved rule within each variant. M5, val, pooled:
+
+| variant (cumulative) | budget | chosen f / c₀ / τ / k | FBR | real MSE | obj | DSS flip | DSS A2 | DSS exagg | DSS A3 | FBR Eco / HUS / SG / Tra |
+|---|---|---|---|---|---|---|---|---|---|---|
+| V0 as built | ✗ | ¼ / 0.8 / 0 / ∞ | 17.0% | 0.626 | 0.045 | −0.019 | +0.112 | −0.045 | −0.005 | 20.0 / 16.7 / 0 / 33.3 |
+| V1 + "three months ending" → unchecked (bug fix) | ✗ | same | 17.0% | 0.626 | 0.045 | −0.019 | +0.112 | −0.045 | −0.005 | unchanged |
+| V2 + baseline-stating unit → level claim only | ✗ | ¼ / 0.8 / 0 / ∞ | 13.8% | 0.628 | 0.045 | −0.002 | +0.127 | −0.048 | −0.003 | 20.0 / 9.1 / 0 / 33.3 |
+| **V3 + drop an outlook claim equal to its unit's change claim** | ✓ | ½ / 0.8 / 0 / 1 | **6.3%** | 0.546 | 0.017 | +0.001 | **+0.032** | −0.024 | −0.010 | 8.6 / 7.6 / 0 / 7.4 |
+| V4 + unit must name the domain's subject | ✓ | ½ / 0.6 / 0 / 1 | 9.4% | 0.530 | **0.014** | +0.004 | +0.028 | −0.020 | −0.001 | 2.9 / 13.6 / 0 / 18.5 |
+
+  Q7 (descriptive): V3 A2 +0.081, FBR 5.7%; V4 A2 +0.074, FBR 8.8%. V3 per domain (M5): SocialGood
+  A2 +0.222 (n 17) is the one cell not neutralised. **By the approved objective V4 edges V3 (0.014 vs
+  0.017); V3 has the lower FBR and no domain above 10%.** Choosing among variants is not covered by
+  the approved rule (it picks settings within one design) — open for Aryan. Caveat: 5 variants were
+  compared on 159 genuine val texts after seeing V0, so val overstates v2; the held-out test decides.
+
+**Next:** Aryan chooses V0 / V3 / V4 (or another option) → the choice and its settings are frozen
+here, in the pre-registration commit, with this dev iteration disclosed.
 
 ### 10c. Open issues
 
@@ -3681,6 +3718,15 @@ reviews the chosen settings → frozen here, in the pre-registration commit.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-16 (night) — R4: v2 val judge back; as built misses the FBR budget; variants for Aryan
+- Kaggle v2 val judge verified (fingerprints, one setup, complete, probe 40 / 40) and backed up.
+- V0 (as built): FBR 17.0% (budget not met), A2 +0.112. The 1.5B judge answers outlook = change on
+  94–100% of units and almost never "none"; 20 / 27 false blocks are copied outlook claims.
+- Exploratory dev round 2 (`src/explore_r4_v2_variants.py`, chosen after seeing V0): V3 (drop an outlook
+  claim equal to its unit's change claim) meets the budget — FBR 6.3%, A2 +0.032; V4 (+ subject
+  filter) FBR 9.4%, A2 +0.028, best objective. Nothing adopted.
+- Next: Aryan chooses the variant; then the pre-registration (§10g) committed alone.
 
 ### 2026-10-16 (evening) — R4: subjects + dual-comparison rule decided; /doctor commit reverted
 - Aryan: held-out judge subjects approved; Energy dual-comparison units → trend (option a, disclosed

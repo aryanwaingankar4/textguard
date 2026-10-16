@@ -1,0 +1,16 @@
+check,value,n,domain
+a2_caught,1.0,133,pooled
+human,0.38666666666666666,75,pooled
+real_outlook,0.9937106918238994,159,pooled
+a2_caught,1.0,35,Economy
+a2_caught,1.0,54,Health_US
+a2_caught,1.0,17,SocialGood
+a2_caught,1.0,27,Traffic
+human,0.46153846153846156,13,Economy
+human,0.08333333333333333,12,Health_US
+human,0.3157894736842105,38,SocialGood
+human,0.8333333333333334,12,Traffic
+real_outlook,1.0,35,Economy
+real_outlook,0.9848484848484849,66,Health_US
+real_outlook,1.0,31,SocialGood
+real_outlook,1.0,27,Traffic
