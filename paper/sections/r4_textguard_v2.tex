@@ -1,0 +1,18 @@
+% R4 — TextGuard v2 on held-out domains (Energy, FNSPID). STUB: no results yet.
+% Pre-registration: PROJECT_STATUS §10g, commit 1e13815, before any held-out output; v2 frozen
+% as V3 in 0a58aba (results/summary_r4_v2_frozen.json).
+% Note 1 (Energy prompt label) added 2026-10-19 during the M5 Kaggle run, before any held-out
+% output was opened — a disclosure, not an amendment (no test changed).
+% The results and their wording are written here only after the analysis has run (CLAUDE.md §17).
+
+\subsection{Does a revised TextGuard generalise to held-out domains?}
+\label{sec:r4}
+
+% Results go here after the analysis.
+
+\paragraph{One disclosed wording error, found before any output was seen.}
+Energy's prompt labels the all-grades series as regular gasoline, a wording error in our
+pre-registration that contradicts our own data description: the target is the U.S.\ all-grades
+weekly retail price, while the reports quote the regular-grade price. The gap is about \$0.09;
+every comparison is paired within one prompt, so no pre-registered test can be biased by it.
+Energy accuracy (MSE vs persistence) may be slightly affected and is noted where reported.

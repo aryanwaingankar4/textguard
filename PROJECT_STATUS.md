@@ -138,6 +138,8 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
        `r4_judge_v2_kaggle` (one dataset holding `r4_heldout_inputs.csv`); outputs →
        `results/qwen/`, verified, backed up with `git add -f`. **Then** the analysis (loaders + tables
        exactly as §10g). FNSPID 50-label spot-check **done** 2026-10-16: 48 / 50, κ 0.92 (§10g).
+       **§10g Note 1 (2026-10-19):** Energy's prompt says "regular gasoline", target is all-grades —
+       kept as pre-registered, disclosed; nothing redone (Aryan).
 5. [ ] Analysis → §9 "R4" → `paper/sections/r4_textguard_v2.tex` → commit & push.
 
 **Constraints a fresh session must respect in R4:**
@@ -3884,6 +3886,27 @@ labels (`results/summary_directional_fnspid.csv`); the held-out judge answers' f
 notebooks, tests) → Kaggle runs → verification and backup → analysis exactly as above → §9 "R4" →
 `paper/sections/r4_textguard_v2.tex` → commit & push.
 
+#### Note 1 — 2026-10-19: Energy prompt label (disclosure, not an amendment; no test changed)
+
+> **Timing.** Spotted by Aryan reading an Energy prompt while the `r4_m5_kaggle` run was in
+> progress, **before any held-out output was opened**. Decided by Aryan the same day: keep the
+> pre-registered prompt; nothing is redone; Q7 and both judges run on the same input
+> (`r4_heldout_inputs.csv`, sha256 `cecbdc9b…`).
+
+Energy's prompt labels the all-grades series as regular gasoline — a pre-registration wording error
+contradicting §6. The gap is about $0.09; every comparison is paired within one prompt, so no
+pre-registered test can be biased by it. Energy accuracy (MSE vs persistence) may be slightly
+affected and is noted where reported.
+
+* **What is what.** The Energy target is Time-MMD's `OT` (the file's other columns are regional "All
+  Grades All Formulations Retail Gasoline Prices"; `OT` sits above the reports' regular-grade price,
+  ≈ +$0.09, corr 1.0, same sign 99.4% of weeks — §6). The prompt field fixed under "Targets" above
+  ("United States weekly average retail price of regular gasoline") and `export_r4_inputs.SERIES`
+  match each other verbatim; the label is wrong, not the implementation.
+* **Not affected:** the judges (TG1 / TG2 questions and subjects describe the **text's** subject,
+  which is regular gasoline; the gate checks directions only, never a dollar level against the
+  series), `y_true`, σ, FNSPID.
+
 ### 10c. Open issues
 
 | # | Issue | Phase | Status |
@@ -3924,6 +3947,15 @@ notebooks, tests) → Kaggle runs → verification and backup → analysis exact
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-19 — R4: Energy prompt label disclosed (§10g Note 1)
+- Aryan noticed, during the M5 Kaggle run and before any held-out output was opened, that Energy's
+  prompt says "regular gasoline" while the target (`OT`) is the all-grades price. The prompt is
+  exactly what §10g pre-registered; the label error is in the pre-registration (written by Claude in
+  `1e13815`, contradicting §6).
+- Aryan chose option (a): keep it, disclose it (§10g Note 1 + `paper/sections/r4_textguard_v2.tex`);
+  nothing redone; Q7 and both judges use the same input CSV.
+- Next: M5 run finishes → verify, back up; then Q7, judge v1, judge v2.
 
 ### 2026-10-16 (night, 3) — R4 pre-registered (alone); held-out build ready for Kaggle
 - §10g pre-registration committed alone and pushed (`1e13815`): m = 79 per target, "v2 improves on
