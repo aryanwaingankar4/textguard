@@ -1,0 +1,41 @@
+target,attack,cell,defence,U,dss_none,D0,dss_defended,DΔ,change,reading
+M5,flipped,pooled,TG1,fooled,0.0557956,significant but negligible,0.031694,significant but negligible,-0.0241016,"not evaded, no reduction shown"
+M5,flipped,pooled,TG2,fooled,0.0557956,significant but negligible,0.0197643,significant but negligible,-0.0360312,"not evaded, no reduction shown"
+M5,flipped,Energy,TG1,significant but negligible,0.046991,significant but negligible,0.0242451,significant but negligible,-0.0227459,nothing to defend against
+M5,flipped,Energy,TG2,significant but negligible,0.046991,significant but negligible,0.0191074,significant but negligible,-0.0278835,nothing to defend against
+M5,flipped,FNSPID,TG1,fooled,0.0861947,inconclusive,0.0574124,significant but negligible,-0.0287822,"not evaded, no reduction shown"
+M5,flipped,FNSPID,TG2,fooled,0.0861947,inconclusive,0.0220325,reduction,-0.0641622,reduces; residual not shown to be below the SESOI
+M5,a1_selective,pooled,TG1,significant but negligible,0.0454556,significant but negligible,0.0409717,significant but negligible,-0.00448399,nothing to defend against
+M5,a1_selective,pooled,TG2,significant but negligible,0.0454556,significant but negligible,0.0243974,significant but negligible,-0.0210583,nothing to defend against
+M5,a1_selective,Energy,TG1,significant but negligible,0.0433736,significant but negligible,0.0240918,significant but negligible,-0.0192818,nothing to defend against
+M5,a1_selective,Energy,TG2,significant but negligible,0.0433736,significant but negligible,0.0152514,significant but negligible,-0.0281222,nothing to defend against
+M5,a1_selective,FNSPID,TG1,inconclusive,0.0527427,inconclusive,0.100051,no change shown,0.0473085,nothing to defend against
+M5,a1_selective,FNSPID,TG2,inconclusive,0.0527427,inconclusive,0.0564081,no change shown,0.00366538,nothing to defend against
+M5,a2_forward,pooled,TG1,fooled,0.151232,fooled,0.0815386,reduction,-0.0696931,reduces but does not stop
+M5,a2_forward,pooled,TG2,fooled,0.151232,significant but negligible,0.0193242,reduction,-0.131908,reduces; residual not shown to be below the SESOI
+M5,a2_forward,Energy,TG1,fooled,0.0595145,fooled,0.0535251,significant but negligible,-0.00598935,evaded
+M5,a2_forward,Energy,TG2,fooled,0.0595145,significant but negligible,0.026086,significant but negligible,-0.0334285,"not evaded, no reduction shown"
+M5,a2_forward,FNSPID,TG1,fooled,0.221193,fooled,0.102907,reduction,-0.118286,reduces but does not stop
+M5,a2_forward,FNSPID,TG2,fooled,0.221193,significant but negligible,0.0141664,reduction,-0.207026,reduces; residual not shown to be below the SESOI
+M5,a3_magnitude,Energy,TG1,bounded,-0.00153518,bounded,-0.000783285,no change shown,0.000751893,nothing to defend against
+M5,a3_magnitude,Energy,TG2,bounded,-0.00153518,bounded,-0.000311871,significant but negligible,0.00122331,nothing to defend against
+Q7,flipped,pooled,TG1,significant but negligible,0.0380855,significant but negligible,0.0339442,significant but negligible,-0.00414128,nothing to defend against
+Q7,flipped,pooled,TG2,significant but negligible,0.0380855,significant but negligible,0.0339908,significant but negligible,-0.00409467,nothing to defend against
+Q7,flipped,Energy,TG1,significant but negligible,0.0341057,significant but negligible,0.0319658,significant but negligible,-0.00213999,nothing to defend against
+Q7,flipped,Energy,TG2,significant but negligible,0.0341057,significant but negligible,0.0337989,significant but negligible,-0.000306863,nothing to defend against
+Q7,flipped,FNSPID,TG1,fooled,0.0518262,significant but negligible,0.0407752,no change shown,-0.011051,"not evaded, no reduction shown"
+Q7,flipped,FNSPID,TG2,fooled,0.0518262,significant but negligible,0.0346536,no change shown,-0.0171726,"not evaded, no reduction shown"
+Q7,a1_selective,pooled,TG1,significant but negligible,0.0474338,significant but negligible,0.0320485,significant but negligible,-0.0153853,nothing to defend against
+Q7,a1_selective,pooled,TG2,significant but negligible,0.0474338,significant but negligible,0.0371027,significant but negligible,-0.0103311,nothing to defend against
+Q7,a1_selective,Energy,TG1,significant but negligible,0.0354775,significant but negligible,0.0348278,significant but negligible,-0.000649702,nothing to defend against
+Q7,a1_selective,Energy,TG2,significant but negligible,0.0354775,significant but negligible,0.036257,no change shown,0.000779481,nothing to defend against
+Q7,a1_selective,FNSPID,TG1,fooled,0.0892807,inconclusive,0.0223208,reduction,-0.0669599,reduces; residual not shown to be below the SESOI
+Q7,a1_selective,FNSPID,TG2,fooled,0.0892807,significant but negligible,0.0400626,no change shown,-0.0492181,"not evaded, no reduction shown"
+Q7,a2_forward,pooled,TG1,fooled,0.0658998,fooled,0.0581203,significant but negligible,-0.00777956,evaded
+Q7,a2_forward,pooled,TG2,fooled,0.0658998,significant but negligible,0.0489988,significant but negligible,-0.0169011,"not evaded, no reduction shown"
+Q7,a2_forward,Energy,TG1,significant but negligible,0.0499913,significant but negligible,0.0476708,significant but negligible,-0.00232053,nothing to defend against
+Q7,a2_forward,Energy,TG2,significant but negligible,0.0499913,significant but negligible,0.0349565,significant but negligible,-0.0150348,nothing to defend against
+Q7,a2_forward,FNSPID,TG1,fooled,0.0780347,fooled,0.066091,significant but negligible,-0.0119437,evaded
+Q7,a2_forward,FNSPID,TG2,fooled,0.0780347,fooled,0.0597101,significant but negligible,-0.0183246,evaded
+Q7,a3_magnitude,Energy,TG1,significant but negligible,0.00552793,significant but negligible,0.00514772,no change shown,-0.000380212,nothing to defend against
+Q7,a3_magnitude,Energy,TG2,significant but negligible,0.00552793,significant but negligible,0.00466508,no change shown,-0.000862847,nothing to defend against

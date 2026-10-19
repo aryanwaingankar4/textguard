@@ -52,7 +52,7 @@ and a deployable defense.
 - **RQ3 (P6)** — Can TextGuard reduce manipulation without losing the benefit of genuine
   text, and does it beat trained alternatives (CFA) and architectural ones (PA-RNet)?
 - **RQ4 (R6; was P7.4)** — Can embedding-drift monitoring detect a sustained fake-text
-  campaign?
+  campaign? **Future work — not run (decided 2026-10-19).**
 
 ---
 
@@ -353,8 +353,9 @@ textguard/
   two independent classes taking any object with `predict(numbers, text)`. Do not hardcode
   it to our models.
 - **Never tune on the test split.**
-- **Research extensions R1–R7 run before P8** (decided 2026-10-09; PHASES.md "Research
-  extensions", PROJECT_STATUS §1a). Rules for every extension:
+- **Research extensions R1–R4 and R7 run before P8** (decided 2026-10-09; PHASES.md "Research
+  extensions", PROJECT_STATUS §1a). **R5 and R6 are future work, not run (2026-10-19); order after
+  R4: R7 → P7.2 (demo) → P8.** Rules for every extension:
   - **pre-registered and committed alone** (pushed) before any of its test results exist;
     later changes are dated amendments, reported as deviations;
   - **new models and new attacks may be evaluated on the existing test set; already-reported

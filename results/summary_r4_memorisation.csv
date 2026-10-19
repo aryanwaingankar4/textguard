@@ -1,0 +1,9 @@
+target,domain,condition,precision_decimals,n,exact,exact_rate,unexplained,unexplained_rate,n_placebo,placebo,placebo_rate,excess_pp,flagged
+M5,Energy,real,3,665,3,0.00451128,0,0,664,0,0,0,False
+M5,Energy,none,3,665,5,0.0075188,0,0,664,0,0,0,False
+M5,FNSPID,real,2,1031,1,0.000969932,0,0,1021,0,0,0,False
+M5,FNSPID,none,2,1031,1,0.000969932,0,0,1021,0,0,0,False
+Q7,Energy,real,3,665,4,0.00601504,4,0.00601504,664,7,0.0105422,-0.452713,False
+Q7,Energy,none,3,665,5,0.0075188,4,0.00601504,664,5,0.00753012,-0.151508,False
+Q7,FNSPID,real,2,1031,0,0,0,0,1021,1,0.000979432,-0.0979432,False
+Q7,FNSPID,none,2,1031,0,0,0,0,1021,0,0,0,False

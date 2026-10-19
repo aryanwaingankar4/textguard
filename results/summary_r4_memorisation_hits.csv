@@ -1,0 +1,9 @@
+target,domain,series,condition,sample_id,y_true,y_pred
+Q7,Energy,Energy,real,2012-06-11,3.629,3.629
+Q7,Energy,Energy,real,2016-05-16,2.345,2.345
+Q7,Energy,Energy,real,2016-07-11,2.359,2.359
+Q7,Energy,Energy,real,2018-06-18,2.958,2.958
+Q7,Energy,Energy,none,2012-08-27,3.837,3.837
+Q7,Energy,Energy,none,2015-01-05,2.308,2.308
+Q7,Energy,Energy,none,2016-05-16,2.345,2.345
+Q7,Energy,Energy,none,2020-04-27,1.87,1.87

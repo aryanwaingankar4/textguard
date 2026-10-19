@@ -1,0 +1,210 @@
+{
+ "headline": {
+  "M5": {
+   "pooled": {
+    "reading": "v2 buys protection at a cost (FBR)",
+    "i_attacks_where_tg2_lower": [
+     "a2_forward"
+    ],
+    "ii_attacks_where_tg2_higher": [],
+    "iii_fbr_tg2": 0.18409425625920472,
+    "iii_fbr_tg1": 0.06995581737849779,
+    "iii_holds": false,
+    "F21": "TG2 blocks more",
+    "iv_holds": true,
+    "M21": "TG2 more accurate",
+    "U": {
+     "flip": "fooled",
+     "A1": "significant but negligible",
+     "A2": "fooled"
+    },
+    "a2_gap": {
+     "TG1": "reduces but does not stop",
+     "TG2": "reduces; residual not shown to be below the SESOI",
+     "closes_gap": false
+    },
+    "tg2_vs_clip": {
+     "flip": "significant but negligible",
+     "A1": "significant but negligible",
+     "A2": "lower than clip"
+    },
+    "fbr_budget_met": {
+     "TG1": true,
+     "TG2": false,
+     "CL": false
+    }
+   },
+   "Energy": {
+    "reading": "no improvement over v1 shown",
+    "i_attacks_where_tg2_lower": [],
+    "ii_attacks_where_tg2_higher": [],
+    "iii_fbr_tg2": 0.07102272727272728,
+    "iii_fbr_tg1": 0.011363636363636364,
+    "iii_holds": false,
+    "F21": "TG2 blocks more",
+    "iv_holds": true,
+    "M21": "within ±10%",
+    "U": {
+     "flip": "significant but negligible",
+     "A1": "significant but negligible",
+     "A2": "fooled",
+     "A3": "bounded"
+    },
+    "a2_gap": {
+     "TG1": "evaded",
+     "TG2": "not evaded, no reduction shown",
+     "closes_gap": false
+    },
+    "tg2_vs_clip": {
+     "flip": "significant but negligible",
+     "A1": "significant but negligible",
+     "A2": "significant but negligible",
+     "A3": "no difference detected"
+    },
+    "fbr_budget_met": {
+     "TG1": true,
+     "TG2": true,
+     "CL": true
+    }
+   },
+   "FNSPID": {
+    "reading": "v2 buys protection at a cost (FBR)",
+    "i_attacks_where_tg2_lower": [
+     "a2_forward"
+    ],
+    "ii_attacks_where_tg2_higher": [],
+    "iii_fbr_tg2": 0.22365805168986083,
+    "iii_fbr_tg1": 0.09045725646123261,
+    "iii_holds": false,
+    "F21": "TG2 blocks more",
+    "iv_holds": true,
+    "M21": "TG2 more accurate",
+    "U": {
+     "flip": "fooled",
+     "A1": "inconclusive",
+     "A2": "fooled"
+    },
+    "a2_gap": {
+     "TG1": "reduces but does not stop",
+     "TG2": "reduces; residual not shown to be below the SESOI",
+     "closes_gap": false
+    },
+    "tg2_vs_clip": {
+     "flip": "no difference detected",
+     "A1": "no difference detected",
+     "A2": "lower than clip"
+    },
+    "fbr_budget_met": {
+     "TG1": true,
+     "TG2": false,
+     "CL": false
+    }
+   }
+  },
+  "Q7": {
+   "pooled": {
+    "reading": "no improvement over v1 shown",
+    "i_attacks_where_tg2_lower": [],
+    "ii_attacks_where_tg2_higher": [],
+    "iii_fbr_tg2": 0.1634756995581738,
+    "iii_fbr_tg1": 0.06995581737849779,
+    "iii_holds": false,
+    "F21": "TG2 blocks more",
+    "iv_holds": true,
+    "M21": "within ±10%",
+    "U": {
+     "flip": "significant but negligible",
+     "A1": "significant but negligible",
+     "A2": "fooled"
+    },
+    "a2_gap": {
+     "TG1": "evaded",
+     "TG2": "evaded",
+     "closes_gap": false
+    },
+    "tg2_vs_clip": {
+     "flip": "no difference detected",
+     "A1": "no difference detected",
+     "A2": "significant but negligible"
+    },
+    "fbr_budget_met": {
+     "TG1": true,
+     "TG2": false,
+     "CL": true
+    }
+   },
+   "Energy": {
+    "reading": "no improvement over v1 shown",
+    "i_attacks_where_tg2_lower": [],
+    "ii_attacks_where_tg2_higher": [],
+    "iii_fbr_tg2": 0.07102272727272728,
+    "iii_fbr_tg1": 0.011363636363636364,
+    "iii_holds": false,
+    "F21": "TG2 blocks more",
+    "iv_holds": true,
+    "M21": "within ±10%",
+    "U": {
+     "flip": "significant but negligible",
+     "A1": "significant but negligible",
+     "A2": "significant but negligible",
+     "A3": "significant but negligible"
+    },
+    "a2_gap": {
+     "TG1": "nothing to defend against",
+     "TG2": "nothing to defend against",
+     "closes_gap": false
+    },
+    "tg2_vs_clip": {
+     "flip": "no difference detected",
+     "A1": "no difference detected",
+     "A2": "significant but negligible",
+     "A3": "no difference detected"
+    },
+    "fbr_budget_met": {
+     "TG1": true,
+     "TG2": true,
+     "CL": true
+    }
+   },
+   "FNSPID": {
+    "reading": "no improvement over v1 shown",
+    "i_attacks_where_tg2_lower": [],
+    "ii_attacks_where_tg2_higher": [],
+    "iii_fbr_tg2": 0.19582504970178927,
+    "iii_fbr_tg1": 0.09045725646123261,
+    "iii_holds": false,
+    "F21": "TG2 blocks more",
+    "iv_holds": true,
+    "M21": "within ±10%",
+    "U": {
+     "flip": "fooled",
+     "A1": "fooled",
+     "A2": "fooled"
+    },
+    "a2_gap": {
+     "TG1": "evaded",
+     "TG2": "evaded",
+     "closes_gap": false
+    },
+    "tg2_vs_clip": {
+     "flip": "no difference detected",
+     "A1": "no difference detected",
+     "A2": "significant but negligible"
+    },
+    "fbr_budget_met": {
+     "TG1": true,
+     "TG2": false,
+     "CL": true
+    }
+   }
+  }
+ },
+ "rejections": {
+  "R4-M5": 55,
+  "R4-Q7": 43
+ },
+ "family_sizes": {
+  "R4-M5": 79,
+  "R4-Q7": 79
+ }
+}

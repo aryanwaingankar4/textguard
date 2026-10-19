@@ -4,8 +4,8 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** R4 — TextGuard v2 (P0–P6, R1–R3 complete; research extensions R4–R7 before P8; P7 optional)
-**Last updated:** 2026-10-16
+**Current phase:** R7 — reproducibility (P0–P6, R1–R4 complete; R5, R6 = future work, not run; then P7.2 demo, then P8)
+**Last updated:** 2026-10-19
 
 > 👤 **Solo project.** All work by Aryan.
 > 📌 **Phase-gated, no deadlines.** See `PHASES.md`.
@@ -26,26 +26,30 @@
 | R1 | LLM vs fusion — late-fusion heads on Qwen embeddings (+ FinBERT) | ✅ | ✅ Done — pre-registered reading R1-a (§9 R1) |
 | **R2** | Generality — Qwen2.5-7B (4-bit), Phi-3.5-mini; prompt variants for M5 | ✅ | ✅ Done — Q7 fooled, P35 bounded (ignores report content), prompt-robust, skeptical prompt does not help (§9 R2) |
 | **R3** | Adaptive attacks on TextGuard v1 | ✅ | ✅ Done — **TextGuard v1 evaded by A2** (one forward-looking sentence) on M5 + Q7; no defence stops it; A1 not robust on M5, evades TG on M3-F; A3 pushes nothing (§9 R3) |
-| **R4** | TextGuard v2 — val-developed, tested once on held-out domains | ✅ | 🔵 **Next** — pre-register first (§1a) |
-| R5 | Realistic attacks — other-family LLM fakes + human plausibility study | ✅ | ⚪ Pending |
-| R6 | Drift monitor for fake-report campaigns (RQ4; replaces P7.4) | ✅ | ⚪ Pending |
-| R7 | Reproducibility — reproduce script, pinned env, data/model cards, ethics | ✅ | ⚪ Pending |
-| P7 | Auditor, demo, extras | ⬜ Optional | ⚪ Pending |
+| **R4** | TextGuard v2 — val-developed, tested once on held-out domains | ✅ | ✅ Done — **v2 buys protection at a cost (FBR)**: A2 cut on M5 (+0.180 → +0.021σ, below v1), FBR 18.4% vs v1 7.0% (val ordering reversed); nothing transfers to Q7 (§9 R4) |
+| R5 | Realistic attacks — other-family LLM fakes + human plausibility study | — | ❌ Future work, not run (Aryan 2026-10-19) |
+| R6 | Drift monitor for fake-report campaigns (RQ4; replaces P7.4) | — | ❌ Future work, not run (Aryan 2026-10-19) |
+| R7 | Reproducibility — reproduce script, pinned env, data/model cards, ethics | ✅ | 🔵 **Next** |
+| P7 | Auditor, demo, extras | ⬜ Optional | ⚪ Pending — **P7.2 demo after R7** |
 | P8 | Paper & release | ✅ | ⚪ Pending (after R7) |
 
 Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 
-**P0–P6 + P8 = complete paper.** Research extensions R1–R7 run before P8 (decided 2026-10-09,
-PHASES.md "Research extensions"). P7 is upside.
+**P0–P6 + P8 = complete paper.** Research extensions R1–R4 and R7 run before P8 (decided 2026-10-09,
+PHASES.md "Research extensions"); **R5 and R6 are future work, not run (Aryan 2026-10-19). Order:
+R7 → P7.2 (demo) → P8.** P7 is otherwise upside.
 
 ---
 
-## 1a. ▶ START HERE — handoff for the next session (R4 — TextGuard v2)
+## 1a. ▶ START HERE — handoff for the next session (R7 — reproducibility)
 
-> Written 2026-10-11 at the end of R3. Replace this section at the end of R4 (then R5, …, R7, P8).
+> Written 2026-10-11 at the end of R3; updated 2026-10-19 at the end of R4. The R4 block below is
+> kept as the record of how R4 was run. Replace this section at the end of R7.
 
-**P0–P6, R1, R2 and R3 are complete.** Research extensions R4–R7 run next, in order (PHASES.md
-"Research extensions"), then **P8**. P7 stays optional (R6 replaces P7.4).
+**P0–P6, R1, R2, R3 and R4 are complete.** **R5 (realistic attacks) and R6 (drift monitor) are
+future work — not run (Aryan 2026-10-19);** they go in the paper's future-work paragraph (P8), not
+in the results. **Next: R7 (reproducibility) → P7.2 (Streamlit demo) → P8 (paper & release).**
+Other P7 items stay optional.
 
 ### The results, one line per phase (details and every number in §9)
 
@@ -69,8 +73,26 @@ PHASES.md "Research extensions"). P7 is upside.
   (text-validity exclusions, made before any metric); C8 found after metrics, **not adopted**
   (sensitivity only). Exploratory: P5/P6 headlines hold without P3's 19% internally inconsistent
   fakes. §9 "R3". `paper/sections/r3_adaptive.tex`.
+* **R4 (TextGuard v2, held-out Energy + FNSPID) — COMPLETE:** v2 generalises its A2 protection on M5
+  (pooled +0.180 → +0.021σ, an 88% cut, lower than v1's +0.096 by 0.075σ) **but not its FBR
+  improvement** — 18.4% vs v1 7.0% (FNSPID 22.4%), reversing val's 6.3% vs 11.3%; the judge gives a
+  direction to 11 / 33 neutral FNSPID headlines (never reverses one). Nothing transfers to Qwen2.5-7B.
+  Pre-registered reading **"v2 buys protection at a cost (FBR)"**; "closes R3's A2 gap" not met (v1 is
+  not evaded pooled). Validation overstated v2, as pre-stated. Genuine FNSPID headlines worsen M5
+  (MSE 1.06 vs 0.48σ²), so v2's accuracy gain partly reflects damping harmful text. §9 "R4".
+  `paper/sections/r4_textguard_v2.tex`.
 
-### R4 — what to do (TextGuard v2)
+### R7 — what to do next (reproducibility; PHASES.md R7)
+
+* One-command reproduce script (every `python -m src.analyze_*` / `figures_*` from the backed-up
+  Kaggle / Colab answers — the "Regenerate everything" table below is its inventory); pinned
+  environment.
+* Data card (Time-MMD, FNSPID CC BY-NC-4.0 — academic use only), model card, ethics statement
+  (synthetic fakes labelled in every released file).
+* Pre-register only if R7 produces a test result (it should not — it reproduces existing ones).
+* Then P7.2 (Streamlit demo, Qwen results precomputed), then P8.
+
+### R4 — what was done (TextGuard v2) — record, complete
 
 **Question:** can a val-developed TextGuard v2 fix v1's known failures — tested **once** on
 held-out domains, and against R3's adaptive attacks? PHASES.md R4. TextGuard v1 stays frozen as
@@ -141,7 +163,8 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
        **Then** the analysis (loaders + tables exactly as §10g). FNSPID 50-label spot-check **done** 2026-10-16: 48 / 50, κ 0.92 (§10g).
        **§10g Note 1 (2026-10-19):** Energy's prompt says "regular gasoline", target is all-grades —
        kept as pre-registered, disclosed; nothing redone (Aryan).
-5. [ ] Analysis → §9 "R4" → `paper/sections/r4_textguard_v2.tex` → commit & push.
+5. [x] **Analysis (2026-10-19)** exactly as §10g → §9 "R4" → `paper/sections/r4_textguard_v2.tex`
+       (framing approved by Aryan) → committed & pushed. **R4 complete.**
 
 **Constraints a fresh session must respect in R4:**
 * **No model output of any kind on the held-out domains before §10g is committed.**
@@ -209,7 +232,9 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
 | R4 v2 val grid (interim / with v2's judge) | `python -m src.analyze_r4_val v1j` / `… v2` | ~15 s |
 | R4 v2 freeze (refuses different values) / dev variants | `python -m src.analyze_r4_val freeze` / `python -m src.explore_r4_v2_variants` | ~1 min |
 | R4 held-out Kaggle input → notebooks | `python -m src.models.export_r4_inputs`, `python notebooks/build_r4_heldout_notebooks.py` | ~2 min |
-| Tests | `python -m pytest -q` (461) | ~2–4 min |
+| R4 run verification | `python -m src.models.r4_answers` (needs the exported input CSV, sha `cecbdc9b…`) | ~1 min |
+| R4 analysis + figures | `python -m src.analyze_r4`, `python -m src.figures_r4` | a few min CPU |
+| Tests | `python -m pytest -q` (469) | ~2–4 min |
 
 Model 5 / judge answers: `results/qwen/*_predictions.csv` + `*_run_meta.json` (in git); the
 Colab notebooks in `notebooks/` are only needed to re-generate them.
@@ -2654,6 +2679,120 @@ per-domain cells lose power (52 → 14 windows). **Limitation for the paper:** P
 internally inconsistent numbers in ~19% of attacked test texts (mostly Traffic arithmetic, Health_US
 level-vs-verb); the conclusions do not depend on them.
 
+### R4 results — TextGuard v2 vs v1 on held-out domains (pre-registration §10g + Note 1)
+
+> **Framing approved by Aryan 2026-10-19.** Analysis exactly as §10g — no test added or dropped.
+
+`python -m src.analyze_r4` → `results/summary_r4_*.csv` (29 tables) + `summary_r4_reading.json`;
+figures `python -m src.figures_r4` → `paper/figures/r4_dss.{pdf,png}`, `r4_fbr.{pdf,png}`; tests
+`tests/test_analyze_r4.py` (frozen settings, anchor15, m = 79 with per-block sizes, too-few-windows
+p = 1). Inputs: the four runs verified in §7f (`models/r4_answers.py`). Paper:
+`paper/sections/r4_textguard_v2.tex`. **Holm rejections: M5 55 / 79, Q7 43 / 79.**
+
+#### 1. Framing (approved)
+
+* **v2 generalises its A2 protection on M5** — pooled +0.180 → **+0.021σ** (an 88% cut), lower than
+  v1 (+0.096) by 0.075σ (T21, Holm p < 0.001) — **but not its FBR improvement:** on held-out data v2
+  blocks **18.4%** of genuine reports vs v1's **7.0%** (FNSPID 22.4% vs 9.0%), reversing val's
+  ordering (6.3% vs 11.3%).
+* **Cause (judge check, §5 below):** on Aryan's 50 FNSPID labels the v2 judge gives a direction to
+  **11 of 33 neutral headlines**; it never reverses one. With ~9.6 units per bundle and g = min,
+  each spurious claim can block a bundle.
+* **No improvement transfers to Qwen2.5-7B.**
+* **Validation overstated v2, as pre-stated (§10g expectations) — the held-out test caught it.**
+* Genuine FNSPID headlines **worsen M5** (MSE 1.06 vs 0.48σ² without text; persistence 0.32), so v2's
+  accuracy gain (M21) partly reflects damping harmful text, not claim checking.
+
+#### 2. Pre-registered readings (`summary_r4_reading.json`)
+
+| Cell | M5 | Q7 |
+|---|---|---|
+| **pooled (headline)** | **"v2 buys protection at a cost (FBR)"** — (i) A2 ✓, (ii) ✓, (iii) ✗ FBR 18.4% > 10% and F21 +11.4 pp "TG2 blocks more", (iv) ✓ M21 "TG2 more accurate" (−0.249σ²) | no improvement over v1 shown |
+| Energy | no improvement over v1 shown | no improvement over v1 shown |
+| FNSPID | v2 buys protection at a cost (FBR) | no improvement over v1 shown |
+
+* **"v2 closes R3's A2 gap": NOT met.** Pooled, TG1 is not evaded — it *reduces but does not stop*
+  A2 (0.180 → 0.096), via FNSPID, where v1's judge reads the appended sentence in 54% of bundles. On
+  Energy TG1 *is* evaded (0.061 → 0.055; v1's judge reads the genuine past claim, 99.4% opposite to
+  the lie), but TG2's reduction there (−0.034) is below the SESOI → "not evaded, no reduction shown".
+* **TG2 on A2 pooled = "reduces; residual not shown to be below the SESOI"**, although the residual's
+  CI [+0.004, +0.037] lies below 0.05σ. **Checked 2026-10-19 (Aryan's question): this is the rule,
+  not a code error.** T20 rejects (Holm p 1.6e-10), and §10e (adopted by §10f / §10g) reserves
+  "bounded" for non-rejections: *"A significant estimate below the SESOI is reported as 'significant
+  but negligible'. A non-rejection is 'bounded below the SESOI' only if the whole 95% CI lies inside
+  ±SESOI"*; §10f: *"reduction with D0 inconclusive / negligible → 'D reduces X; residual not shown to
+  be below the SESOI'"*. Kept as computed; the rule is quoted in the paper.
+* **v2 vs clip (T2C):** A2 "lower than clip" pooled; flip, A1 significant but negligible.
+* **FBR budget:** TG1 met in every cell; TG2 Energy only; clip Energy only on M5 (pooled 10.2%),
+  every cell on Q7.
+
+#### 3. DSS (σ, toward the lie; `summary_r4_operating.csv`, `summary_r4_readings.csv`)
+
+| M5 | Energy | FNSPID | pooled |
+|---|---|---|---|
+| flip: none / TG1 / TG2 / clip | +0.045 / +0.022 / +0.018 / +0.043 | +0.083 / +0.051 / +0.010 / +0.038 | +0.054 / +0.029 / +0.016 / +0.042 |
+| A1 | +0.042 / +0.022 / +0.015 / +0.034 | +0.048 / +0.090 / +0.052 / +0.015 (n 31, inconclusive) | +0.043 / +0.038 / +0.023 / +0.030 |
+| **A2** | +0.061 / +0.055 / +0.027 / +0.059 | **+0.256 / +0.122 / +0.016 / +0.125** | **+0.180 / +0.096 / +0.021 / +0.099** |
+| A3 (Energy only) | −0.002 bounded (all defences ≈ 0) | — | — |
+| anchor15, A2 | +0.060 | +0.207 | +0.150 |
+
+Flip on FNSPID: TG2 *reduces* it (−0.073σ, "reduces; residual not shown to be below the SESOI"),
+TG1 does not. No flip or A1 cell has T21 |Δ| ≥ 0.05σ. never_trust DSS 0 (blocks 100%);
+always_trust = undefended (0 failures). Medians of per-window DSS are 0
+for flip and A1 (a minority of windows moves). **Q7:** flip +0.038 pooled (significant but negligible);
+fooled on FNSPID by flip +0.057, A1 +0.082, A2 +0.090; A2 pooled +0.074 fooled; TG1 +0.064 and TG2
++0.054 → **both evaded**; Q7 accuracy unchanged by either defence.
+
+#### 4. False Block Rate (%) on genuine reports (`summary_r4_fbr.csv`; per stock in the same file)
+
+| Defence | M5 Energy / FNSPID / pooled | Q7 Energy / FNSPID / pooled |
+|---|---|---|
+| TG1 (target-independent) | 1.1 / 9.0 / 7.0 | 1.1 / 9.0 / 7.0 |
+| **TG2** | 7.1 / **22.4** / **18.4** | 7.1 / 19.6 / 16.3 |
+| Clip k 0.5 | 0.3 / 13.6 / 10.2 | 0.0 / 1.0 / 0.7 |
+| anchor15 | 0 / 5.7 / 4.2 | ≈ 0 |
+
+F21 (exact McNemar) pooled +11.4 pp, Holm p < 0.001. Ablations (M5 pooled): V0 as built 19.7%; no cap
+16.3%; cap only 3.3% — **the gate, not the cap, does the blocking.** anchor15 binds more than
+predicted on FNSPID (5.7% blocked) but barely reduces A2.
+
+#### 5. Judge (`summary_r4_judge_checks.csv`, `summary_r4_judge_labels*.csv`)
+
+* A2's appended sentence read in the claimed direction by v2: **345 / 345 Energy, 538 / 538 FNSPID**.
+* Genuine FNSPID: v1 answers "none" for 31% of bundles; v2 for 46% of units (9.6 units per bundle).
+* **vs Aryan's 50 FNSPID labels (added at Aryan's request; not pre-registered):** v2 change answer
+  76% agreement, κ 0.60 (always-"none" baseline 66%); **never reverses a direction; finds 16 / 17
+  directional headlines; gives a direction to 11 / 33 neutral ones.** After the c₀ 0.8 floor: 80%.
+  Outlook answer 60%. v1 not assessable (n = 1 single-headline bundle). Claude's labels vs Aryan's 96%.
+
+#### 6. Accuracy (normalised MSE, σ²; `summary_r4_accuracy.csv`)
+
+* **M5 FNSPID: real 1.06, none 0.48, persistence 0.32**; TG2 0.60, TG1 0.93, clip 0.54, cap only 0.66.
+* M5 Energy: real 0.0238, none 0.0112, persistence 0.0074; TG2 vs TG1 within ±10%.
+* **Note 1 (exploratory, `summary_r4_energy_label_check.csv`):** reports' regular-grade price is on
+  average $0.092 below y_last; M5's mean error moves +0.013 → −0.018 with the report (toward the lower
+  quoted price); exact copies of the quoted price 2.8%. Q7 not hurt (real 0.0072). Paired DSS / FBR
+  tests unaffected.
+
+#### 7. Robustness — pre-stated, descriptive
+
+| Table | Result |
+|---|---|
+| Semantic mismatch (connector-flagged bundles out) | M5 FNSPID flip +0.083 → +0.072; **A1 FNSPID +0.048 → +0.006 (n 18)** — the A1 effect lives in the flagged bundles; Q7 unchanged |
+| COVID (Feb–May 2020 out) | every M5 reading unchanged; 3 Q7 readings change; TG2 FBR 16.3% pooled |
+| FNSPID σ = 520 weeks | 15 / 40 readings change, DSS shrinks (A2 pooled +0.107); TG1 evaded by A2 pooled; TG2 still lower than TG1 on FNSPID A2; FBR TG2 12.3% vs TG1 3.5% |
+| Single window | max change of a pooled mean 0.017σ |
+| v2 ablations | V0: FBR 19.7%, A2 +0.021; no cap: FBR 16.3%, A2 −0.013, FNSPID MSE 0.851; cap only: FBR 3.3%, A2 +0.133 |
+| Scan (all texts) | 0 readings change |
+| Memorisation | nothing flagged (≤ 4 unexplained matches, excess ≤ 0). **FNSPID compared to the cent** (stored closes carry float noise, e.g. 191.96000671), Energy at 3 decimals — accepted by Aryan 2026-10-19 |
+| Per stock A1 (descriptive) | 1–6 windows per stock; MRK (4 windows) drives M5's FNSPID A1 effect |
+
+#### 8. Caveats
+
+A1 FNSPID n 31 (per-stock cells tiny); judge-label check n 50 (17 directional); FBR is per bundle on
+FNSPID (one blocked headline blocks the bundle's text); Flip Rate carries R2's copy-the-last-value
+caveat; one Kaggle setup per run; Energy accuracy may be affected by the Note 1 label.
+
 ### P7.6 — FNSPID (optional)
 | Model | DSS before | DSS after | Flip before | Flip after |
 |---|---|---|---|---|
@@ -3981,6 +4120,22 @@ affected and is noted where reported.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-19 — R4: held-out analysis exactly as §10g → **R4 complete**
+- `src/analyze_r4.py` (m = 79 per target, asserted; R2 / R3 verdict functions reused),
+  `src/figures_r4.py` (`r4_dss`, `r4_fbr`), `tests/test_analyze_r4.py`; 29 `summary_r4_*.csv` +
+  `summary_r4_reading.json`. Holm rejections M5 55 / 79, Q7 43 / 79. §9 "R4".
+- Reading (M5 pooled): **"v2 buys protection at a cost (FBR)"**; "closes R3's A2 gap" not met;
+  Q7 "no improvement over v1 shown" everywhere. Framing approved by Aryan (§9 R4 part 1).
+- Aryan's review: (1) TG2's A2 label "reduces; residual not shown to be below the SESOI" with CI
+  [+0.004, +0.037] — **checked, rule not code**: T20 rejects, §10e reserves "bounded" for
+  non-rejections; kept, rule quoted in the paper. (2) Paper file = `r4_textguard_v2.tex` (§10g's name);
+  draft moved in, Note 1 paragraph carried over word for word, `r4_heldout.tex` deleted.
+  (3) Memorisation to the cent on FNSPID accepted. (5) **R5 and R6 → future work, not run.**
+- Not pre-registered, labelled as such: judge vs Aryan's 50 labels (Aryan's request); Energy Note-1 label
+  check (exploratory). Corrected in my own draft before commit: v2's 12 label disagreements are
+  mostly directions read into neutral headlines (not "none" answers); v2 *does* reduce the FNSPID flip.
+- Next: **R7** (reproducibility) → P7.2 (demo) → P8.
 
 ### 2026-10-19 — R4: the four held-out Kaggle runs verified (§7f)
 - `src/models/r4_answers.py` (R3's verifier pattern) + `tests/test_r4_answers.py`: M5, Q7, judge v1,

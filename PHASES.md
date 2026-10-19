@@ -19,7 +19,7 @@ P0 Setup ─► P1 Data ─► P2 Models ─► P3 Attacks ─► P4 Metrics
                                                P6 TextGuard
                                                       │
                                                       ▼
-              R1 ─► R2 ─► R3 ─► R4 ─► R5 ─► R6 ─► R7   (research extensions)
+              R1 ─► R2 ─► R3 ─► R4 ─► R7   (research extensions; R5, R6 = future work)
                                                       │
                                     ┌─────────────────┴─────────────┐
                                     ▼                               ▼
@@ -40,8 +40,9 @@ P0 Setup ─► P1 Data ─► P2 Models ─► P3 Attacks ─► P4 Metrics
 | P7 | Auditor, audit report, Streamlit demo, drift monitor | ⬜ Optional |
 | P8 | Paper and release | ✅ |
 
-**P0–P6 + P8 = complete paper.** R1–R7 run before P8 (decided 2026-10-09); P7 is upside.
-R6 covers P7.4 (drift monitor) — do not build it twice.
+**P0–P6 + P8 = complete paper.** R1–R4 and R7 run before P8 (decided 2026-10-09; R5 and R6 moved
+to future work, not run — Aryan 2026-10-19). **Order after R4: R7 → P7.2 (demo) → P8.** P7 is
+upside; P7.4 (drift monitor) stays future work with R6.
 
 ---
 
@@ -336,26 +337,30 @@ Attackers who know the defence. TextGuard v1 is run exactly as frozen in P6.
   not robust (evades TG on M3-F); A3 pushes nothing. Amendment 1: text-validity exclusions
 
 ### R4 — TextGuard v2
-- [ ] **Judge evaluates every claim in a report, including forward-looking ones** (R3: A2's
+- [x] **Judge evaluates every claim in a report, including forward-looking ones** (R3: A2's
       appended forward claim was never checked — v1 asks only about the main past claim)
-- [ ] Level/change-aware judge; longer history for year-over-year claims; a magnitude cap
+- [x] Level/change-aware judge; longer history for year-over-year claims; a magnitude cap
       (borrowed from clip, which beat v1 on exaggeration)
-- [ ] **Developed on VAL only.** Held-out Time-MMD domains (Energy, Health_AFR, Climate if
-      feasible) chosen and frozen before any model output exists on them
-- [ ] Tested **once** on the held-out domains: v2 and v1 both, and v2 also against R3's
-      adaptive attacks
-- [ ] v2 also evaluated on R1's **FinBERT heads** (M3-F, M4-F) — v1 did not reduce M3-F's DSS
-      (+0.049 → +0.053)
+- [x] **Developed on VAL only.** Held-out domains chosen and frozen before any model output
+      existed on them — **Energy and FNSPID** (Health_AFR, Climate dropped, PROJECT_STATUS §6)
+- [x] Tested **once** on the held-out domains: v2 and v1 both, and v2 also against R3's
+      adaptive attacks (pre-registered §10g)
+- [x] ~~v2 also evaluated on R1's FinBERT heads~~ — dropped before the pre-registration (2026-10-12)
+- **✅ R4 done (2026-10-19):** v2 generalises its A2 protection on M5 (pooled +0.180 → +0.021σ,
+  lower than v1) but not its FBR improvement (18.4% vs v1 7.0%, val ordering reversed — the judge
+  reads directions into neutral FNSPID headlines); nothing transfers to Qwen2.5-7B. Pre-registered
+  reading: "v2 buys protection at a cost (FBR)". PROJECT_STATUS §9 "R4",
+  `paper/sections/r4_textguard_v2.tex`.
 
-### R5 — realistic attacks
+### R5 — realistic attacks — ❌ FUTURE WORK, not run (Aryan 2026-10-19; goes in the paper's future work, P8)
 - [ ] Fluent fakes written by an LLM from a **different family** than Qwen
 - [ ] Small human plausibility study (real vs rule-written vs LLM-written fakes)
 
-### R6 — drift monitor for sustained fake-report campaigns (RQ4; replaces P7.4)
+### R6 — drift monitor for sustained fake-report campaigns (RQ4; replaces P7.4) — ❌ FUTURE WORK, not run (Aryan 2026-10-19)
 - [ ] Embedding centroid + per-batch distance, threshold from historical variation (val)
 - [ ] Detection delay and false-alarm rate on streams seeded with fake reports
 
-### R7 — reproducibility
+### R7 — reproducibility — 🔵 NEXT (then P7.2 demo, then P8)
 - [ ] One-command reproduce script; pinned environment
 - [ ] Data card, model card, ethics statement
 

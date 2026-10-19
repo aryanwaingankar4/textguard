@@ -1,0 +1,30 @@
+check,domain,value,n
+v1: genuine text answered none,Energy,0,352
+v2: genuine unit answered none (change),Energy,0.00793651,378
+v2: genuine unit answered none (outlook),Energy,0.0026455,378
+v2: units per genuine text (mean),Energy,1.07386,352
+v1: fake read in the claimed direction (flip),Energy,1,345
+"v2: edited/added unit read in the claimed direction, any question (flip)",Energy,0.982609,345
+v2: ... and kept by V3 at c >= c0 (flip),Energy,0.944928,345
+v1: fake read in the claimed direction (A1),Energy,1,102
+"v2: edited/added unit read in the claimed direction, any question (A1)",Energy,0.95098,102
+v2: ... and kept by V3 at c >= c0 (A1),Energy,0.911765,102
+v1: fake read in the claimed direction (A2),Energy,0.0057971,345
+"v2: edited/added unit read in the claimed direction, any question (A2)",Energy,1,345
+v2: ... and kept by V3 at c >= c0 (A2),Energy,1,345
+v1: fake read in the claimed direction (A3),Energy,0.995413,218
+"v2: edited/added unit read in the claimed direction, any question (A3)",Energy,0.93578,218
+v2: ... and kept by V3 at c >= c0 (A3),Energy,0.866972,218
+v1: genuine text answered none,FNSPID,0.310139,1006
+v2: genuine unit answered none (change),FNSPID,0.458225,9635
+v2: genuine unit answered none (outlook),FNSPID,0.393669,9635
+v2: units per genuine text (mean),FNSPID,9.57753,1006
+v1: fake read in the claimed direction (flip),FNSPID,0.666667,108
+"v2: edited/added unit read in the claimed direction, any question (flip)",FNSPID,0.925926,108
+v2: ... and kept by V3 at c >= c0 (flip),FNSPID,0.537037,108
+v1: fake read in the claimed direction (A1),FNSPID,0.645161,31
+"v2: edited/added unit read in the claimed direction, any question (A1)",FNSPID,0.935484,31
+v2: ... and kept by V3 at c >= c0 (A1),FNSPID,0.580645,31
+v1: fake read in the claimed direction (A2),FNSPID,0.539033,538
+"v2: edited/added unit read in the claimed direction, any question (A2)",FNSPID,1,538
+v2: ... and kept by V3 at c >= c0 (A2),FNSPID,1,538

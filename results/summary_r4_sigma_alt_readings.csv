@@ -1,0 +1,41 @@
+target,attack,cell,defence,U,dss_none,D0,dss_defended,DΔ,change,reading
+M5,flipped,pooled,TG1,significant but negligible,0.045512,significant but negligible,0.0226006,significant but negligible,-0.0229114,nothing to defend against
+M5,flipped,pooled,TG2,significant but negligible,0.045512,significant but negligible,0.0159622,significant but negligible,-0.0295498,nothing to defend against
+M5,flipped,Energy,TG1,significant but negligible,0.045285,significant but negligible,0.0223178,significant but negligible,-0.0229672,nothing to defend against
+M5,flipped,Energy,TG2,significant but negligible,0.045285,significant but negligible,0.0184103,significant but negligible,-0.0268747,nothing to defend against
+M5,flipped,FNSPID,TG1,significant but negligible,0.0462369,bounded,0.0235038,significant but negligible,-0.0227331,nothing to defend against
+M5,flipped,FNSPID,TG2,significant but negligible,0.0462369,bounded,0.00814165,significant but negligible,-0.0380952,nothing to defend against
+M5,a1_selective,pooled,TG1,significant but negligible,0.0352158,significant but negligible,0.0216809,significant but negligible,-0.0135349,nothing to defend against
+M5,a1_selective,pooled,TG2,significant but negligible,0.0352158,significant but negligible,0.0148702,significant but negligible,-0.0203456,nothing to defend against
+M5,a1_selective,Energy,TG1,significant but negligible,0.0416198,significant but negligible,0.0221686,significant but negligible,-0.0194513,nothing to defend against
+M5,a1_selective,Energy,TG2,significant but negligible,0.0416198,significant but negligible,0.0146099,significant but negligible,-0.0270099,nothing to defend against
+M5,a1_selective,FNSPID,TG1,bounded,0.0141444,inconclusive,0.0200764,no change shown,0.00593197,nothing to defend against
+M5,a1_selective,FNSPID,TG2,bounded,0.0141444,bounded,0.0157266,no change shown,0.0015822,nothing to defend against
+M5,a2_forward,pooled,TG1,fooled,0.106686,fooled,0.0723882,significant but negligible,-0.0342975,evaded
+M5,a2_forward,pooled,TG2,fooled,0.106686,significant but negligible,0.0252074,reduction,-0.0814784,reduces; residual not shown to be below the SESOI
+M5,a2_forward,Energy,TG1,fooled,0.0613374,fooled,0.0552633,significant but negligible,-0.00607414,evaded
+M5,a2_forward,Energy,TG2,fooled,0.0613374,significant but negligible,0.0271542,significant but negligible,-0.0341832,"not evaded, no reduction shown"
+M5,a2_forward,FNSPID,TG1,fooled,0.135766,fooled,0.0833698,reduction,-0.0523962,reduces but does not stop
+M5,a2_forward,FNSPID,TG2,fooled,0.135766,significant but negligible,0.023959,reduction,-0.111807,reduces; residual not shown to be below the SESOI
+M5,a3_magnitude,Energy,TG1,bounded,-0.00215823,bounded,-0.00128629,no change shown,0.00087194,nothing to defend against
+M5,a3_magnitude,Energy,TG2,bounded,-0.00215823,bounded,-0.00105204,significant but negligible,0.00110619,nothing to defend against
+Q7,flipped,pooled,TG1,significant but negligible,0.0318482,significant but negligible,0.0307692,significant but negligible,-0.00107903,nothing to defend against
+Q7,flipped,pooled,TG2,significant but negligible,0.0318482,significant but negligible,0.0315645,significant but negligible,-0.000283654,nothing to defend against
+Q7,flipped,Energy,TG1,significant but negligible,0.0319016,significant but negligible,0.0304993,significant but negligible,-0.00140224,nothing to defend against
+Q7,flipped,Energy,TG2,significant but negligible,0.0319016,significant but negligible,0.0322196,no change shown,0.000318074,nothing to defend against
+Q7,flipped,FNSPID,TG1,significant but negligible,0.0316777,significant but negligible,0.0316312,no change shown,-4.65503e-05,nothing to defend against
+Q7,flipped,FNSPID,TG2,significant but negligible,0.0316777,significant but negligible,0.0294719,no change shown,-0.00220584,nothing to defend against
+Q7,a1_selective,pooled,TG1,significant but negligible,0.0331435,significant but negligible,0.028989,significant but negligible,-0.00415452,nothing to defend against
+Q7,a1_selective,pooled,TG2,significant but negligible,0.0331435,significant but negligible,0.0330535,significant but negligible,-9.0024e-05,nothing to defend against
+Q7,a1_selective,Energy,TG1,significant but negligible,0.0340862,significant but negligible,0.0333437,significant but negligible,-0.000742564,nothing to defend against
+Q7,a1_selective,Energy,TG2,significant but negligible,0.0340862,significant but negligible,0.0348328,no change shown,0.000746548,nothing to defend against
+Q7,a1_selective,FNSPID,TG1,significant but negligible,0.0300416,bounded,0.0146607,significant but negligible,-0.015381,nothing to defend against
+Q7,a1_selective,FNSPID,TG2,significant but negligible,0.0300416,significant but negligible,0.027199,no change shown,-0.00284262,nothing to defend against
+Q7,a2_forward,pooled,TG1,significant but negligible,0.0455883,significant but negligible,0.0405787,significant but negligible,-0.00500957,nothing to defend against
+Q7,a2_forward,pooled,TG2,significant but negligible,0.0455883,significant but negligible,0.0375482,significant but negligible,-0.0080401,nothing to defend against
+Q7,a2_forward,Energy,TG1,significant but negligible,0.0494662,significant but negligible,0.0471803,significant but negligible,-0.00228587,nothing to defend against
+Q7,a2_forward,Energy,TG2,significant but negligible,0.0494662,significant but negligible,0.034681,significant but negligible,-0.0147852,nothing to defend against
+Q7,a2_forward,FNSPID,TG1,significant but negligible,0.0431015,significant but negligible,0.0363453,significant but negligible,-0.00675618,nothing to defend against
+Q7,a2_forward,FNSPID,TG2,significant but negligible,0.0431015,significant but negligible,0.0393868,significant but negligible,-0.00371471,nothing to defend against
+Q7,a3_magnitude,Energy,TG1,significant but negligible,0.00544813,significant but negligible,0.00508425,no change shown,-0.000363878,nothing to defend against
+Q7,a3_magnitude,Energy,TG2,significant but negligible,0.00544813,significant but negligible,0.00461422,no change shown,-0.000833911,nothing to defend against

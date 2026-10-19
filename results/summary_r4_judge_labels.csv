@@ -1,0 +1,7 @@
+basis,mixed,n,accuracy,kappa,none_rate,acc_when_answered,reversed
+v2_change,0,50,0.76,0.601858,0.46,1,0
+v2_outlook,1,50,0.6,0.386693,0.38,0.75,3
+v2_v3_reading,4,50,0.6,0.450336,0.34,0.764706,0
+v2_v3_at_c0,0,50,0.8,0.54792,0.78,1,0
+v1_single_headline_bundle,0,1,1,,1,,0
+Claude's labels (reference),,50,0.96,0.923547,0.62,1,0
