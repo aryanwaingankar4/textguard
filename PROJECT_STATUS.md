@@ -134,10 +134,11 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
        other than the pre-registered sha256s; 9,145 forecast rows / 4,609 distinct prompts, 2,913 v1 +
        21,312 v2 judge questions, 40 probe), `notebooks/build_r4_heldout_notebooks.py` → 4 notebooks
        (R3's cells, asserted edits only), `tests/test_r4_heldout.py` (11, fake-model notebook runs).
-4. [ ] **Runs on Kaggle** — `r4_m5_kaggle`, `r4_qwen7b_kaggle`, `r4_judge_v1_kaggle`,
+4. [x] **Runs on Kaggle** — `r4_m5_kaggle`, `r4_qwen7b_kaggle`, `r4_judge_v1_kaggle`,
        `r4_judge_v2_kaggle` (one dataset holding `r4_heldout_inputs.csv`); outputs →
-       `results/qwen/`, verified, backed up with `git add -f`. **Then** the analysis (loaders + tables
-       exactly as §10g). FNSPID 50-label spot-check **done** 2026-10-16: 48 / 50, κ 0.92 (§10g).
+       `results/qwen/`, backed up `801c3f6`, **verified 2026-10-19** (`python -m src.models.r4_answers`,
+       §7f: all complete, one setup each, input sha `cecbdc9b…`, probe 40 / 40, 0 parse failures).
+       **Then** the analysis (loaders + tables exactly as §10g). FNSPID 50-label spot-check **done** 2026-10-16: 48 / 50, κ 0.92 (§10g).
        **§10g Note 1 (2026-10-19):** Energy's prompt says "regular gasoline", target is all-grades —
        kept as pre-registered, disclosed; nothing redone (Aryan).
 5. [ ] Analysis → §9 "R4" → `paper/sections/r4_textguard_v2.tex` → commit & push.
@@ -1329,6 +1330,39 @@ every shared prompt (M5 vs P2.4/P5, judge vs P6, Q7 vs R2).
 **After the runs (next session):** loader + verification (fingerprints, one setup per file, test
 complete, consistency vs P5 / R2 / P6 answers on byte-identical prompts), back up with
 `git add -f results/qwen/r3_*`, FinBERT heads, then the analysis against §10f.
+
+## 7f. R4 runs — M5, Qwen2.5-7B, judge v1, judge v2 on the held-out domains (Kaggle)
+
+Pre-registration: §10g (`1e13815`) + Note 1. Input: `results/qwen/r4_heldout_inputs.csv` (sha256
+`cecbdc9b14086178…`; **a fresh `export_r4_inputs` reproduces it byte for byte**, checked 2026-10-19):
+9,145 forecast rows (4,609 distinct prompts), 2,913 v1 + 21,312 v2 judge questions, 40 probe.
+Outputs backed up unverified in `801c3f6` (Aryan), **verified 2026-10-19 before any metric was
+computed** by `python -m src.models.r4_answers` (`tests/test_r4_answers.py`, 5 tests incl. tampered
+copies refused). No metric, gate or DSS was computed before this check.
+
+| Run (Kaggle T4, 2026-10-18 UTC) | Model @ revision, precision | Setup string (one per file) | Rows | Probe / smoke | Determinism | Parse / scale failures |
+|---|---|---|---|---|---|---|
+| `r4_m5_fp16_kaggle` 21:08–21:42 | Qwen2.5-1.5B @ 989aa79, fp16 | `Tesla T4 \| torch 2.11.0+cu128 \| transformers 5.16.1 \| fp16 \| …@989aa79… \| kaggle` = R3's M5 | 9,145 / 9,145 | probe 40 / 40 | 20 / 20 | 0 / 0 |
+| `r4_qwen7b_nf4_kaggle` 21:53–23:08 | Qwen2.5-7B @ a09a354, NF4 (bnb 0.50.2) | `… \| nf4 bitsandbytes 0.50.2 \| …@a09a354… \| kaggle` = R2 / R3's Q7 | 9,145 / 9,145 | smoke 0 / 20 unparseable | 20 / 20 | 0 / 0 |
+| `r4_judge_v1_kaggle` 21:16–21:25 | Qwen2.5-1.5B @ 989aa79, fp16, scored | `Tesla T4 \| torch 2.11.0+cu128 \| transformers 5.16.1 \| …@989aa79… \| kaggle` = R3's judge | 2,913 / 2,913 | probe 40 / 40 | — | — |
+| `r4_judge_v2_kaggle` 21:33–22:20 | same | same as judge v1 (= v2's val judge run) | 21,312 / 21,312 | probe 40 / 40 | — | — |
+
+**Checked for every file:** meta pins (model id, revision, quant) = §10g; meta `input_sha256` =
+today's input file = `cecbdc9b…`; every row carries the meta's single setup string; complete (every
+exported row answered exactly once, no extras, no duplicates). **Forecasters:** test complete,
+variant p5 only; every prompt fingerprint recomputed from the inputs with today's prompt builder;
+y_true = inputs (exact); y_pred = M5's parser on raw_output (exact); parse_ok agrees; byte-identical
+prompts answered identically (4,609 distinct). **Judges:** P6's `load_judgements` (v1, with the
+held-out questions registered; direction = literal answer, POLARITY +1 per §10g — P6's loader only
+knows the original four domains' polarity) and v2's `load_answers` (new `row_type="judge_v2"`
+argument; val behaviour unchanged) accept the files — fingerprints re-derived with the unchanged
+prompt modules; probabilities finite, sum to 1, equal the softmax of the stored log-probs; answer =
+the most likely; confidence = its probability. **Probe** (P5's 40 prompts vs P2.4, recorded only):
+40 / 40 on M5 and both judges. `same_setup_string_as_p5: false` in the judge metas is expected (P5
+ran on Colab); every setup string equals its R3 / R2 Kaggle counterpart. Overlap with earlier runs:
+0 byte-identical prompts (new domains), so no cross-run consistency check is possible — the probe is
+the reproducibility evidence. M5 and the judges ran in parallel GPU sessions; each file is one
+session and one setup.
 
 ## 8. Attack module and fake-text validation (P3)
 
@@ -3947,6 +3981,14 @@ affected and is noted where reported.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-19 — R4: the four held-out Kaggle runs verified (§7f)
+- `src/models/r4_answers.py` (R3's verifier pattern) + `tests/test_r4_answers.py`: M5, Q7, judge v1,
+  judge v2 all pass — pins, input sha `cecbdc9b…` (re-export reproduces it), one setup per file,
+  complete, fingerprints, parser, probabilities; probe 40 / 40; 0 parse / scale failures. No metric
+  computed before this commit. `v2.load_answers` gained a `row_type` argument (default unchanged).
+- §10g Note 1 (Energy label) was already committed and pushed (`2a4fe25`) — nothing to add.
+- Next: the analysis exactly as §10g (`src/analyze_r4.py`).
 
 ### 2026-10-19 — R4: Energy prompt label disclosed (§10g Note 1)
 - Aryan noticed, during the M5 Kaggle run and before any held-out output was opened, that Energy's

@@ -178,10 +178,15 @@ def answer_direction(kind: str, answer: str) -> int:
     return {pos: 1, neg: -1, none: 0}[answer]
 
 
-def load_answers(predictions: Path | str, inputs: Path | str, meta: Path | str) -> pd.DataFrame:
-    """Every v2 judge answer joined with its unit; fingerprints re-derived; one setup; complete."""
+def load_answers(predictions: Path | str, inputs: Path | str, meta: Path | str,
+                 row_type: str = "judge") -> pd.DataFrame:
+    """Every v2 judge answer joined with its unit; fingerprints re-derived; one setup; complete.
+
+    ``row_type``: the input rows holding v2's questions — ``judge`` in the val export,
+    ``judge_v2`` in R4's held-out export (which also carries v1's ``judge`` rows).
+    """
     inp = pd.read_csv(inputs, keep_default_na=False, dtype=str)
-    inp = inp[inp.row_type == "judge"]
+    inp = inp[inp.row_type == row_type]
     out = pd.read_csv(predictions, keep_default_na=False, dtype={"prompt_sha": str})
     run = json.loads(Path(meta).read_text(encoding="utf-8"))
     if out.prompt_sha.duplicated().any():
