@@ -34,7 +34,7 @@ import pandas as pd
 
 from src.attacks import common
 from src.attacks.adaptive import R3_CONDITIONS
-from src.run_experiments import RESULTS, check_embedding_scalers, run
+from src.run_experiments import RESULTS, check_embedding_scalers, collect, run
 
 FINBERT_HEADS = ("DLinear+FinBERT", "PatchTST+FinBERT")
 UNIT_DIR = RESULTS / "r3_finbert_units"
@@ -97,17 +97,23 @@ def check_a1_is_a_selection(preds: pd.DataFrame) -> pd.DataFrame:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--no-mlflow", action="store_true")
+    ap.add_argument("--collect-only", action="store_true",
+                    help="no embedding / inference: rebuild the predictions table from the "
+                         "committed units (R7 reproduce.py; the scaler check needs checkpoints)")
     a = ap.parse_args()
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     fp0 = r1_fingerprint()
     print("R1 fingerprint before:", fp0)
-    print("embedding:", embed())
-    preds = run(models=FINBERT_HEADS, conditions=R3_CONDITIONS, use_mlflow=not a.no_mlflow,
-                unit_dir=UNIT_DIR, predictions=PREDICTIONS, experiment="r3_finbert")
-    scal = check_embedding_scalers(models=FINBERT_HEADS)
-    print(f"embedding scalers: {len(scal)} checkpoints match their train-text statistics "
-          f"(max |diff| {scal.max_abs_diff.max():.1e})")
+    if a.collect_only:
+        preds = collect(UNIT_DIR, PREDICTIONS)
+    else:
+        print("embedding:", embed())
+        preds = run(models=FINBERT_HEADS, conditions=R3_CONDITIONS, use_mlflow=not a.no_mlflow,
+                    unit_dir=UNIT_DIR, predictions=PREDICTIONS, experiment="r3_finbert")
+        scal = check_embedding_scalers(models=FINBERT_HEADS)
+        print(f"embedding scalers: {len(scal)} checkpoints match their train-text statistics "
+              f"(max |diff| {scal.max_abs_diff.max():.1e})")
     print("A1 = selection of R1's own predictions:\n" + check_a1_is_a_selection(preds).to_string(index=False))
     print(preds.groupby(["model", "condition", "split"]).size().unstack().to_string())
     print(f"NaN predictions: {int(preds.y_pred.isna().sum())}")

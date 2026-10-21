@@ -1,0 +1,21 @@
+{
+ "model": "PatchTST",
+ "domain": "Traffic",
+ "condition": "cross_domain",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "6aa314f2aff059e7",
+  "2022": "cd45c462793a107d",
+  "2023": "f2d99302b9641d17"
+ },
+ "texts": "fa2d1b2394fe0a2d"
+}

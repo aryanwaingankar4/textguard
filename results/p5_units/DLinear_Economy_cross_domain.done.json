@@ -1,0 +1,21 @@
+{
+ "model": "DLinear",
+ "domain": "Economy",
+ "condition": "cross_domain",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "ff6a93e055de92bf",
+  "2022": "356b336bc68f1507",
+  "2023": "e2f2e0034cf75040"
+ },
+ "texts": "659a64e526609750"
+}

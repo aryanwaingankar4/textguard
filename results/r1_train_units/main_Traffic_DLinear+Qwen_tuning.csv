@@ -1,0 +1,4 @@
+domain,model,lr,best_val_loss,epochs_run,best_epoch,chosen
+Traffic,DLinear+Qwen,0.0001,0.14977538585662842,200,193,False
+Traffic,DLinear+Qwen,0.001,0.12242814153432846,48,28,False
+Traffic,DLinear+Qwen,0.01,0.11959504336118698,80,60,True

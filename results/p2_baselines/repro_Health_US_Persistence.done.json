@@ -1,0 +1,6 @@
+{
+ "model": "Persistence",
+ "config": "repro",
+ "seq_len": 24,
+ "horizon": 12
+}

@@ -1,0 +1,21 @@
+{
+ "model": "PatchTST+FinBERT",
+ "domain": "Economy",
+ "condition": "real",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "06faa8784f393b33",
+  "2022": "5235417efffb2385",
+  "2023": "1b02b037c0861ff4"
+ },
+ "texts": "29c0ec911520d114"
+}

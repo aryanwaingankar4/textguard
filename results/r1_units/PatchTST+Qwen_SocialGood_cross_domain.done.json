@@ -1,0 +1,21 @@
+{
+ "model": "PatchTST+Qwen",
+ "domain": "SocialGood",
+ "condition": "cross_domain",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "9ec0e996038ddb2b",
+  "2022": "9ca1c873f2267dcb",
+  "2023": "f4ca758b92c32ce7"
+ },
+ "texts": "022e28a1a4e9f020"
+}

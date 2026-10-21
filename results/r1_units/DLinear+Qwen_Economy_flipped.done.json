@@ -1,0 +1,21 @@
+{
+ "model": "DLinear+Qwen",
+ "domain": "Economy",
+ "condition": "flipped",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "353e33f4018542e2",
+  "2022": "77c82cbc90a77d14",
+  "2023": "1495b84d88608451"
+ },
+ "texts": "dad7afc029580cfe"
+}

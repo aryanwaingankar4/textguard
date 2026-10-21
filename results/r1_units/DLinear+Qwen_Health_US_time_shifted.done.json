@@ -1,0 +1,21 @@
+{
+ "model": "DLinear+Qwen",
+ "domain": "Health_US",
+ "condition": "time_shifted",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "f6564170b9050371",
+  "2022": "392af2ccfd760943",
+  "2023": "d68c05989707a2c6"
+ },
+ "texts": "0640b30f9898739b"
+}

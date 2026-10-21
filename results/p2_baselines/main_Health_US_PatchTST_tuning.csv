@@ -1,0 +1,4 @@
+domain,model,lr,best_val_loss,epochs_run,best_epoch,chosen
+Health_US,PatchTST,0.0001,0.05006841570138931,33,13,False
+Health_US,PatchTST,0.001,0.049760401248931885,42,22,True
+Health_US,PatchTST,0.01,1.0526057481765747,66,46,False

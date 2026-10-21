@@ -1,0 +1,4 @@
+domain,model,lr,best_val_loss,epochs_run,best_epoch,chosen
+Health_US,DLinear+Qwen,0.0001,0.04330316185951233,31,11,True
+Health_US,DLinear+Qwen,0.001,0.044265251606702805,22,2,False
+Health_US,DLinear+Qwen,0.01,0.04671930521726608,29,9,False

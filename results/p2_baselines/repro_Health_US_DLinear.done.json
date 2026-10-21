@@ -1,0 +1,14 @@
+{
+ "model": "DLinear",
+ "config": "repro",
+ "seq_len": 24,
+ "horizon": 12,
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "epochs": 10,
+ "patience": 5,
+ "lr": 0.0001
+}

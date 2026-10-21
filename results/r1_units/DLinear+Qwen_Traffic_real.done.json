@@ -1,0 +1,21 @@
+{
+ "model": "DLinear+Qwen",
+ "domain": "Traffic",
+ "condition": "real",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "45c7d25691e6974d",
+  "2022": "a2c081a8dc1bc16c",
+  "2023": "1f796661a9aee2e0"
+ },
+ "texts": "08730c8053ed93d4"
+}

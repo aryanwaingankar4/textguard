@@ -1,0 +1,21 @@
+{
+ "model": "PatchTST+Qwen",
+ "domain": "Economy",
+ "condition": "cross_domain",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "453118172669bb6a",
+  "2022": "177021968b165a5c",
+  "2023": "454dc8f5ac7ce44e"
+ },
+ "texts": "659a64e526609750"
+}

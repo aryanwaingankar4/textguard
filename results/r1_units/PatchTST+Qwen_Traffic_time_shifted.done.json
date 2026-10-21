@@ -1,0 +1,21 @@
+{
+ "model": "PatchTST+Qwen",
+ "domain": "Traffic",
+ "condition": "time_shifted",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "55f6d6acb489e389",
+  "2022": "c048bbecb6064d79",
+  "2023": "effb03082cd5e622"
+ },
+ "texts": "bc58ac30332906ee"
+}

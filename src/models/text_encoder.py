@@ -51,7 +51,10 @@ FINBERT_REVISION = "4556d13015211d73dccd3fdd39d39232506f3e43"
 QWEN_NAME = "Qwen/Qwen2.5-1.5B-Instruct"
 QWEN_REVISION = "989aa7980e4cf806f80c7fef2b1adb7bc71aa306"  # = Model 5 (P5) and the P6 judge
 EMB_DIMS = {MODEL_NAME: EMB_DIM, FINBERT_NAME: 768, QWEN_NAME: 1536}
-REVISIONS = {MODEL_NAME: None, FINBERT_NAME: FINBERT_REVISION, QWEN_NAME: QWEN_REVISION}
+# BERT was loaded unpinned (Hub ``main``) in P2–P5; pinned in R7 to the only snapshot ever used —
+# the one in the local Hub cache that produced every committed embedding (2026-10-19).
+BERT_REVISION = "86b5e0934494bd15c9632b12f734a8a67f723594"
+REVISIONS = {MODEL_NAME: BERT_REVISION, FINBERT_NAME: FINBERT_REVISION, QWEN_NAME: QWEN_REVISION}
 ROOT = Path(__file__).resolve().parents[2]
 CACHE_DIR = ROOT / "cache" / "text_emb"
 

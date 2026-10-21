@@ -1,0 +1,4 @@
+domain,model,lr,best_val_loss,epochs_run,best_epoch,chosen
+Traffic,PatchTST+Qwen,0.0001,0.036340050399303436,21,1,False
+Traffic,PatchTST+Qwen,0.001,0.03485013544559479,51,31,False
+Traffic,PatchTST+Qwen,0.01,0.0330352745950222,48,28,True

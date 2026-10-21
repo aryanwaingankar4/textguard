@@ -1,0 +1,21 @@
+{
+ "model": "PatchTST+BERT",
+ "domain": "Health_US",
+ "condition": "cross_domain",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "ee655022bc87a021",
+  "2022": "a022c1e20882a668",
+  "2023": "d41c326c093414a6"
+ },
+ "texts": "8c40bca2ddae9c05"
+}

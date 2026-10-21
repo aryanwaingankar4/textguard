@@ -389,9 +389,15 @@ def main() -> None:
     ap.add_argument("--models", nargs="+", default=list(P2_MODELS))
     ap.add_argument("--fresh", action="store_true",
                     help="discard saved units and retrain everything")
+    ap.add_argument("--collect-only", action="store_true",
+                    help="no training: rebuild the combined CSVs and summaries from the committed "
+                         "units (R7 reproduce.py; retraining needs MM-TSFlib, BERT and ~1 h CPU)")
     args = ap.parse_args()
-    preds, tuning = run(domains=args.domains, use_mlflow=not args.no_mlflow,
-                        fresh=args.fresh, models=args.models)
+    if args.collect_only:
+        preds, tuning = collect()
+    else:
+        preds, tuning = run(domains=args.domains, use_mlflow=not args.no_mlflow,
+                            fresh=args.fresh, models=args.models)
     summary = summarise(preds)
     summary.to_csv(RESULTS / "summary_p2_baselines.csv", index=False)
     with pd.option_context("display.width", 200, "display.max_rows", 200):

@@ -345,13 +345,20 @@ def main() -> None:
     ap.add_argument("--models", nargs="+", default=list(MODELS))
     ap.add_argument("--domains", nargs="+", default=DOMAINS)
     ap.add_argument("--conditions", nargs="+", default=CONDITIONS)
+    ap.add_argument("--collect-only", action="store_true",
+                    help="no inference: rebuild p5_predictions.csv from the committed units "
+                         "(R7 reproduce.py; the scaler check needs the gitignored checkpoints)")
     args = ap.parse_args()
-    preds = run(args.models, args.domains, args.conditions, use_mlflow=not args.no_mlflow,
-                fresh=args.fresh)
+    if args.collect_only:
+        preds = collect()
+    else:
+        preds = run(args.models, args.domains, args.conditions, use_mlflow=not args.no_mlflow,
+                    fresh=args.fresh)
     with pd.option_context("display.width", 200, "display.max_rows", 200):
-        scal = check_embedding_scalers(args.domains)
-        print(f"embedding scalers: {len(scal)} Model 3/4 checkpoints match the train-text "
-              f"statistics (max |diff| {scal.max_abs_diff.max():.1e})")
+        if not args.collect_only:
+            scal = check_embedding_scalers(args.domains)
+            print(f"embedding scalers: {len(scal)} Model 3/4 checkpoints match the train-text "
+                  f"statistics (max |diff| {scal.max_abs_diff.max():.1e})")
         blind = check_text_blind(preds)
         if len(blind):
             print(f"text-blind check: {len(blind)} (model, domain, seed, split) groups, "

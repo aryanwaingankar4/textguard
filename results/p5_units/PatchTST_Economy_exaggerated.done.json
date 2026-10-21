@@ -1,0 +1,21 @@
+{
+ "model": "PatchTST",
+ "domain": "Economy",
+ "condition": "exaggerated",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "1320888bf5c4fc52",
+  "2022": "6736f2ba5e86f022",
+  "2023": "2cd92ebbcee36e94"
+ },
+ "texts": "f5012462e43fc1d6"
+}

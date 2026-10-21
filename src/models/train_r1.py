@@ -121,8 +121,13 @@ def main() -> None:
     ap.add_argument("--fresh", action="store_true")
     ap.add_argument("--models", nargs="+", default=list(R1_MODELS))
     ap.add_argument("--domains", nargs="+", default=DOMAINS)
+    ap.add_argument("--collect-only", action="store_true",
+                    help="no training: rebuild from the committed units (R7 reproduce.py)")
     a = ap.parse_args()
-    preds, tuning = run(a.domains, a.models, use_mlflow=not a.no_mlflow, fresh=a.fresh)
+    if a.collect_only:
+        preds, tuning = collect()
+    else:
+        preds, tuning = run(a.domains, a.models, use_mlflow=not a.no_mlflow, fresh=a.fresh)
     summary = summarise(preds.assign(config="main")).drop(columns="published_uni_mse")
     summary.to_csv(RESULTS / "summary_r1_train.csv", index=False)
     chk = check_text_none(preds)

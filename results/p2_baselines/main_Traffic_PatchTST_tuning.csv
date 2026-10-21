@@ -1,0 +1,4 @@
+domain,model,lr,best_val_loss,epochs_run,best_epoch,chosen
+Traffic,PatchTST,0.0001,0.033701080828905106,80,60,True
+Traffic,PatchTST,0.001,0.05878714844584465,52,32,False
+Traffic,PatchTST,0.01,1.549209475517273,52,32,False

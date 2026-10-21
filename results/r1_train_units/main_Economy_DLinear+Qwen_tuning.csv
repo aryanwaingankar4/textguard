@@ -1,0 +1,4 @@
+domain,model,lr,best_val_loss,epochs_run,best_epoch,chosen
+Economy,DLinear+Qwen,0.0001,0.0892580896615982,48,28,False
+Economy,DLinear+Qwen,0.001,0.08917167782783508,24,4,False
+Economy,DLinear+Qwen,0.01,0.08332355320453644,22,2,True

@@ -1,0 +1,21 @@
+{
+ "model": "PatchTST",
+ "domain": "Health_US",
+ "condition": "time_shifted",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "66cb4e869a0691f6",
+  "2022": "e30a7200e2a7e48f",
+  "2023": "abf43fb5f4463276"
+ },
+ "texts": "0640b30f9898739b"
+}

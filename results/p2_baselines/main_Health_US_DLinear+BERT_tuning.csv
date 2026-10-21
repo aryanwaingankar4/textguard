@@ -1,0 +1,4 @@
+domain,model,lr,best_val_loss,epochs_run,best_epoch,chosen
+Health_US,DLinear+BERT,0.0001,0.042661331593990326,24,4,True
+Health_US,DLinear+BERT,0.001,0.04314534738659859,22,2,False
+Health_US,DLinear+BERT,0.01,0.045744072645902634,36,16,False

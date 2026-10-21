@@ -1,0 +1,21 @@
+{
+ "model": "PatchTST+FinBERT",
+ "domain": "Traffic",
+ "condition": "a1_selective",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "2caeeab725f3abbd",
+  "2022": "1ac2051bf0a87818",
+  "2023": "22853cfcf5213776"
+ },
+ "texts": "16e799f3ef762ab8"
+}

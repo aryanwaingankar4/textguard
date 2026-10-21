@@ -1,0 +1,21 @@
+{
+ "model": "PatchTST+FinBERT",
+ "domain": "Health_US",
+ "condition": "real",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "2124772ba076e330",
+  "2022": "e0fec3d91ba3fbd3",
+  "2023": "02c9f2f8077d5c94"
+ },
+ "texts": "659df5e69c3561eb"
+}

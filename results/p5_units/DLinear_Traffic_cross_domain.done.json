@@ -1,0 +1,21 @@
+{
+ "model": "DLinear",
+ "domain": "Traffic",
+ "condition": "cross_domain",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "47e90d166299cabe",
+  "2022": "1d0b2fc2b74569f9",
+  "2023": "6592074e597466ca"
+ },
+ "texts": "fa2d1b2394fe0a2d"
+}

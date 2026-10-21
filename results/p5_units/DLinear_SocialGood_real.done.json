@@ -1,0 +1,21 @@
+{
+ "model": "DLinear",
+ "domain": "SocialGood",
+ "condition": "real",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "8a674fb53ef5370f",
+  "2022": "4ea5464defd26935",
+  "2023": "135d7c423c38fc1a"
+ },
+ "texts": "7911221ed8c161c1"
+}

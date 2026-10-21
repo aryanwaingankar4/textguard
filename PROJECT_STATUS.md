@@ -5,7 +5,7 @@
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
 **Current phase:** R7 — reproducibility (P0–P6, R1–R4 complete; R5, R6 = future work, not run; then P7.2 demo, then P8)
-**Last updated:** 2026-10-19
+**Last updated:** 2026-10-21
 
 > 👤 **Solo project.** All work by Aryan.
 > 📌 **Phase-gated, no deadlines.** See `PHASES.md`.
@@ -29,7 +29,7 @@
 | **R4** | TextGuard v2 — val-developed, tested once on held-out domains | ✅ | ✅ Done — **v2 buys protection at a cost (FBR)**: A2 cut on M5 (+0.180 → +0.021σ, below v1), FBR 18.4% vs v1 7.0% (val ordering reversed); nothing transfers to Q7 (§9 R4) |
 | R5 | Realistic attacks — other-family LLM fakes + human plausibility study | — | ❌ Future work, not run (Aryan 2026-10-19) |
 | R6 | Drift monitor for fake-report campaigns (RQ4; replaces P7.4) | — | ❌ Future work, not run (Aryan 2026-10-19) |
-| R7 | Reproducibility — reproduce script, pinned env, data/model cards, ethics | ✅ | 🔵 **Next** |
+| R7 | Reproducibility — reproduce script, pinned env, data/model cards, ethics | ✅ | 🔵 **WIP, paused** — clean room stopped at step 9 / 47; restart with memory freed, then the Kaggle toolkit test (§1a) |
 | P7 | Auditor, demo, extras | ⬜ Optional | ⚪ Pending — **P7.2 demo after R7** |
 | P8 | Paper & release | ✅ | ⚪ Pending (after R7) |
 
@@ -82,15 +82,57 @@ Other P7 items stay optional.
   (MSE 1.06 vs 0.48σ²), so v2's accuracy gain partly reflects damping harmful text. §9 "R4".
   `paper/sections/r4_textguard_v2.tex`.
 
-### R7 — what to do next (reproducibility; PHASES.md R7)
+### R7 — WHERE IT STOPPED (paused by Aryan 2026-10-21; WIP commit "R7: WIP …")
 
-* One-command reproduce script (every `python -m src.analyze_*` / `figures_*` from the backed-up
-  Kaggle / Colab answers — the "Regenerate everything" table below is its inventory); pinned
-  environment.
-* Data card (Time-MMD, FNSPID CC BY-NC-4.0 — academic use only), model card, ethics statement
-  (synthetic fakes labelled in every released file).
-* Pre-register only if R7 produces a test result (it should not — it reproduces existing ones).
-* Then P7.2 (Streamlit demo, Qwen results precomputed), then P8.
+**R7 is NOT complete.** Built and committed as WIP (Aryan's 10-item R7 brief, 2026-10-19):
+`reproduce.py` + `reproduce.sh` (47 steps, data → P1 … R4, then a byte-for-byte comparison of every
+committed `results/` and `paper/figures/` file + the sha256 of every regenerated Kaggle input);
+`requirements-lock.txt` (exact freeze), `requirements.txt` (direct pins), `.python-version` 3.14.3;
+`src/data/download.py` + `src/data/manifest.json` (Time-MMD @00281e2, FNSPID @bf9189c, sha256 of raw
+bytes); `DATA_CARD.md`, `MODEL_CARD.md`, `ETHICS.md`, `LICENSE` (MIT), README rewrite,
+`docs/REPRODUCE.md`, `docs/GPU_RUNS.md` (generated from the run metas); public toolkit
+(`textguard/`, `src/textguard/toolkit.py`, `live_judge.py`, `examples/`,
+`notebooks/textguard_your_model.ipynb` + builder, `tests/test_toolkit.py`).
+
+**Verified so far:**
+* **In place (dev repo):** all 47 steps ok; **every committed table byte-identical**; 9 / 9 Kaggle
+  inputs regenerate to their recorded sha256; only the 8 PDFs differed (embedded creation date) →
+  re-rendered with `SOURCE_DATE_EPOCH` and committed, now byte-reproducible (R4 rerun: identical).
+* Tests: 478 passed (full suite, before the last 2 fixes) + `test_toolkit.py` 10 / 10 after them.
+* Toolkit: end to end on the DummyForecaster + synthetic sample **with a stub judge only** — the real
+  Qwen judge has NOT been run through the toolkit yet.
+
+**Clean room — stopped at step 9 / 47** (`C:\Users\Aryan\tg-cleanroom`, outside the repo; fresh
+clone of HEAD + the uncommitted changes, committed only inside that throwaway clone; fresh venv
+`C:\Users\Aryan\tg-cleanroom-venv` from the lock = identical; fresh `HF_HOME`
+`C:\Users\Aryan\tg-cleanroom-hf`). Run 3: steps 1–9 ok (data 47 / 47, P1–P3, P5 exports, BERT
+embeddings 933 s), then **killed by Claude Code for low system memory** (16 GB machine; a parallel
+3 GB Qwen download was running). Two real bugs the clean room found, both fixed and in this commit:
+1. **Line endings are data**: every result came from a Windows `git clone` of Time-MMD
+   (autocrlf → CRLF, also inside report texts); an LF copy changes 166 Model 5 prompts and the loaders
+   refuse the committed answers. `download.py` now writes Time-MMD as CRLF (reproduces all 30 original
+   files byte for byte); manifest hashes raw bytes (the first version normalised CRLF and hid this).
+2. FNSPID's 332 MB stream was silently truncated by a dropped connection → resumable range download
+   with a size check + retries on the price reads (`fnspid.py`).
+
+**Next, in order:**
+1. **Free memory** (close other apps; do not download Qwen at the same time), then rebuild and rerun the
+   clean room: delete `C:\Users\Aryan\tg-cleanroom`, re-create it the same way (clone HEAD — the WIP
+   commit now holds everything — into a fresh folder; reuse the venv or make a fresh one from
+   `requirements-lock.txt`), set `HF_HOME` to the clean-room HF folder, run `python reproduce.py`
+   (~45 min incl. the CPU embeddings). Expected: `REPRODUCED`; report `logs/reproduce/report.json`.
+   Any `differs` → explain each before going on.
+2. **Kaggle toolkit test** (Aryan): run `notebooks/textguard_your_model.ipynb` on a Kaggle T4 (GPU,
+   Internet on) — the worked example (DummyForecaster + `examples/sample_series.csv`) with the **real**
+   Qwen judge. Needs the repo reachable from Kaggle (public, or upload a zip). Record the audit summary.
+3. Then: fill `docs/REPRODUCE.md` §5 with the clean-room result; §9 "R7"; mark R7 done (phase board,
+   PHASES.md); session log; commit "R7: …" and push. Show Aryan the clean-room result **before** that
+   final commit (his instruction).
+4. **Decisions pending (Aryan):** `results/qwen/r4_heldout_inputs.csv` was removed from the tree
+   (15 MB FNSPID headlines + fakes; regenerated by `export_r4_inputs`, sha asserted) but is still in
+   history (`801c3f6`) — rewrite history before going public? The CPU per-unit raw predictions
+   (~18 MB, numbers only) are now committed so nothing needs retraining.
+* After R7: P7.2 (Streamlit demo, Qwen results precomputed), then P8.
 
 ### R4 — what was done (TextGuard v2) — record, complete
 
@@ -4120,6 +4162,20 @@ affected and is noted where reported.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-21 — R7 WIP (paused by Aryan): reproduce + cards + toolkit built; clean room at 9 / 47
+- Built: `reproduce.py` / `.sh`, lock + `.python-version`, `src/data/download.py` + manifest,
+  DATA_CARD / MODEL_CARD / ETHICS / LICENSE / README / `docs/`, public toolkit (`textguard/`,
+  `toolkit.py`, `live_judge.py`, example + Kaggle/Colab notebook), `--collect-only` on the CPU runners
+  (per-unit raw predictions now committed), `qwen_forecaster.summarise_p2` and
+  `analyze_r4.energy_label_check` (the two tables that came from inline snippets), BERT revision pinned
+  (`86b5e09`, the only snapshot ever used), FNSPID / S&P 500 sources pinned. `r4_heldout_inputs.csv`
+  untracked (regenerated, sha asserted).
+- In place: 47 / 47 steps, every table byte-identical, 9 / 9 Kaggle inputs sha-identical; PDFs
+  re-rendered with a fixed `SOURCE_DATE_EPOCH`.
+- Clean room found 2 bugs (Time-MMD CRLF-in-texts; truncated FNSPID stream), both fixed; run 3 reached
+  step 9 / 47 and was killed for low system memory (not a code failure).
+- Next: §1a "R7 — WHERE IT STOPPED".
 
 ### 2026-10-19 — R4: held-out analysis exactly as §10g → **R4 complete**
 - `src/analyze_r4.py` (m = 79 per target, asserted; R2 / R3 verdict functions reused),

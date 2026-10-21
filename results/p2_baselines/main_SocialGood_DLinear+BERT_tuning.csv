@@ -1,0 +1,4 @@
+domain,model,lr,best_val_loss,epochs_run,best_epoch,chosen
+SocialGood,DLinear+BERT,0.0001,0.01766190677881241,21,1,False
+SocialGood,DLinear+BERT,0.001,0.01753688044846058,21,1,False
+SocialGood,DLinear+BERT,0.01,0.015222554095089436,23,3,True

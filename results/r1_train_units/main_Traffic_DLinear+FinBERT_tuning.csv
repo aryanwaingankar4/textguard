@@ -1,0 +1,4 @@
+domain,model,lr,best_val_loss,epochs_run,best_epoch,chosen
+Traffic,DLinear+FinBERT,0.0001,0.6136675477027893,200,200,False
+Traffic,DLinear+FinBERT,0.001,0.47105127573013306,65,45,False
+Traffic,DLinear+FinBERT,0.01,0.42847543954849243,57,37,True

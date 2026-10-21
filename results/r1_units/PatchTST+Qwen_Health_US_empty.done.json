@@ -1,0 +1,21 @@
+{
+ "model": "PatchTST+Qwen",
+ "domain": "Health_US",
+ "condition": "empty",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "e6af367cbbe47202",
+  "2022": "a330cbfa1d9838f7",
+  "2023": "e35e78e22a741fea"
+ },
+ "texts": "f6fcf2466be5f880"
+}

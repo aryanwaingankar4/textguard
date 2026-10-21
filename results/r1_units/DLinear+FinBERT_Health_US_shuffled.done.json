@@ -1,0 +1,21 @@
+{
+ "model": "DLinear+FinBERT",
+ "domain": "Health_US",
+ "condition": "shuffled",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "724b75b867cc00de",
+  "2022": "a15fc6276f43e90d",
+  "2023": "4a5a199bf83d67d0"
+ },
+ "texts": "cf3c0dc22e5ed14d"
+}

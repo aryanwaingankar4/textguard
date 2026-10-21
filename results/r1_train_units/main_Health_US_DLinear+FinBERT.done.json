@@ -1,0 +1,24 @@
+{
+ "model": "DLinear+FinBERT",
+ "config": "main",
+ "seq_len": 24,
+ "horizon": 1,
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "lr_grid": [
+  0.0001,
+  0.001,
+  0.01
+ ],
+ "tune_seed": 2021,
+ "epochs": 200,
+ "patience": 20,
+ "prompt_weight": 0.1,
+ "encoder": "ProsusAI/finbert",
+ "emb_scaling": "train_zscore",
+ "backbone": "frozen_model_1_2_same_seed",
+ "text_none": "backbone_only"
+}

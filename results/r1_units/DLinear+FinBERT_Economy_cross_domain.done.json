@@ -1,0 +1,21 @@
+{
+ "model": "DLinear+FinBERT",
+ "domain": "Economy",
+ "condition": "cross_domain",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "212e12ec64d27e6f",
+  "2022": "c5aeb319b772fb34",
+  "2023": "8fa209c802d514c3"
+ },
+ "texts": "659a64e526609750"
+}

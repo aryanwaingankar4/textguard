@@ -825,9 +825,43 @@ def run(save: bool = True) -> dict:
     return out
 
 
+def energy_label_check() -> pd.DataFrame:
+    """EXPLORATORY, not in §10g (2026-10-19): how far §10g Note 1's prompt label ("regular" vs the
+    all-grades target) could affect Energy accuracy — the report's quoted price vs y_last, how often
+    the forecast copies it, mean errors with / without the report. Run inline during R4; kept here
+    verbatim in R7 so ``summary_r4_energy_label_check.csv`` is regenerated (``python -m
+    src.analyze_r4 --energy-label-check``). Not part of ``run()``: no pre-registered test uses it."""
+    from src.analyze_r2 import report_numbers
+    rows = []
+    for t in TARGETS:
+        x = frame(t)
+        e = x[(x.domain == "Energy") & x.has_text]
+        rep = [report_numbers(s) for s in e.text_real]
+        # the report's dollar price = first number with 3 decimals that looks like a price ($1-$6)
+        price = np.array([next((v for v in r if 1 < v < 7), np.nan) for r in rep])
+        copy = np.isclose(e.real.to_numpy(), price, atol=5e-4)
+        err_real = (e.real - e.y_true).to_numpy()
+        err_none = (e["none"] - e.y_true).to_numpy()
+        rows.append(dict(target=t, n=len(e), report_price_minus_ylast=np.nanmean(price - e.y_last),
+                         share_real_equals_report_price=copy.mean(),
+                         share_none_equals_report_price=np.isclose(e["none"].to_numpy(), price, atol=5e-4).mean(),
+                         mean_err_real=err_real.mean(), mean_err_none=err_none.mean(),
+                         mean_err_persistence=(e.y_last - e.y_true).mean(), sigma=e.sigma.iloc[0],
+                         mse_real_sigma2=np.mean((err_real / e.sigma) ** 2),
+                         mse_real_excl_copies=np.mean((err_real[~copy] / e.sigma.to_numpy()[~copy]) ** 2),
+                         mse_none_sigma2=np.mean((err_none / e.sigma) ** 2)))
+    df = pd.DataFrame(rows).assign(
+        note="EXPLORATORY (not in §10g): how far Note 1's label could affect Energy accuracy")
+    df.to_csv(RESULTS / "summary_r4_energy_label_check.csv", index=False, float_format="%.6g")
+    return df
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
+    if "--energy-label-check" in sys.argv[1:]:
+        print(energy_label_check().round(4).T.to_string())
+        return 0
     out = run()
     pd.set_option("display.width", 250)
     print(json.dumps(out["reading"], indent=1, ensure_ascii=False, default=str))

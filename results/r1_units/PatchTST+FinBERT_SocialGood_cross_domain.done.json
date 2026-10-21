@@ -1,0 +1,21 @@
+{
+ "model": "PatchTST+FinBERT",
+ "domain": "SocialGood",
+ "condition": "cross_domain",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "0aa681688c6a837d",
+  "2022": "ff6a22b2981aa5c5",
+  "2023": "fc0d04e1372fc17e"
+ },
+ "texts": "022e28a1a4e9f020"
+}

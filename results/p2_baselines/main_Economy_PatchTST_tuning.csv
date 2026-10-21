@@ -1,0 +1,4 @@
+domain,model,lr,best_val_loss,epochs_run,best_epoch,chosen
+Economy,PatchTST,0.0001,0.09072860330343246,30,10,False
+Economy,PatchTST,0.001,0.07632020860910416,49,29,True
+Economy,PatchTST,0.01,0.12905332446098328,24,4,False

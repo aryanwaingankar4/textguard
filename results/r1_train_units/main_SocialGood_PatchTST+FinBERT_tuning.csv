@@ -1,0 +1,4 @@
+domain,model,lr,best_val_loss,epochs_run,best_epoch,chosen
+SocialGood,PatchTST+FinBERT,0.0001,0.010321266017854214,21,1,False
+SocialGood,PatchTST+FinBERT,0.001,0.009728356264531612,22,2,False
+SocialGood,PatchTST+FinBERT,0.01,0.00735767837613821,22,2,True

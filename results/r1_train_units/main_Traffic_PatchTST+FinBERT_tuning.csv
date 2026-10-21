@@ -1,0 +1,4 @@
+domain,model,lr,best_val_loss,epochs_run,best_epoch,chosen
+Traffic,PatchTST+FinBERT,0.0001,0.03252733498811722,22,2,False
+Traffic,PatchTST+FinBERT,0.001,0.034699954092502594,21,1,False
+Traffic,PatchTST+FinBERT,0.01,0.031241782009601593,25,5,True

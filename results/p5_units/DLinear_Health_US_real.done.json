@@ -1,0 +1,21 @@
+{
+ "model": "DLinear",
+ "domain": "Health_US",
+ "condition": "real",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "b26e028922c76d7a",
+  "2022": "08992b6e283aad15",
+  "2023": "8c7c170617fe8151"
+ },
+ "texts": "659df5e69c3561eb"
+}

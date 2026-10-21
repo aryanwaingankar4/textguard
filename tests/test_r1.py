@@ -13,7 +13,7 @@ import pandas as pd
 import pytest
 
 from src.models.qwen_embeddings import build, import_embeddings
-from src.models.text_encoder import (FINBERT_NAME, FINBERT_REVISION, MODEL_NAME, QWEN_NAME,
+from src.models.text_encoder import (BERT_REVISION, FINBERT_NAME, FINBERT_REVISION, MODEL_NAME, QWEN_NAME,
                                      QWEN_REVISION, BertTextEncoder, CachedEncoder, get_encoder,
                                      make_prompt, prompt_sha)
 
@@ -28,7 +28,7 @@ def test_encoder_factory_pins_revisions_and_dims(tmp_path):
     bert = get_encoder(MODEL_NAME, cache_dir=tmp_path)
     fin = get_encoder(FINBERT_NAME, cache_dir=tmp_path)
     qwen = get_encoder(QWEN_NAME, cache_dir=tmp_path)
-    assert type(bert) is BertTextEncoder and bert.dim == 768 and bert.revision is None
+    assert type(bert) is BertTextEncoder and bert.dim == 768 and bert.revision == BERT_REVISION
     assert type(fin) is BertTextEncoder and fin.dim == 768 and fin.revision == FINBERT_REVISION
     assert type(qwen) is CachedEncoder and qwen.dim == DIM and qwen.revision == QWEN_REVISION
     assert bert.cache_dir != fin.cache_dir != qwen.cache_dir          # never share a cache

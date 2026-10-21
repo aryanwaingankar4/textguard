@@ -260,3 +260,27 @@ class QwenForecaster(BaseForecaster):
 
 def _same(a: float, b: float) -> bool:
     return (np.isnan(a) and np.isnan(b)) or a == b
+
+
+SUMMARY_P2 = Path(__file__).resolve().parents[2] / "results" / "summary_p2_qwen.csv"
+
+
+def summarise_p2(predictions: Path | str = PREDICTIONS, inputs: Path | str = INPUTS) -> pd.DataFrame:
+    """P2.4's table (``summary_p2_qwen.csv``): normalised MSE over the valid answers, with the
+    failure counts beside it — so a low MSE can never hide answers that were dropped.
+
+    Written in P2.4 by an inline snippet; this function is that snippet, kept so R7's
+    ``reproduce.py`` regenerates the committed file byte for byte."""
+    d = load_predictions(predictions, inputs)
+    d = d.assign(se=((d.y_true - d.y_pred) / d.train_std) ** 2)
+    g = d.groupby(["domain", "split", "condition"])
+    out = pd.DataFrame({"mse_norm": g.se.mean(), "n_valid": g.se.count()})
+    out = out.join(parse_failure_rate(d)).reset_index()
+    out.insert(1, "model", QwenForecaster.name)
+    return out[["domain", "model", "split", "condition", "mse_norm", "n_valid", "parse_failures",
+                "scale_failures", "n", "rate"]]
+
+
+if __name__ == "__main__":
+    summarise_p2().to_csv(SUMMARY_P2, index=False)
+    print(f"-> {SUMMARY_P2}")

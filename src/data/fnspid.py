@@ -33,12 +33,16 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "data" / "FNSPID"
-BASE = "https://huggingface.co/datasets/Zihan1004/FNSPID/resolve/main/"
+# Pinned (R7): the dataset revision current since 2024-04-09, i.e. the one read at the 2026-10-12 freeze.
+FNSPID_REVISION = "bf9189c41527198897d1af3e17b1a0095279fc45"
+BASE = f"https://huggingface.co/datasets/Zihan1004/FNSPID/resolve/{FNSPID_REVISION}/"
 NEWS = "Stock_news/All_external.csv"
 PRICES = "Stock_price/full_history.zip"
 PRICES_SIZE = 589_525_596
 BENZINGA_END = 331_521_297          # last byte of the ticker-tagged Benzinga block (found by probing)
-SP500_URL = ("https://raw.githubusercontent.com/fja05680/sp500/master/"
+# Pinned (R7): the last commit of the membership file before the freeze (2026-09-07; unchanged since).
+SP500_COMMIT = "a2430f2af0c79ddf0748e91de11bdeb1616ab5a7"
+SP500_URL = (f"https://raw.githubusercontent.com/fja05680/sp500/{SP500_COMMIT}/"
              "S%26P%20500%20Historical%20Components%20%26%20Changes%20(Updated).csv")
 
 PERIOD = ("2018-06-01", "2020-05-31")
@@ -58,12 +62,38 @@ DUAL_CLASSES = [("GOOG", "GOOGL"), ("FOX", "FOXA"), ("NWS", "NWSA"), ("DISCK", "
 AS_TRADED = {"NVDA": 4.0, "MRK": 1.048, "PFE": 1.054}
 
 
+def _fetch_range(url: str, end: int, dest: Path, tries: int = 20) -> Path:
+    """Bytes 0..end of ``url`` into ``dest``, resuming after a dropped connection (R7: a clean-room
+    download was silently cut short at the 'A' tickers; the selection assert caught it). Refuses to
+    return a short file."""
+    want = end + 1
+    for _ in range(tries):
+        have = dest.stat().st_size if dest.exists() else 0
+        if have >= want:
+            break
+        req = urllib.request.Request(url, headers={"Range": f"bytes={have}-{end}"})
+        try:
+            with urllib.request.urlopen(req, timeout=300) as r, open(dest, "ab") as f:
+                if r.status != 206:      # a 200 would be the whole 29 GB file, not our range
+                    raise OSError(f"server ignored the byte range (HTTP {r.status})")
+                while chunk := r.read(1 << 20):
+                    f.write(chunk)
+        except (OSError, urllib.error.URLError) as e:
+            print(f"  connection dropped at {have:,} bytes ({e}); resuming", flush=True)
+    size = dest.stat().st_size if dest.exists() else 0
+    if size != want:
+        raise OSError(f"{url}: got {size:,} of {want:,} bytes")
+    return dest
+
+
 def _stream_benzinga() -> pd.DataFrame:
     """Every ticker-tagged Benzinga headline: Date, ticker, title, publisher, url."""
-    req = urllib.request.Request(BASE + NEWS, headers={"Range": f"bytes=0-{BENZINGA_END + 200_000}"})
+    OUT.mkdir(parents=True, exist_ok=True)
+    part = OUT / "_benzinga_block.part"
+    _fetch_range(BASE + NEWS, BENZINGA_END + 200_000, part)
     csv.field_size_limit(10**9)
     rows = []
-    with urllib.request.urlopen(req, timeout=900) as r:
+    with open(part, "rb") as r:
         rd = csv.reader(io.TextIOWrapper(r, encoding="utf-8", errors="replace", newline=""))
         next(rd)
         for row in rd:
@@ -124,8 +154,15 @@ class _HTTPFile(io.RawIOBase):
         if n <= 0:
             return 0
         req = urllib.request.Request(self.url, headers={"Range": f"bytes={self.pos}-{self.pos + n - 1}"})
-        with urllib.request.urlopen(req, timeout=300) as r:
-            data = r.read()
+        for attempt in range(10):          # flaky connections (R7); zipfile's CRC check catches the rest
+            try:
+                with urllib.request.urlopen(req, timeout=300) as r:
+                    data = r.read()
+                if len(data) == n:
+                    break
+            except OSError:
+                if attempt == 9:
+                    raise
         b[:len(data)] = data
         self.pos += len(data)
         return len(data)
@@ -167,6 +204,7 @@ def main() -> int:
     assert top[:10] == SELECTED and top[10:15] == RESERVE, f"ranking changed: {top[:15]}"
     block[block["ticker"].isin(SELECTED + RESERVE)].to_parquet(OUT / "benzinga_frozen_tickers.parquet")
     print(f"{len(block):,} headlines; frozen selection reproduced: {top[:10]} | reserve {top[10:15]}")
+    (OUT / "_benzinga_block.part").unlink(missing_ok=True)   # 332 MB, no longer needed
     fetch_prices(SELECTED + RESERVE)
     print("prices ->", OUT / "prices")
     return 0

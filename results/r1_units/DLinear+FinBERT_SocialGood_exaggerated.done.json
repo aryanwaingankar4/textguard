@@ -1,0 +1,21 @@
+{
+ "model": "DLinear+FinBERT",
+ "domain": "SocialGood",
+ "condition": "exaggerated",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "6dffe63069342365",
+  "2022": "af374fa1c1ebe3ef",
+  "2023": "07eaa092f5cf3a11"
+ },
+ "texts": "2d2b48eedd72240b"
+}

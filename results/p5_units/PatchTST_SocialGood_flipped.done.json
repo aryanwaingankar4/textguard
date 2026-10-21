@@ -1,0 +1,21 @@
+{
+ "model": "PatchTST",
+ "domain": "SocialGood",
+ "condition": "flipped",
+ "config": "main",
+ "seeds": [
+  2021,
+  2022,
+  2023
+ ],
+ "splits": [
+  "val",
+  "test"
+ ],
+ "checkpoints": {
+  "2021": "079f801b3d7c7a90",
+  "2022": "2cb833a12fa1b3c8",
+  "2023": "05765783d0ea6a49"
+ },
+ "texts": "805ce6abf9e90724"
+}
