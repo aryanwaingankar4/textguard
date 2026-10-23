@@ -6,7 +6,7 @@ Goal: clone the repository and regenerate every reported table and figure withou
 
 * **Python 3.14.3** (`.python-version`). The results were produced on Windows 11 x64, CPU only.
 * `python -m pip install -r requirements-lock.txt` installs the exact environment (`pip freeze`
-  of the development venv, 120 packages; `pywin32` only on Windows). `requirements.txt` lists the
+  of the development venv, 116 packages; `pywin32` only on Windows). `requirements.txt` lists the
   direct dependencies, pinned.
 * Pinned model weights, downloaded from the Hugging Face Hub on first use:
   BERT `google-bert/bert-base-uncased` @ `86b5e09` and FinBERT `ProsusAI/finbert` @ `4556d13` (CPU

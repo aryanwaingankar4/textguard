@@ -5,7 +5,7 @@
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
 **Current phase:** R7 — reproducibility (P0–P6, R1–R4 complete; R5, R6 = future work, not run; then P7.2 demo, then P8)
-**Last updated:** 2026-10-21
+**Last updated:** 2026-10-23
 
 > 👤 **Solo project.** All work by Aryan.
 > 📌 **Phase-gated, no deadlines.** See `PHASES.md`.
@@ -29,7 +29,7 @@
 | **R4** | TextGuard v2 — val-developed, tested once on held-out domains | ✅ | ✅ Done — **v2 buys protection at a cost (FBR)**: A2 cut on M5 (+0.180 → +0.021σ, below v1), FBR 18.4% vs v1 7.0% (val ordering reversed); nothing transfers to Q7 (§9 R4) |
 | R5 | Realistic attacks — other-family LLM fakes + human plausibility study | — | ❌ Future work, not run (Aryan 2026-10-19) |
 | R6 | Drift monitor for fake-report campaigns (RQ4; replaces P7.4) | — | ❌ Future work, not run (Aryan 2026-10-19) |
-| R7 | Reproducibility — reproduce script, pinned env, data/model cards, ethics | ✅ | 🔵 **WIP, paused** — clean room stopped at step 9 / 47; restart with memory freed, then the Kaggle toolkit test (§1a) |
+| R7 | Reproducibility — reproduce script, pinned env, data/model cards, ethics | ✅ | 🔵 **WIP** — clean room reached step 20 / 47 (stopped by Claude Code's memory reaper, not a code failure); Aryan reruns it outside Claude Code; Kaggle toolkit test prepared (§1a) |
 | P7 | Auditor, demo, extras | ⬜ Optional | ⚪ Pending — **P7.2 demo after R7** |
 | P8 | Paper & release | ✅ | ⚪ Pending (after R7) |
 
@@ -114,6 +114,27 @@ embeddings 933 s), then **killed by Claude Code for low system memory** (16 GB m
    files byte for byte); manifest hashes raw bytes (the first version normalised CRLF and hid this).
 2. FNSPID's 332 MB stream was silently truncated by a dropped connection → resumable range download
    with a size check + retries on the price reads (`fnspid.py`).
+
+**2026-10-23 (second WIP commit, "R7: WIP 2 …"):**
+* **Decisions (Aryan):** (1) **git history is NOT rewritten**: a rewrite would change commit hashes
+  cited here. FNSPID is CC BY-NC 4.0, which permits non-commercial redistribution with attribution →
+  DATA_CARD §1a (attribution, what is redistributed: 50 headlines in the tree +
+  `r4_heldout_inputs.csv` in history `801c3f6`…`d93f98a`; its fakes labelled by rule: forecast rows
+  `attacked=True`, judge rows whose `sources` lack `real`), README / ETHICS / LICENSE match.
+  (2) DATA_CARD documents the CRLF finding (prompts hold Windows line endings; `download.py`
+  reproduces the original clone byte for byte). *Open for Aryan:* the history file also holds
+  Time-MMD Energy report texts (Time-MMD states no licence); documented, nothing changed.
+* **Clean room run 4** (fresh GitHub clone of `24bd16d`, fresh venv = lock 116 / 116, fresh
+  `HF_HOME`): steps **1–20 ok** (BERT 723 s + 350 s), then **stopped at step 21 (FinBERT) by Claude
+  Code's low-memory reaper** (not a code failure). Aryan reruns it in his own PowerShell (Option 1,
+  outside Claude Code), from a fresh clone of this WIP commit.
+* **Kaggle toolkit test prepared:** `notebooks/build_toolkit_zip.py` → `dist/textguard_toolkit.zip`
+  (23 files: the 17 `src/` modules `import textguard` loads, `textguard/`, the synthetic example,
+  notebook, LICENSE, README + sha256 manifest; no data; self-tested inside the unpacked zip; syntax
+  OK for Python 3.10–3.12). Notebook cell 1 finds the zip under `/kaggle/input` (unpacked or not,
+  both tested), refuses a hash mismatch; cell 6 saves `run_info.json`. `test_toolkit.py` 10 / 10.
+  Not yet run on Kaggle.
+* `docs/REPRODUCE.md`: lock is 116 packages (said 120).
 
 **Next, in order:**
 1. **Free memory** (close other apps; do not download Qwen at the same time), then rebuild and rerun the
@@ -4162,6 +4183,14 @@ affected and is noted where reported.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-23 — R7 WIP 2: licence decisions documented; toolkit zip for Kaggle; clean room at 20 / 47
+- Aryan's decisions: no history rewrite (FNSPID CC BY-NC permits non-commercial redistribution with
+  attribution); attribution + synthetic labels + CRLF finding in DATA_CARD / README / ETHICS / LICENSE.
+- Toolkit zip builder + notebook cell 1 for a private-repo Kaggle run; tests 10 / 10.
+- Clean room run 4: steps 1–20 ok, stopped at 21 by Claude Code's memory reaper. Aryan reruns it
+  outside Claude Code.
+- Next: §1a "R7 — WHERE IT STOPPED" (clean-room result → Kaggle test → REPRODUCE §5, §9 R7, commit).
 
 ### 2026-10-21 — R7 WIP (paused by Aryan): reproduce + cards + toolkit built; clean room at 9 / 47
 - Built: `reproduce.py` / `.sh`, lock + `.python-version`, `src/data/download.py` + manifest,

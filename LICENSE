@@ -23,5 +23,8 @@ SOFTWARE.
 ---------------------------------------------------------------------------
 Scope: this licence covers the code and documentation in this repository.
 It does not cover the datasets it downloads (Time-MMD: no licence stated by
-its authors; FNSPID: CC BY-NC 4.0) — see DATA_CARD.md. Generated attack
-texts are synthetic research artefacts; see ETHICS.md.
+its authors; FNSPID: CC BY-NC 4.0) — see DATA_CARD.md. FNSPID-derived
+extracts in this repository and its git history (headlines, headline
+bundles) remain under CC BY-NC 4.0: non-commercial use only, attribution to
+Dong et al. (KDD 2024) required. Generated attack texts are synthetic
+research artefacts; see ETHICS.md.

@@ -116,7 +116,10 @@ y_hat = guarded.predict(numbers, text, history=past_values)   # frozen paper set
   is not offered. **Supply your own fakes** in `fake_text` / `fake_direction`.
 * **GPU notebook:** `notebooks/textguard_your_model.ipynb` (Colab or Kaggle, free T4) runs the judge
   with your model and CSV. Its worked example (the `DummyForecaster` on
-  `examples/sample_series.csv`, a small **synthetic** series) runs as is. Locally:
+  `examples/sample_series.csv`, a small **synthetic** series) runs as is. Without GitHub access
+  (a private copy, or no Internet for `git clone`), run `python notebooks/build_toolkit_zip.py`
+  and attach `dist/textguard_toolkit.zip` (23 files, ~60 KB, sha256 manifest) as a Kaggle dataset
+  or upload it to Colab. Cell 1 finds it and checks every hash. Locally:
   `python examples/audit_dummy.py` (no judge) or `--judge qwen` (CPU, slow).
 
 **Honest limits — read before trusting a number:**
@@ -156,9 +159,17 @@ Full list: **`MODEL_CARD.md`**.
 
 ## Data, ethics, licence
 
-* **Data:** Time-MMD (no licence stated by its authors) and FNSPID (**CC BY-NC 4.0**:
-  non-commercial academic use) are **downloaded from their owners, never redistributed**. See
+* **Data:** the raw datasets are **downloaded from their owners, not redistributed**:
+  Time-MMD (Liu et al., NeurIPS 2024; no licence stated by its authors) and FNSPID. See
   `DATA_CARD.md`.
-* **Ethics:** every attack text is synthetic, rule-generated, labelled, and for defence research
-  only. Do not publish or deploy it as genuine reporting. See `ETHICS.md`.
-* **Licence:** code MIT (`LICENSE`). Datasets keep their own terms.
+* **FNSPID attribution:** Zihan Dong, Xinyu Fan, Zhiyuan Peng, *FNSPID: A Comprehensive Financial
+  News Dataset in Time Series*, KDD 2024 (arXiv 2402.06698), licensed **CC BY-NC 4.0**. The
+  FNSPID-derived extracts in this repository and its git history are redistributed under that
+  licence and are for **non-commercial use only**. They are 50 labelled headlines, plus the R4
+  held-out input file of headline bundles, which is in history only. Details are in
+  `DATA_CARD.md` §1a.
+* **Synthetic texts:** every attack text (flipped, exaggerated, A1–A3, and the fakes in the R4
+  input file in git history) is a **synthetic research artefact**. Each one is rule-generated,
+  labelled, and for defence research only, and none is genuine news or a genuine report. Do not
+  publish or deploy it as genuine reporting. See `ETHICS.md`.
+* **Licence:** code MIT (`LICENSE`). Datasets and their extracts keep their own terms.

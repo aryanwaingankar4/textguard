@@ -1,7 +1,7 @@
 """Build ``notebooks/textguard_your_model.ipynb`` — audit YOUR model with TextGuard on a free GPU (R7).
 
 The template a deployer opens on Colab (Runtime → T4 GPU) or Kaggle (Accelerator → GPU T4,
-Internet on). It clones this repository, loads a CSV in the toolkit's format
+Internet on). It gets this repository's code (the toolkit zip, or a clone), loads a CSV in the toolkit's format
 (``src/textguard/toolkit.py``), wraps a model, runs the Qwen2.5-1.5B judge live on the GPU and
 writes the audit. The worked example — the DummyForecaster on ``examples/sample_series.csv`` —
 runs as is; to audit your own model, edit only cells 3 and 4.
@@ -9,13 +9,15 @@ runs as is; to audit your own model, edit only cells 3 and 4.
 Cells (``tests/test_toolkit.py`` compiles every code cell and runs the worked example with a
 stub judge):
 
-1. clone + install (the repository must be reachable: public, or upload a zip instead);
+1. get the code: ``textguard_toolkit.zip`` (``build_toolkit_zip.py``) attached as a Kaggle dataset
+   or uploaded to Colab, hashes checked against its manifest; otherwise ``git clone``;
 2. imports and the GPU check;
 3. **your data** — path, lookback, frequency, what the series is (``SUBJECT``), split;
 4. **your model** — any object with ``horizon`` and ``predict(numbers, text)``;
 5. the judges (one model shared by v1 and v2; pinned revision);
 6. the audit (DSS / flip rate / False Block Rate / MSE / worst cases), saved to ``audit_out/``,
-   plus every judge answer (``audit_out/judge_answers.csv``) so the run can be re-scored offline;
+   plus every judge answer (``audit_out/judge_answers.csv``) so the run can be re-scored offline,
+   and ``audit_out/run_info.json`` (toolkit commit, Python / torch / transformers, GPU);
 7. download.
 
 Run: ``python notebooks/build_toolkit_notebook.py``.
@@ -58,11 +60,29 @@ Paper code and settings: [{REPO}]({REPO}).
 * **Ethics:** the attack texts this notebook writes are synthetic, for testing defences only.
 """),
     code(f"""
-# 1. Get the code (needs the repository to be reachable; otherwise upload a zip and unzip it here)
-import os, subprocess, sys
+# 1. Get the code: from textguard_toolkit.zip (notebooks/build_toolkit_zip.py) if one is attached
+#    (Kaggle: a dataset under /kaggle/input; Colab: uploaded next to this notebook), else git clone.
+import glob, hashlib, json, os, shutil, subprocess, sys, zipfile
 if not os.path.exists("textguard"):
-    subprocess.run(["git", "clone", "--depth", "1", "{REPO}"], check=True)
+    unpacked = sorted(glob.glob("/kaggle/input/**/TOOLKIT_MANIFEST.json", recursive=True))
+    zips = sorted(glob.glob("/kaggle/input/**/textguard_toolkit*.zip", recursive=True)
+                  + glob.glob("textguard_toolkit*.zip"))
+    if unpacked:                       # Kaggle unpacks an uploaded zip; /kaggle/input is read-only
+        shutil.copytree(os.path.dirname(unpacked[0]), "textguard")
+    elif zips:
+        zipfile.ZipFile(zips[0]).extractall("textguard")
+    else:
+        subprocess.run(["git", "clone", "--depth", "1", "{REPO}"], check=True)
 os.chdir("textguard")
+if os.path.exists("TOOLKIT_MANIFEST.json"):  # refuse a stale or edited upload
+    TOOLKIT = json.load(open("TOOLKIT_MANIFEST.json"))
+    bad = [f for f, h in TOOLKIT["files"].items()
+           if hashlib.sha256(open(f, "rb").read()).hexdigest() != h]
+    assert not bad, f"files differ from the manifest: {{bad}}"
+    print("toolkit zip from commit", TOOLKIT["commit"], "-", len(TOOLKIT["files"]), "files verified")
+else:
+    TOOLKIT = {{"commit": subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True,
+                                       text=True).stdout.strip()}}
 # Colab / Kaggle already ship torch, transformers, pandas and numpy; only add what is missing
 subprocess.run([sys.executable, "-m", "pip", "install", "-q", "scipy", "pyarrow"], check=True)
 """),
@@ -106,6 +126,11 @@ judge_v1, judge_v2 = judges(KEY, SUBJECT, frame_v1=FRAME_V1, device=DEVICE)
 report = audit(model, data, judge_v1=judge_v1, judge_v2=judge_v2, subject=SUBJECT)
 report.save("audit_out")
 judge_v1.scorer.answers().to_csv("audit_out/judge_answers.csv", index=False)
+import json, platform, transformers            # what this run used, saved beside the audit
+json.dump(dict(toolkit_commit=TOOLKIT["commit"], python=platform.python_version(),
+               torch=torch.__version__, transformers=transformers.__version__, device=DEVICE,
+               gpu=torch.cuda.get_device_name(0) if DEVICE == "cuda" else None, data=DATA),
+          open("audit_out/run_info.json", "w"), indent=1)
 try:
     from IPython.display import Markdown, display
     display(Markdown(report.to_markdown()))

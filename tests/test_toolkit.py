@@ -172,12 +172,13 @@ def test_notebook_template_runs_the_worked_example(tmp_path, monkeypatch):
         compile(c, "<cell>", "exec")
     monkeypatch.chdir(ROOT)
     monkeypatch.setattr(TG, "judges", lambda *a, **k: _stub_judges("nb-test"))
-    ns = {}
+    ns = {"TOOLKIT": {"commit": "test"}}                   # set by cell 1 (skipped)
     for c in cells[1:6]:                                   # skip clone (1) and download (7)
         c = c.replace('report.save("audit_out")', f'report.save(r"{tmp_path}")')
         c = c.replace('"audit_out/judge_answers.csv"', repr(str(tmp_path / "judge_answers.csv")))
+        c = c.replace('"audit_out/run_info.json"', repr(str(tmp_path / "run_info.json")))
         exec(c, ns)
-    assert (tmp_path / "audit_summary.csv").exists() and (tmp_path / "judge_answers.csv").exists()
+    assert all((tmp_path / f).exists() for f in ("audit_summary.csv", "judge_answers.csv", "run_info.json"))
 
 
 def test_download_reproduces_the_windows_checkout_bytes():
