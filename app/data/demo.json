@@ -11,7 +11,15 @@
   "r4_a2_tg2": 0.020519,
   "r4_fbr_tg1": 0.069956,
   "r4_fbr_tg2": 0.184094,
-  "r4_fbr_tg2_fnspid": 0.223658
+  "r4_fbr_tg2_fnspid": 0.223658,
+  "r4_fbr_tg1_fnspid": 0.090457,
+  "val_fbr_tg1": 0.113208,
+  "val_fbr_tg2": 0.062893,
+  "q7_a2_none": 0.07444,
+  "q7_a2_tg1": 0.064306,
+  "q7_a2_tg2": 0.053925,
+  "judge_neutral_n": 33,
+  "judge_neutral_directional": 11
  },
  "models": [
   {
@@ -348,6 +356,7 @@
     }
    },
    "v2_available": true,
+   "note": null,
    "text": null,
    "settings": {
     "v1": "window 6, τ 0 (P6 frozen)",
@@ -357,8 +366,8 @@
   {
    "id": "energy_a2",
    "title": "Energy — A2: v2 catches what v1 misses",
-   "rule": "Same rule as the FNSPID A2 example (v2 blocks the fake but not the genuine report; v1 lets the fake through), on Energy.",
-   "n_candidates": 39,
+   "rule": "Same rule as the FNSPID A2 example (v1 lets the fake through; v2 blocks the fake but not the genuine report; v2's final with the fake is closer to the genuine forecast than the undefended one), on Energy. The added condition did not change this pick.",
+   "n_candidates": 37,
    "source": "R4 (held-out test)",
    "domain": "Energy",
    "series": "Energy",
@@ -548,6 +557,7 @@
     }
    },
    "v2_available": true,
+   "note": "Data note: the genuine report says \"January 1, 2023\" — a year typo in Time-MMD, not a misaligned report. Its $3.089 is the price of January 1, **2024**: the next report gives $3.073 on January 8, 2024, \"$0.016 below last week's price\" (= $3.089), and the all-grades target fell that week ($3.238 → $3.213) as the report's −$0.027 says, whereas in the first week of 2023 it rose $0.128. Known and kept as in the data (PROJECT_STATUS §6, R4 Energy timing).",
    "text": null,
    "settings": {
     "v1": "window 6, τ 0 (P6 frozen)",
@@ -557,7 +567,312 @@
   {
    "id": "fnspid_a2",
    "title": "FNSPID — A2: v2 catches what v1 misses",
-   "rule": "R4, FNSPID, `a2_forward`, Model 5. Candidates: attacked windows with DSS > 0 where TextGuard v1 lets the fake through (applied weight ≥ 0.5) and v2 does not (< 0.5), while v2 lets the same window's **genuine** report through (≥ 0.5) — so the block comes from the added sentence, not from a genuine one. Picked: the median-DSS candidate.",
+   "rule": "R4, FNSPID, `a2_forward`, Model 5. Candidates: attacked windows with DSS > 0 where TextGuard v1 lets the fake through (applied weight ≥ 0.5) and v2 does not (< 0.5), while v2 lets the same window's **genuine** report through (≥ 0.5) — so the block comes from the added sentence, not from a genuine one — **and v2's final forecast with the fake is closer to the genuine forecast than the undefended one** (added 2026-10-24 after viewing the demo: a block that falls back to a no-text forecast as far away as the fake protects nothing). Picked: the median-DSS candidate.",
+   "n_candidates": 37,
+   "source": "R4 (held-out test)",
+   "domain": "FNSPID",
+   "series": "JNJ",
+   "sample_id": "2018-11-30",
+   "description": "JNJ weekly closing share price",
+   "unit": "US dollars",
+   "freq": "weekly",
+   "timemmd": false,
+   "dates": [
+    "2018-06-15",
+    "2018-06-22",
+    "2018-06-29",
+    "2018-07-06",
+    "2018-07-13",
+    "2018-07-20",
+    "2018-07-27",
+    "2018-08-03",
+    "2018-08-10",
+    "2018-08-17",
+    "2018-08-24",
+    "2018-08-31",
+    "2018-09-07",
+    "2018-09-14",
+    "2018-09-21",
+    "2018-09-28",
+    "2018-10-05",
+    "2018-10-12",
+    "2018-10-19",
+    "2018-10-26",
+    "2018-11-02",
+    "2018-11-09",
+    "2018-11-16",
+    "2018-11-23"
+   ],
+   "lookback": [
+    122.610001,
+    122.839996,
+    121.339996,
+    125.75,
+    125.93,
+    125.849998,
+    131.550003,
+    131.949997,
+    130.75,
+    134.470001,
+    135.949997,
+    134.690002,
+    137.320007,
+    139.490005,
+    142.880005,
+    138.169998,
+    139.100006,
+    133.869995,
+    139.050003,
+    136.970001,
+    140.679993,
+    145.339996,
+    145.990005,
+    142.229996
+   ],
+   "target_date": "2018-11-30",
+   "y_true": 146.899994,
+   "sigma": 8.955872,
+   "fake_cond": "a2_forward",
+   "synthetic_fake": true,
+   "claimed": -1,
+   "forecast": {
+    "none": 142.23,
+    "real": 145.339996,
+    "fake": 139.100006
+   },
+   "defended": {
+    "real": {
+     "off": {
+      "final": 145.339996,
+      "weight": 1.0
+     },
+     "v1": {
+      "final": 145.339996,
+      "weight": 1.0
+     },
+     "v2": {
+      "final": 145.339996,
+      "weight": 1.0
+     }
+    },
+    "fake": {
+     "off": {
+      "final": 139.100006,
+      "weight": 1.0
+     },
+     "v1": {
+      "final": 140.395892,
+      "weight": 0.585978
+     },
+     "v2": {
+      "final": 140.84664,
+      "weight": 0.441969
+     }
+    }
+   },
+   "v1": {
+    "real": {
+     "g": 1.0,
+     "checks": [
+      {
+       "kind": "change",
+       "direction": 1,
+       "confidence": 0.590086,
+       "evidence": 1,
+       "strength": 0.759597,
+       "g": 1.0,
+       "frame": "trend"
+      }
+     ]
+    },
+    "fake": {
+     "g": 0.585978,
+     "checks": [
+      {
+       "kind": "change",
+       "direction": -1,
+       "confidence": 0.545055,
+       "evidence": 1,
+       "strength": 0.759597,
+       "g": 0.585978,
+       "frame": "trend"
+      }
+     ]
+    }
+   },
+   "v2": {
+    "real": {
+     "g": 1.0,
+     "units": [
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.466174
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.913432,
+         "evidence": 1,
+         "strength": 0.605833,
+         "g": 1.0,
+         "frame": "trend"
+        }
+       ],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.909341,
+         "evidence": 1,
+         "strength": 0.605833,
+         "g": 1.0,
+         "frame": "trend"
+        }
+       ],
+       "ignored": [],
+       "g": 1.0
+      }
+     ]
+    },
+    "fake": {
+     "g": 0.441969,
+     "units": [
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.466174
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.913432,
+         "evidence": 1,
+         "strength": 0.605833,
+         "g": 1.0,
+         "frame": "trend"
+        }
+       ],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.909341,
+         "evidence": 1,
+         "strength": 0.605833,
+         "g": 1.0,
+         "frame": "trend"
+        }
+       ],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.921098,
+         "evidence": 1,
+         "strength": 0.605833,
+         "g": 0.441969,
+         "frame": "trend"
+        }
+       ],
+       "ignored": [],
+       "g": 0.441969
+      }
+     ]
+    }
+   },
+   "v2_available": true,
+   "note": null,
+   "text": {
+    "real": "CHMP Says J&J's Janssen Pharma's ERLEADA Receive Positive Opinion For Treatment Of Non-Metastatic Castration Resistant Prostate Cancer\nHearing Appeals Court Says JNJ Can't Prevent Sales Of Generic Zytiga; Says Teva, Mylan Can Enter Market\nStocks Which Set New 52-Week High Yesterday, Mon., Nov. 19, 2018\nThe Daily Biotech Pulse: Denali's Positive Results, Novartis' Substance Abuse Therapy Launch, Medtronic Earnings\nA US Appeals Court Has Declined To Block The Sale Of Generic Versions Of J&J's ZYTIGA\nStocks Which Set New 52-Week High Yesterday, Tues., Nov. 20, 2018",
+    "fake": "CHMP Says J&J's Janssen Pharma's ERLEADA Receive Positive Opinion For Treatment Of Non-Metastatic Castration Resistant Prostate Cancer\nHearing Appeals Court Says JNJ Can't Prevent Sales Of Generic Zytiga; Says Teva, Mylan Can Enter Market\nStocks Which Set New 52-Week High Yesterday, Mon., Nov. 19, 2018\nThe Daily Biotech Pulse: Denali's Positive Results, Novartis' Substance Abuse Therapy Launch, Medtronic Earnings\nA US Appeals Court Has Declined To Block The Sale Of Generic Versions Of J&J's ZYTIGA\nStocks Which Set New 52-Week High Yesterday, Tues., Nov. 20, 2018\nJohnson & Johnson shares are expected to fall next week.",
+    "units": {
+     "real": [
+      "CHMP Says J&J's Janssen Pharma's ERLEADA Receive Positive Opinion For Treatment Of Non-Metastatic Castration Resistant Prostate Cancer",
+      "Hearing Appeals Court Says JNJ Can't Prevent Sales Of Generic Zytiga; Says Teva, Mylan Can Enter Market",
+      "Stocks Which Set New 52-Week High Yesterday, Mon., Nov. 19, 2018",
+      "The Daily Biotech Pulse: Denali's Positive Results, Novartis' Substance Abuse Therapy Launch, Medtronic Earnings",
+      "A US Appeals Court Has Declined To Block The Sale Of Generic Versions Of J&J's ZYTIGA",
+      "Stocks Which Set New 52-Week High Yesterday, Tues., Nov. 20, 2018"
+     ],
+     "fake": [
+      "CHMP Says J&J's Janssen Pharma's ERLEADA Receive Positive Opinion For Treatment Of Non-Metastatic Castration Resistant Prostate Cancer",
+      "Hearing Appeals Court Says JNJ Can't Prevent Sales Of Generic Zytiga; Says Teva, Mylan Can Enter Market",
+      "Stocks Which Set New 52-Week High Yesterday, Mon., Nov. 19, 2018",
+      "The Daily Biotech Pulse: Denali's Positive Results, Novartis' Substance Abuse Therapy Launch, Medtronic Earnings",
+      "A US Appeals Court Has Declined To Block The Sale Of Generic Versions Of J&J's ZYTIGA",
+      "Stocks Which Set New 52-Week High Yesterday, Tues., Nov. 20, 2018",
+      "Johnson & Johnson shares are expected to fall next week."
+     ]
+    }
+   },
+   "settings": {
+    "v1": "window 6, τ 0 (P6 frozen)",
+    "v2": "window 12, c₀ 0.8, τ 0, cap 1σ (R4 frozen)"
+   }
+  },
+  {
+   "id": "fnspid_a2_discard",
+   "title": "FNSPID — A2: v2 flags the lie, but blocking also discards the genuine news",
+   "rule": "The FNSPID A2 rule **without** the last condition (\"closer to the genuine forecast\") — the median-DSS pick of the first version of that rule, kept after viewing because it shows a limit: v2 blocks the fake, but blocking falls back to the no-text forecast, which here is as far from the genuine forecast as the fake, so DSS does not fall.",
    "n_candidates": 54,
    "source": "R4 (held-out test)",
    "domain": "FNSPID",
@@ -868,6 +1183,7 @@
     }
    },
    "v2_available": true,
+   "note": null,
    "text": {
     "real": "Netflix shares trading down 4.3% after competitor Disney provided additional details for their stand alone streaming service, Disney +, on their earnings call last night.\nThe Street Weighs In On Disney's Q4 Earnings, ESPN And Streaming Among Highlights\nEverything We Know About The Disney+ Streaming Service\nCitron's Andrew Left Says Netflix Only Short Position Among FANG's\nThe Legacy Of Stan Lee: Marvel Comics Mastermind, Box Office Gold\nDay After Selloff, Earnings, Trade News Seem To Offer Lift\nCitron's Andrew Left, On CNBC, Highlights He's Currently Short Netflix\nModerate Inflation, Positive Retail Earnings Offer Lift In Back-And-Forth Market\n'Netflix is testing a mobile-only subscription to make its service more affordable' -TechCrunch",
     "fake": "Netflix shares trading down 4.3% after competitor Disney provided additional details for their stand alone streaming service, Disney +, on their earnings call last night.\nThe Street Weighs In On Disney's Q4 Earnings, ESPN And Streaming Among Highlights\nEverything We Know About The Disney+ Streaming Service\nCitron's Andrew Left Says Netflix Only Short Position Among FANG's\nThe Legacy Of Stan Lee: Marvel Comics Mastermind, Box Office Gold\nDay After Selloff, Earnings, Trade News Seem To Offer Lift\nCitron's Andrew Left, On CNBC, Highlights He's Currently Short Netflix\nModerate Inflation, Positive Retail Earnings Offer Lift In Back-And-Forth Market\n'Netflix is testing a mobile-only subscription to make its service more affordable' -TechCrunch\nNetflix shares are expected to rise next week.",
@@ -1492,6 +1808,7 @@
     }
    },
    "v2_available": true,
+   "note": null,
    "text": {
     "real": "Analyst Likes Google After More Details From Stadia\nBitcoin Vs. Apple Pay And Alipay\nRussia's RIA Says Russian Watchdog Has Not Ruled Out A New Case Against Google\nBulls & Bears Of The Week: GameStop, McDonald's, Tesla, Tilray And More\nDOJ Demands Google Hand Over Data Pertinent To Roger Stone\n'Sources say @Google gearing up for epic battle w Trump DOJ over antitrust issues; Unclear if Google has been contacted by DOJ; $GOOGL believes it has a strong counterargument given past successful skirmishes with FTC any case could take years more now' -FBN's Charlie Gasparino\nShares of several technology companies are trading higher after the U.S. and Mexico signed part of an immigration deal. If reached, Mexico would avoid previously announced tariffs; if not reached, President Trump stated tariffs would be reinstated.\nTrump Talks China, Mexico And Big Tech In CNBC Interview\nWhitney Tilson: 'I Think We Are In An IPO Bubble'\nTrump, Speaking About Big US Technology Firms, Says There Is Something Going On In Terms Of Monopoly\nTrump Says EU Is Attacking US Companies\nWhitney Tilson On Antitrust Concerns On Amazon, Google, Facebook, Says Thinks Cos. Will Not Be Broken Up, Says Might Be Fines, But 'Still Gonna Be Dominate Cos.'\n'Fmr #Google Engineer @m_wacker says he was FIRED just days after he appeared on 'Trish Regan Primetime' to expose the company's bias and 'outrage mobs'' -Tweet From FOX Business Anchor Trish Regan\nFrom Earlier: 'Antitrust Chief Rips Google and Amazon, Citing Historic Breakups' -Bloomberg\nYouTube's Account Purges Spark A Cannabis Content Alternative\nDept. Of Justice Antitrust Chief Touts Importance Of Protecting Competition In Digital Economy\nShares of Shares of several semiconductor and technology companies are trading higher on continued trade optimism. The recent US-Mexico deal boosted confidence that the US could also strike a deal with China.\nMorgan Stanley Says The Market Is Underappreciating Tesla's AV Business\nHearing Needham Out Saying A Breakup Of Google Would Yield Investors ~50%\nNomura: AMD's Upcoming Products Can Drive Revenue Momentum, Operating Leverage\nVietnam Asked Companies Not to Advertise on YouTube Videos Containing Anti-state Propaganda\nNetflix, Next Games To Develop 'Stranger Things' Game Similar To Pokemon Go\nGoogle CEO Sundar Pichai Was In Oklahoma To Announce A $600M Investment To Expand Data Center In Mayes County\nLegal Expert Breaks Down Antitrust Risk For Big US Tech Stocks\nFrom Kyrgyzstan To London: How This CEO Is Trying To Revolutionize Productivity In Financial Services",
     "fake": "Analyst Likes Google After More Details From Stadia\nBitcoin Vs. Apple Pay And Alipay\nRussia's RIA Says Russian Watchdog Has Not Ruled Out A New Case Against Google\nBulls & Bears Of The Week: GameStop, McDonald's, Tesla, Tilray And More\nDOJ Demands Google Hand Over Data Pertinent To Roger Stone\n'Sources say @Google gearing up for epic battle w Trump DOJ over antitrust issues; Unclear if Google has been contacted by DOJ; $GOOGL believes it has a strong counterargument given past successful skirmishes with FTC any case could take years more now' -FBN's Charlie Gasparino\nShares of several technology companies are trading higher after the U.S. and Mexico signed part of an immigration deal. If reached, Mexico would avoid previously announced tariffs; if not reached, President Trump stated tariffs would be reinstated.\nTrump Talks China, Mexico And Big Tech In CNBC Interview\nWhitney Tilson: 'I Think We Are In An IPO Bubble'\nTrump, Speaking About Big US Technology Firms, Says There Is Something Going On In Terms Of Monopoly\nTrump Says EU Is Attacking US Companies\nWhitney Tilson On Antitrust Concerns On Amazon, Google, Facebook, Says Thinks Cos. Will Not Be Broken Up, Says Might Be Fines, But 'Still Gonna Be Dominate Cos.'\n'Fmr #Google Engineer @m_wacker says he was FIRED just days after he appeared on 'Trish Regan Primetime' to expose the company's bias and 'outrage mobs'' -Tweet From FOX Business Anchor Trish Regan\nFrom Earlier: 'Antitrust Chief Rips Google and Amazon, Citing Historic Breakups' -Bloomberg\nYouTube's Account Purges Spark A Cannabis Content Alternative\nDept. Of Justice Antitrust Chief Touts Importance Of Protecting Competition In Digital Economy\nShares of Shares of several semiconductor and technology companies are trading higher on continued trade optimism. The recent US-Mexico deal boosted confidence that the US could also strike a deal with China.\nMorgan Stanley Says The Market Is Underappreciating Tesla's AV Business\nHearing Needham Out Saying A Breakup Of Google Would Yield Investors ~50%\nNomura: AMD's Upcoming Products Can Drive Revenue Momentum, Operating Leverage\nVietnam Asked Companies Not to Advertise on YouTube Videos Containing Anti-state Propaganda\nNetflix, Next Games To Develop 'Stranger Things' Game Similar To Pokemon Go\nGoogle CEO Sundar Pichai Was In Oklahoma To Announce A $600M Investment To Expand Data Center In Mayes County\nLegal Expert Breaks Down Antitrust Risk For Big US Tech Stocks\nFrom Kyrgyzstan To London: How This CEO Is Trying To Revolutionize Productivity In Financial Services\nAlphabet shares are expected to fall next week.",
@@ -1666,6 +1983,7 @@
    },
    "v2": null,
    "v2_available": false,
+   "note": null,
    "text": null,
    "settings": {
     "v1": "window 3, τ 0 (P6 frozen)",

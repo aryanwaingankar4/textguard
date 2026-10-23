@@ -69,12 +69,21 @@ SLOTS = {
         rule="R4, FNSPID, `a2_forward`, Model 5. Candidates: attacked windows with DSS > 0 where "
              "TextGuard v1 lets the fake through (applied weight ≥ 0.5) and v2 does not (< 0.5), "
              "while v2 lets the same window's **genuine** report through (≥ 0.5) — so the block "
-             "comes from the added sentence, not from a genuine one. Picked: the median-DSS "
-             "candidate."),
+             "comes from the added sentence, not from a genuine one — **and v2's final forecast with "
+             "the fake is closer to the genuine forecast than the undefended one** (added 2026-10-24 "
+             "after viewing the demo: a block that falls back to a no-text forecast as far away as the "
+             "fake protects nothing). Picked: the median-DSS candidate."),
     "energy_a2": dict(
         title="Energy — A2: v2 catches what v1 misses",
-        rule="Same rule as the FNSPID A2 example (v2 blocks the fake but not the genuine report; "
-             "v1 lets the fake through), on Energy."),
+        rule="Same rule as the FNSPID A2 example (v1 lets the fake through; v2 blocks the fake but not "
+             "the genuine report; v2's final with the fake is closer to the genuine forecast than the "
+             "undefended one), on Energy. The added condition did not change this pick."),
+    "fnspid_a2_discard": dict(
+        title="FNSPID — A2: v2 flags the lie, but blocking also discards the genuine news",
+        rule="The FNSPID A2 rule **without** the last condition (\"closer to the genuine forecast\") — "
+             "the median-DSS pick of the first version of that rule, kept after viewing because it shows "
+             "a limit: v2 blocks the fake, but blocking falls back to the no-text forecast, which here "
+             "is as far from the genuine forecast as the fake, so DSS does not fall."),
     "p5_fooled": dict(
         title=f"{P5_DOMAIN} (original Time-MMD) — Model 5 fooled in P5",
         rule=f"P5 test split, `flipped`, Model 5. Domain: the change-flip domain with the largest "
@@ -123,6 +132,8 @@ def headline() -> dict:
     op = pd.read_csv(RESULTS / "summary_r4_operating.csv")
     fbr = pd.read_csv(RESULTS / "summary_r4_fbr.csv")
     m5 = _row(p5, short="M5", condition="flipped", domain="pooled")
+    lab = pd.read_csv(RESULTS / "summary_r4_judge_labels_rows.csv")
+    neutral = lab[lab.manual_d == 0]                  # Aryan's 50 FNSPID labels: the neutral headlines
     late = [abs(float(_row(p5, short=s, condition="flipped", domain="pooled").dss)) for s in ("M3", "M4")]
     return dict(
         m5_dss=_f(m5.dss), m5_flip=_f(m5.flip_rate), late_max_abs_dss=_f(max(late)),
@@ -134,6 +145,14 @@ def headline() -> dict:
         r4_fbr_tg1=_f(_row(fbr, target="M5", defence="TG1", cell="pooled").fbr),
         r4_fbr_tg2=_f(_row(fbr, target="M5", defence="TG2", cell="pooled").fbr),
         r4_fbr_tg2_fnspid=_f(_row(fbr, target="M5", defence="TG2", cell="FNSPID").fbr),
+        r4_fbr_tg1_fnspid=_f(_row(fbr, target="M5", defence="TG1", cell="FNSPID").fbr),
+        # validation (original domains, val split) — the ordering the held-out test reversed
+        val_fbr_tg1=_f(json.loads((RESULTS / "summary_p6_frozen.json").read_text(encoding="utf-8"))["textguard"]["val_fbr"]),
+        val_fbr_tg2=_f(json.loads((RESULTS / "summary_r4_v2_frozen.json").read_text(encoding="utf-8"))["val"]["fbr"]),
+        q7_a2_none=_f(_row(op, target="Q7", attack="a2_forward", defence="none", cell="pooled").dss),
+        q7_a2_tg1=_f(_row(op, target="Q7", attack="a2_forward", defence="TG1", cell="pooled").dss),
+        q7_a2_tg2=_f(_row(op, target="Q7", attack="a2_forward", defence="TG2", cell="pooled").dss),
+        judge_neutral_n=int(len(neutral)), judge_neutral_directional=int((neutral.v2_change != 0).sum()),
     )
 
 
@@ -211,10 +230,28 @@ def _v2_detail(key, text, nums, sigma, history) -> tuple[dict, list[str]]:
     return dict(g=_f(res.g), units=rows), us
 
 
+def _note(domain: str, sample_id: str, real_text: str) -> str | None:
+    if (domain, sample_id) not in NOTES:
+        return None
+    frag, note = NOTES[(domain, sample_id)]
+    if frag not in real_text:
+        raise ValueError(f"{domain} {sample_id}: expected {frag!r} in the genuine report")
+    return note
+
+
 def _dates(end: pd.Timestamp, n: int, freq: str) -> list[str]:
     step = pd.DateOffset(weeks=1) if freq == "weekly" else pd.DateOffset(months=1)
     return [(end - step * (n - i)).strftime("%Y-%m-%d") for i in range(n)]
 
+
+# Known Time-MMD quirks shown next to an example (text fragment that must be present, note).
+NOTES = {("Energy", "2024-01-08"): (
+    "January 1, 2023",
+    "Data note: the genuine report says \"January 1, 2023\" — a year typo in Time-MMD, not a "
+    "misaligned report. Its $3.089 is the price of January 1, **2024**: the next report gives $3.073 on "
+    "January 8, 2024, \"$0.016 below last week's price\" (= $3.089), and the all-grades target fell "
+    "that week ($3.238 → $3.213) as the report's −$0.027 says, whereas in the first week of 2023 it "
+    "rose $0.128. Known and kept as in the data (PROJECT_STATUS §6, R4 Energy timing).")}
 
 R4_DESC = {"Energy": ("US weekly retail gasoline price", "US dollars per gallon"),
            "FNSPID": ("{s} weekly closing share price", "US dollars")}
@@ -233,7 +270,18 @@ def r4_examples() -> list[dict]:
         c = base.assign(att=R.attacked(x, a), dss=t["none"]["dss"], flip=t["none"]["flip"],
                         w1=fin["TG1"][a].weight, w2=fin["TG2"][a].weight, w2r=fin["TG2"]["real"].weight)
         c = c[c.att & (c.domain == dom) & (c.dss > 0)]
-        c = c[c.flip == 1] if slot == "energy_flip" else c[(c.w1 >= WARN) & (c.w2 < WARN) & (c.w2r >= WARN)]
+        if slot == "energy_flip":
+            c = c[c.flip == 1]
+        else:
+            c = c[(c.w1 >= WARN) & (c.w2 < WARN) & (c.w2r >= WARN)]
+            if slot == "fnspid_a2":                         # the first rule's pick, kept (SLOTS)
+                r = _median_pick(c, "dss")
+                if (r.series, r.sample_id) != ("NFLX", "2018-11-23"):
+                    raise ValueError(f"first-rule A2 pick moved: {r.series} {r.sample_id}")
+                picks.append(("fnspid_a2_discard", a, r, len(c)))
+            Br, Bf, Vf = fin["none"]["real"].final, fin["none"][a].final, fin["TG2"][a].final
+            closer = pd.Series(np.abs(Vf - Br) < np.abs(Bf - Br), index=base.index)
+            c = c[closer[c.index]]
         picks.append((slot, a, _median_pick(c, "dss"), len(c)))
     # honest failure: v2 blocks a genuine FNSPID report and that costs accuracy
     sig, y = x.sigma.to_numpy(float), x.y_true.to_numpy(float)
@@ -272,6 +320,7 @@ def r4_examples() -> list[dict]:
             defended=dict(real=defended["real"], fake=defended[a]),
             v1=dict(real=v1["real"], fake=v1[a]), v2=dict(real=v2["real"], fake=v2[a]),
             v2_available=True,
+            note=_note(w.domain, w.sample_id, texts["real"]),
             text=dict(real=texts["real"], fake=texts[a], units=dict(real=unit_txt["real"], fake=unit_txt[a])),
             settings=dict(v1=f"window {st['tg1_window']}, τ {st['tg1_tau']:g} (P6 frozen)",
                           v2=f"window {st['tg2'].window}, c₀ {st['tg2'].conf_floor:g}, τ {st['tg2'].tau:g}, "
@@ -322,7 +371,7 @@ def p5_example() -> dict:
         fake_cond="flipped", synthetic_fake=True, claimed=int(d[i]),
         forecast=dict(none=_f(w["empty"]), real=_f(w.real), fake=_f(w.flipped)),
         defended=dict(real=defended["real"], fake=defended["flipped"]),
-        v1=dict(real=v1["real"], fake=v1["flipped"]), v2=None, v2_available=False,
+        v1=dict(real=v1["real"], fake=v1["flipped"]), v2=None, v2_available=False, note=None,
         text=dict(real=texts["real"], fake=texts["flipped"], units=None),
         settings=dict(v1=f"window {win}, τ {tau:g} (P6 frozen)", v2=None),
     )
@@ -339,7 +388,7 @@ def main() -> int:
         if e["timemmd"]:
             private[e["id"]] = e["text"]
             e["text"] = None
-    order = ["energy_flip", "energy_a2", "fnspid_a2", "fnspid_fbr", "p5_fooled"]
+    order = ["energy_flip", "energy_a2", "fnspid_a2", "fnspid_a2_discard", "fnspid_fbr", "p5_fooled"]
     ex.sort(key=lambda e: order.index(e["id"]))
     data = dict(
         note="Precomputed by `python -m app.build_data` from saved results; no model was run. "

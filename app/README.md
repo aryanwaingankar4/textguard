@@ -26,7 +26,7 @@ This needs the project environment and the downloaded data (`python -m src.data.
 
 | File | In git? | What |
 |---|---|---|
-| `app/data/demo.json` | yes | headline numbers, results tables, the 5 examples' forecasts / gates / per-claim checks, FNSPID headlines |
+| `app/data/demo.json` | yes | headline numbers, results tables, the 6 examples' forecasts / gates / per-claim checks, FNSPID headlines |
 | `app/data/demo_timemmd_texts.json` | **no** | the report texts of the Time-MMD examples (Energy, SocialGood). Time-MMD states no licence, so the repo does not redistribute its texts (`DATA_CARD.md` §1). Without this file the app still shows every number, plus a notice where the text would be |
 | `app/figures/*.png` | yes | copies of the paper figures |
 
@@ -44,7 +44,8 @@ ties broken by series, then date). The rule text appears in the app next to each
 | Slot | Domain | Criterion (Model 5) |
 |---|---|---|
 | clear flip | Energy | `flipped`: DSS > 0 and direction reversed. Median DSS |
-| A2: v2 catches, v1 misses | Energy, FNSPID | `a2_forward`: DSS > 0; v1 lets the fake through (weight ≥ 0.5); v2 blocks the fake (< 0.5) but not the window's genuine report. Median DSS |
+| A2: v2 catches, v1 misses | Energy, FNSPID | `a2_forward`: DSS > 0; v1 lets the fake through (weight ≥ 0.5); v2 blocks the fake (< 0.5) but not the window's genuine report; v2's final forecast with the fake is closer to the genuine forecast than the undefended one (added after viewing). Median DSS |
+| A2: v2 flags the lie, but blocking also discards the genuine news | FNSPID | the A2 rule without its last condition (the first rule's pick, NFLX 2018-11-23, kept) |
 | P5 fooled | SocialGood | P5 `flipped`: DSS > 0 and direction reversed. Median DSS. SocialGood is the change-flip domain with the largest pooled P5 DSS (Health_US is excluded because its level flip also edits a number) |
 | honest failure | FNSPID | v2 blocks the **genuine** report (weight < 0.5), blocking worsens the forecast, and the window has an attacked fake. Median extra error |
 

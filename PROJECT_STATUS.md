@@ -117,13 +117,33 @@ once the repo is public (P8).
   weight < 0.5, a per-defence table); 4 results (DSS per model from P5/R1/R2, the R4 trade-off table,
   paper figures).
 * **Examples (median candidate of each fixed rule; rules in `build_data.SLOTS` and shown in the app):**
-  Energy flip 2016-01-25 (59 candidates); Energy A2 2024-01-08 (39); FNSPID A2 NFLX 2018-11-23 (54);
+  Energy flip 2016-01-25 (59 candidates); Energy A2 2024-01-08 (37); FNSPID A2 JNJ 2018-11-30 (37);
+  FNSPID "flags the lie, but discards the genuine news" NFLX 2018-11-23 (the first rule's pick, 54);
   FNSPID honest failure GOOGL 2019-06-21 (29: a genuine "tech shares trading higher" headline against the
-  down trend; v2 blocks it, and v1 does too); SocialGood P5-fooled 2021-11-01 (13).
+  down trend; v2 blocks it, and v1 does too); SocialGood P5-fooled 2021-11-01 (13). *(Counts and A2
+  picks as revised after viewing; see below.)*
   **Rule revised once, before the app existed:** the first A2 rule ("v1 passes the fake, v2 blocks
   it") picked windows where v2 also blocked the *genuine* report, because the block came from a genuine
   headline, not the lie. The rule now also requires v2 to pass the genuine report. The FBR slot now
   requires an attacked fake (the first pick had an un-attacked A2 text, identical to the real one).
+* **Changes after Aryan viewed the demo (2026-10-24, demo-only; no reported number changes):**
+  1. **Energy A2 window 2024-01-08: "January 1, 2023" is a Time-MMD year typo, not a misalignment.**
+     The report (start 2023-12-25) gives $3.089 and −$0.027 week on week. The next report gives $3.073 on
+     January 8, 2024, "$0.016 below last week's price", so last week = $3.089 = January 1, **2024**. The
+     all-grades target fell that week (3.238 → 3.213, −0.025), but rose +0.128 in the first week of
+     2023. It was already recorded in §6 (R4 Energy timing, "one year typo, kept"). R4 is unaffected,
+     and the app shows a data note.
+  2. **A2 rule: added "and v2's final forecast with the fake is closer to the genuine forecast than
+     the undefended one"** (both A2 slots). The FNSPID pick moves NFLX 2018-11-23 → **JNJ 2018-11-30**
+     (37 candidates; DSS off +0.70σ / v1 +0.55σ, weight 0.59, no warning / v2 +0.50σ, weight 0.44,
+     warning: a partial cut, because the soft gate only partly discounts). The Energy pick is unchanged
+     (2024-01-08, 37 candidates). **NFLX is kept as an extra example**, "v2 flags the lie, but blocking
+     also discards the genuine news": v2 weight 0.06 on the fake, yet DSS stays +0.380σ under off, v1
+     and v2, because the no-text fallback (343.09) is as far from the genuine forecast (316.78) as the
+     fake.
+  3. Results chart: full model and legend labels (Qwen2.5-7B shown). Diff caption fixed (blue, not
+     struck through). `$` escaped (Streamlit reads `$…$` as LaTeX). New **"What TextGuard can't do"** box
+     on the results screen, with numbers read from the summaries (§9 R4).
 * **Rules kept:** every number is a saved answer through the analysis code at the frozen settings, or a
   `summary_*` value. No aggregate is computed on any test split. **v2 is not shown on SocialGood** because
   it is never evaluated on the original test split. Fakes are labelled SYNTHETIC on screen and
@@ -345,7 +365,12 @@ Colab notebooks in `notebooks/` are only needed to re-generate them.
    cause that no longer fits the flipped move** (semantic mismatch — results with/without the
    connector-flagged bundles, §8 / §10g); **TextGuard v2 needs the series' history beyond the
    model's lookback** (passed explicitly — black-box w.r.t. the model, but an input requirement);
-   **Economy's residual FBR is a target/report series mismatch v2 cannot fix** (§10g).
+   **Economy's residual FBR is a target/report series mismatch v2 cannot fix** (§10g);
+   **v2's confidence floor (c₀ 0.8) also drops clear claims**: in the NFLX 2018-11-23 bundle the judge
+   read "Netflix shares trading down 4.3% …" correctly as *down*, but at 0.77, so it was never checked
+   (P7.2 demo, §9 R4.8); **blocking a report discards its genuine information too**: a block falls back
+   to the no-text forecast, so catching a lie does not always lower DSS (NFLX: v2 weight 0.06 on the
+   A2 fake, DSS +0.380σ unchanged; §9 R4.8).
 6. **Release** (PHASES §8.3): README (install, 5-minute example with `TextGuard` around any
    `predict(numbers, text)`, results, licence), MIT licence, fake-text benchmark labelled
    research-only (CLAUDE.md §14 ethics), tag, **arXiv as soon as the draft is solid**, venue.
@@ -2875,6 +2900,16 @@ A1 FNSPID n 31 (per-stock cells tiny); judge-label check n 50 (17 directional); 
 FNSPID (one blocked headline blocks the bundle's text); Flip Rate carries R2's copy-the-last-value
 caveat; one Kaggle setup per run; Energy accuracy may be affected by the Note 1 label.
 
+**Observed in single windows while building the P7.2 demo (2026-10-24; descriptive, for the paper's
+limitations, no new aggregate):**
+* **The confidence floor drops clear claims, not only doubtful ones.** In NFLX 2018-11-23 the v2 judge
+  reads "Netflix shares trading down 4.3% after competitor Disney provided additional details …" as
+  *down* (right) at confidence 0.77 < c₀ 0.8, so the claim is never checked.
+* **Detection ≠ protection.** A block falls back to the no-text forecast A, which also throws away the
+  report's genuine information. When A is as far from the genuine-report forecast as the fake is, DSS
+  does not fall. NFLX 2018-11-23 A2: v2 flags the fake (weight 0.06), but A = 343.09, the fake forecast
+  = 343.09, and the genuine forecast = 316.78, so DSS is +0.380σ under off, v1 and v2 alike.
+
 ### R7 results — reproducibility (2026-10-19 → 2026-10-24)
 
 R7 is engineering, not an experiment: no pre-registration, no new numbers, and **no reported number
@@ -4289,6 +4324,16 @@ affected and is noted where reported.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-24 (later) — P7.2: fixes after Aryan's review of the demo
+- Energy A2 "January 1, 2023" = a Time-MMD year typo (already in §6), **not a misalignment: R4 is
+  unaffected**. Data note added in the app.
+- A2 rule + "v2's final with the fake is closer to the genuine forecast" (demo-only, made after
+  viewing): FNSPID pick NFLX → JNJ 2018-11-30; NFLX kept as an extra example, honestly titled. Energy
+  pick unchanged.
+- Results chart labels in full; diff caption fixed; `$` escaped; "What TextGuard can't do" box. Two
+  limitations recorded (§9 R4.8, P8 list item 5): the confidence floor drops clear claims; blocking
+  discards genuine news. AppTest: 42 / 42 combinations, 0 exceptions.
 
 ### 2026-10-24 — P7.2: Streamlit demo built (local)
 - `app/app.py` (4 screens), `app/build_data.py` (precompute from saved results, 5 rule-chosen

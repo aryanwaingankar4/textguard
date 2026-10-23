@@ -38,8 +38,7 @@ st.markdown("""
 .tg-text {border:1px solid rgba(128,128,128,.35); border-radius:6px; padding:.6rem .8rem;
           max-height:340px; overflow-y:auto; font-size:.9rem; line-height:1.5;}
 mark.add {background:rgba(230,80,60,.30); color:inherit; padding:0 2px; border-radius:3px;}
-mark.del {background:rgba(80,140,230,.28); color:inherit; padding:0 2px; border-radius:3px;
-          text-decoration:line-through;}
+mark.del {background:rgba(80,140,230,.28); color:inherit; padding:0 2px; border-radius:3px;}
 .tg-synth {display:inline-block; background:rgba(230,80,60,.18); border:1px solid rgba(230,80,60,.6);
            border-radius:4px; padding:1px 8px; font-size:.78rem; font-weight:600; letter-spacing:.03em;}
 .tg-unit {border-left:5px solid; border-radius:4px; padding:.35rem .6rem; margin:.3rem 0;
@@ -88,6 +87,12 @@ def texts_of(e: dict) -> dict | None:
     return e["text"] if e["text"] is not None else PRIVATE.get(e["id"])
 
 
+def esc_html(s: str) -> str:
+    """HTML-escape, and write $ as an entity: Streamlit's markdown reads $…$ as LaTeX, and reports
+    and headlines are full of prices."""
+    return html.escape(s).replace("$", "&#36;")
+
+
 def synth_badge() -> str:
     return '<span class="tg-synth">SYNTHETIC — written by our attack rules, not real news</span>'
 
@@ -97,14 +102,14 @@ def _tokens(s: str) -> list[str]:
 
 
 def diff_html(real: str, fake: str) -> tuple[str, str]:
-    """Word-level diff: words removed from the genuine report (blue, struck) and words the fake
-    added or changed (red)."""
+    """Word-level diff: words removed from the genuine report (blue) and words the fake added or
+    changed (red)."""
     a, b = _tokens(real), _tokens(fake)
     sm = difflib.SequenceMatcher(a=a, b=b, autojunk=False)
     ra, fb = [], []
 
     def esc(toks):
-        return "".join("<br>" if t == "\n" else html.escape(t) for t in toks)
+        return "".join("<br>" if t == "\n" else esc_html(t) for t in toks)
 
     for op, i1, i2, j1, j2 in sm.get_opcodes():
         if op == "equal":
@@ -162,6 +167,8 @@ def header(e: dict) -> None:
                f"{fmt(e, e['sigma'])}")
     with st.expander("How this example was chosen (a fixed rule, not hand-picked)"):
         st.markdown(e["rule"] + f"\n\n{e['n_candidates']} windows met the criterion.")
+    if e.get("note"):
+        st.info(e["note"].replace("$", "\\$"), icon="ℹ️")
 
 
 # =============================================================================================
@@ -262,7 +269,7 @@ def page_attack(e: dict) -> None:
     with c1:
         st.markdown("**Genuine report**")
         text_box(real_h)
-        st.caption("Blue, struck through: words the attack removed or changed.")
+        st.caption("Blue: words the attack removed or changed.")
     with c2:
         st.markdown(f"**Fake report** &nbsp; {synth_badge()}", unsafe_allow_html=True)
         text_box(fake_h)
@@ -290,7 +297,7 @@ def _check_line(k: dict) -> str:
 def trust_v2(e: dict, which: str, units_text: list[str] | None) -> None:
     rows = e["v2"][which]["units"]
     for i, r in enumerate(rows):
-        body = html.escape(units_text[i]) if units_text else f"<i>unit {i + 1} (text not stored)</i>"
+        body = esc_html(units_text[i]) if units_text else f"<i>unit {i + 1} (text not stored)</i>"
         notes = [_check_line(k) for k in r["checks"]]
         if not r["checks"]:
             notes.append("no claim the judge was sure of (confidence below 0.8): not checked"
@@ -302,7 +309,7 @@ def trust_v2(e: dict, which: str, units_text: list[str] | None) -> None:
 
 def trust_v1(e: dict, which: str, text: str | None) -> None:
     v = e["v1"][which]
-    body = html.escape(text).replace("\n", "<br>") if text else "<i>report text not stored</i>"
+    body = esc_html(text).replace("\n", "<br>") if text else "<i>report text not stored</i>"
     notes = [_check_line(k) for k in v["checks"]] or ["no directional claim: not checked"]
     cls = _unit_class(v["g"], bool(v["checks"]))
     st.markdown(f'<div class="tg-unit {cls}" style="max-height:340px;overflow-y:auto">{body}<br>'
@@ -357,7 +364,7 @@ def page_defence(e: dict) -> None:
     text = tx[which] if tx else None
     if dfn == "off":
         if text:
-            text_box(html.escape(text).replace("\n", "<br>"))
+            text_box(esc_html(text).replace("\n", "<br>"))
         st.caption("Off: nothing is checked.")
     elif dfn == "v1":
         trust_v1(e, which, text)
@@ -392,15 +399,17 @@ def page_results() -> None:
     st.title("Results")
     st.markdown("#### Who can be fooled? DSS under the flip attack, per model")
     m = pd.DataFrame(D["models"])
+    y = alt.Y("model:N", sort=list(m.model), title=None, axis=alt.Axis(labelLimit=0, labelFontSize=12))
     bars = alt.Chart(m).mark_bar().encode(
-        y=alt.Y("model:N", sort=list(m.model), title=None),
+        y=y,
         x=alt.X("dss:Q", title="DSS (σ toward the lie), pooled, original domains"),
         color=alt.Color("reads:N", title="How the model reads the report",
-                        legend=alt.Legend(orient="bottom", columns=2)),
+                        legend=alt.Legend(orient="bottom", direction="vertical", labelLimit=0,
+                                          titleLimit=0)),
         tooltip=["model", "reads", "source", alt.Tooltip("dss:Q", format="+.3f"),
                  alt.Tooltip("flip:Q", format=".1%", title="flip rate"), "n"])
-    err = alt.Chart(m).mark_rule().encode(y=alt.Y("model:N", sort=list(m.model)), x="dss_lo:Q", x2="dss_hi:Q")
-    st.altair_chart((bars + err).properties(height=360), width="stretch")
+    err = alt.Chart(m).mark_rule().encode(y=y, x="dss_lo:Q", x2="dss_hi:Q")
+    st.altair_chart((bars + err).properties(height=380), width="stretch")
     st.markdown(
         "**The \"immune\" models ignore the text.** Models that pool the report into a BERT or Qwen "
         "embedding barely move (DSS ≈ 0). They aren't resisting the lie: the embedding doesn't carry "
@@ -427,6 +436,26 @@ def page_results() -> None:
         "screens 2–3 shows what a false block looks like.")
     st.caption("Source: `summary_r4_operating.csv`, `summary_r4_fbr.csv`. FBR = share of genuine "
                "reports given weight < 0.5.")
+
+    with st.container(border=True):
+        st.markdown("#### What TextGuard can't do")
+        st.markdown(
+            f"- **It blocks genuine reports.** On the held-out data v2 discounts **{pct(H['r4_fbr_tg2'])}** "
+            f"of genuine reports ({pct(H['r4_fbr_tg2_fnspid'])} on FNSPID headlines), against v1's "
+            f"{pct(H['r4_fbr_tg1'])}. Both are meant to stay under 10%.\n"
+            f"- **Validation overstated v2.** On validation v2 blocked fewer genuine reports than v1 "
+            f"({pct(H['val_fbr_tg2'])} vs {pct(H['val_fbr_tg1'])}). On held-out data the order reversed.\n"
+            f"- **No gain on a bigger model.** On Qwen2.5-7B, A2 stays at {sig(H['q7_a2_none'])} undefended, "
+            f"{sig(H['q7_a2_tg1'])} with v1 and {sig(H['q7_a2_tg2'])} with v2: both are evaded.\n"
+            "- **Blocking discards the genuine news too.** A blocked report falls back to the no-text "
+            "forecast. When that is as far off as the lie, catching the lie doesn't lower DSS (the NFLX "
+            "example).\n"
+            f"- **The small judge over-reads neutral financial headlines.** It gives a direction to "
+            f"{H['judge_neutral_directional']} of {H['judge_neutral_n']} headlines labelled neutral, and "
+            "one such reading is enough to block a whole bundle (the GOOGL example). Its 0.8 confidence "
+            "floor also drops some clear claims (NFLX: \"shares trading down 4.3%\" was left unchecked).")
+        st.caption("PROJECT_STATUS.md §9 R4; `summary_r4_fbr.csv`, `summary_r4_v2_frozen.json`, "
+                   "`summary_p6_frozen.json`, `summary_r4_operating.csv`, `summary_r4_judge_labels_rows.csv`.")
 
     st.divider()
     st.markdown("#### Paper figures")

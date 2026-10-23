@@ -52,7 +52,7 @@ code does not apply to it.
 | Where | What | Changes made |
 |---|---|---|
 | `results/summary_directional_fnspid.csv`, `results/summary_r4_judge_labels_rows.csv` (current tree) | 50 Benzinga headlines (ticker, date, title) | added our direction labels and judge readings |
-| `app/data/demo.json` (current tree, P7.2 demo) | the genuine weekly headline bundles of 2 FNSPID demo windows (NFLX 2018-11-23, GOOGL 2019-06-21) and their **synthetic** A2 fakes (`synthetic_fake: true`) | headlines grouped into weekly bundles; split into headlines (claim units); fakes written by our rules |
+| `app/data/demo.json` (current tree, P7.2 demo) | the genuine weekly headline bundles of 3 FNSPID demo windows (JNJ 2018-11-30, NFLX 2018-11-23, GOOGL 2019-06-21) and their **synthetic** A2 fakes (`synthetic_fake: true`) | headlines grouped into weekly bundles; split into headlines (claim units); fakes written by our rules |
 | `results/qwen/r4_heldout_inputs.csv` in **git history only**: added in `801c3f6`, present through `d93f98a`, removed from the tree in `24bd16d` (R7) | the R4 held-out GPU input, 15 MB, 33,410 rows: weekly bundles of FNSPID headlines for 10 stocks, Time-MMD Energy reports, and the **synthetic fakes** made from both | headlines grouped into weekly bundles; prompts and judge questions built around them; fakes written by our rules (below) |
 
 **Decision (Aryan, 2026-10-23): git history is not rewritten.** A rewrite would change the commit
