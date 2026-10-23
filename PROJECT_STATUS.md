@@ -29,7 +29,7 @@
 | **R4** | TextGuard v2 — val-developed, tested once on held-out domains | ✅ | ✅ Done — **v2 buys protection at a cost (FBR)**: A2 cut on M5 (+0.180 → +0.021σ, below v1), FBR 18.4% vs v1 7.0% (val ordering reversed); nothing transfers to Q7 (§9 R4) |
 | R5 | Realistic attacks — other-family LLM fakes + human plausibility study | — | ❌ Future work, not run (Aryan 2026-10-19) |
 | R6 | Drift monitor for fake-report campaigns (RQ4; replaces P7.4) | — | ❌ Future work, not run (Aryan 2026-10-19) |
-| R7 | Reproducibility — reproduce script, pinned env, data/model cards, ethics | ✅ | 🔵 **WIP** — clean room reached step 20 / 47 (stopped by Claude Code's memory reaper, not a code failure); Aryan reruns it outside Claude Code; Kaggle toolkit test prepared (§1a) |
+| R7 | Reproducibility — reproduce script, pinned env, data/model cards, ethics | ✅ | 🔵 **WIP** — clean room run 5 (outside Claude Code) failed at step 22 / 47: FinBERT null-prompt bug, fixed in WIP 3; steps 1–21 byte-identical. Next: R1–R4 precheck, fresh full run; Kaggle toolkit test prepared (§1a) |
 | P7 | Auditor, demo, extras | ⬜ Optional | ⚪ Pending — **P7.2 demo after R7** |
 | P8 | Paper & release | ✅ | ⚪ Pending (after R7) |
 
@@ -135,6 +135,15 @@ embeddings 933 s), then **killed by Claude Code for low system memory** (16 GB m
   both tested), refuses a hash mismatch; cell 6 saves `run_info.json`. `test_toolkit.py` 10 / 10.
   Not yet run on Kaggle.
 * `docs/REPRODUCE.md`: lock is 116 packages (said 120).
+* **Clean room run 5 (Aryan's PowerShell, fresh clone of `c037a2b`, 32.5 min): steps 1–21 ok, all
+  42 regenerated files byte-identical, 0 differ; FAILED at step 22 `analyze_r1_mechanism`.** Third
+  real bug found by the clean room: `embed-finbert` skipped blank texts, but `mechanism` encodes
+  report-less windows as the **null prompt**, absent from a fresh FinBERT cache (the dev cache had it
+  from R1 training; the one file step 22 added was exactly that prompt). No number affected
+  (`mechanism` keeps attacked windows with a report). Fixed in "R7: WIP 3": `embed_finbert` also
+  embeds the null prompt in its own call (the 1,993 texts keep their batching → byte-identical);
+  regression test in `tests/test_r1.py` (13 / 13). Next: precheck `reproduce.py --phases R1 R2 R3
+  R4` in the existing clean room (its R1–R4 files are untouched), then a fresh full run.
 
 **Next, in order:**
 1. **Free memory** (close other apps; do not download Qwen at the same time), then rebuild and rerun the
@@ -4190,7 +4199,9 @@ affected and is noted where reported.
 - Toolkit zip builder + notebook cell 1 for a private-repo Kaggle run; tests 10 / 10.
 - Clean room run 4: steps 1–20 ok, stopped at 21 by Claude Code's memory reaper. Aryan reruns it
   outside Claude Code.
-- Next: §1a "R7 — WHERE IT STOPPED" (clean-room result → Kaggle test → REPRODUCE §5, §9 R7, commit).
+- Clean room run 5 (outside Claude Code): 1–21 ok (42 files identical), failed at 22 — FinBERT null
+  prompt not embedded by `embed-finbert`; fixed in WIP 3 (+ test).
+- Next: §1a "R7 — WHERE IT STOPPED" (precheck R1–R4 → fresh full run → Kaggle test → REPRODUCE §5, §9 R7, commit).
 
 ### 2026-10-21 — R7 WIP (paused by Aryan): reproduce + cards + toolkit built; clean room at 9 / 47
 - Built: `reproduce.py` / `.sh`, lock + `.python-version`, `src/data/download.py` + manifest,

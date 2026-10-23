@@ -59,11 +59,20 @@ def r1_texts() -> list[str]:
 
 
 def embed_finbert() -> dict:
+    """Embeds every R1 text, then the null prompt in a call of its own.
+
+    Why the null prompt: ``mechanism`` encodes windows without a report as the null prompt
+    (``make_prompt(None)``), exactly as the heads do. ``r1_texts`` drops blank texts, so a fresh
+    cache lacked it and ``mechanism`` refused to run (R7 clean room, 2026-10-23); the dev cache had
+    it from R1 training. Why a separate call: the 1,993 texts keep the batching they were
+    embedded with, so their vectors stay byte-identical. The null vector never enters a number
+    (``mechanism`` keeps attacked windows that have a report)."""
     enc = BertTextEncoder(FINBERT_NAME)
     texts = r1_texts()
     try:
         n_tok = enc.token_counts(texts)
         enc.encode(texts)
+        enc.encode([None])
     finally:
         enc.unload()
     return dict(encoder=FINBERT_NAME, revision=enc.revision, texts=len(texts),

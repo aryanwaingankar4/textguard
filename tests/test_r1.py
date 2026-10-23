@@ -74,6 +74,33 @@ def test_export_one_row_per_distinct_prompt_exactly_as_the_heads_encode_it():
     assert (df.row_type == "probe").sum() == 4
 
 
+def test_finbert_embedding_fills_the_null_prompt_in_its_own_call(monkeypatch):
+    """R7 clean room: `mechanism` encodes report-less windows as the null prompt, so a fresh
+    FinBERT cache must hold it; the texts keep their own batching (vectors unchanged)."""
+    import src.analyze_r1 as R1
+    calls = []
+
+    class Fake:
+        revision = "x"
+
+        def __init__(self, name):
+            assert name == FINBERT_NAME
+
+        def token_counts(self, texts):
+            return np.array([5] * len(texts))
+
+        def encode(self, texts):
+            calls.append(list(texts))
+
+        def unload(self):
+            pass
+
+    monkeypatch.setattr(R1, "BertTextEncoder", Fake)
+    monkeypatch.setattr(R1, "r1_texts", lambda: ["a", "b"])
+    assert R1.embed_finbert()["texts"] == 2
+    assert calls == [["a", "b"], [None]]
+
+
 # --- notebook: in sync, pinned, and its logic with a fake model --------------------------------
 
 def _cells():
