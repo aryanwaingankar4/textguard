@@ -386,6 +386,9 @@ def page_defence(e: dict) -> None:
                      "DSS": sig(e["claimed"] * (ff["final"] - rf["final"]) / e["sigma"]),
                      "error with genuine (σ)": f"{abs(rf['final'] - e['y_true']) / e['sigma']:.3f}"})
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+    if e["id"] == "fnspid_fbr":
+        st.caption("Lower DSS here is not protection: both defences discarded the genuine report, so "
+                   "the forecast got worse (see the error column).")
     st.caption(f"Settings, frozen before testing — v1: {e['settings']['v1']}"
                + (f"; v2: {e['settings']['v2']}" if e["settings"]["v2"] else "")
                + ". One window; aggregates are on screen 4.")
