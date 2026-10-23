@@ -66,3 +66,7 @@ results/qwen/r4_heldout_inputs.csv
 audit_out/
 examples/audit_out/
 !/examples/*.csv
+
+# Streamlit demo (P7.2): its own venv; Time-MMD report texts of the demo examples (no licence → not redistributed)
+.venv-app/
+/app/data/demo_timemmd_texts.json

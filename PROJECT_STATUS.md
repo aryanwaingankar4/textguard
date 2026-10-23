@@ -4,7 +4,7 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** P7.2 — Streamlit demo (P0–P6, R1–R4, R7 complete; R5, R6 = future work, not run; then P8)
+**Current phase:** P8 — Paper & release (P0–P6, R1–R4, R7, P7.2 demo complete; R5, R6 = future work, not run)
 **Last updated:** 2026-10-24
 
 > 👤 **Solo project.** All work by Aryan.
@@ -30,8 +30,8 @@
 | R5 | Realistic attacks — other-family LLM fakes + human plausibility study | — | ❌ Future work, not run (Aryan 2026-10-19) |
 | R6 | Drift monitor for fake-report campaigns (RQ4; replaces P7.4) | — | ❌ Future work, not run (Aryan 2026-10-19) |
 | R7 | Reproducibility — reproduce script, pinned env, data/model cards, ethics | ✅ | ✅ Done — **fresh clone reproduces everything byte for byte** (47 / 47 steps, 147 files identical, 0 differ, 9 / 9 GPU inputs); 4 clean-room bugs fixed, no number changed; toolkit tested on Kaggle with the live judge (§9 R7) |
-| P7 | Auditor, demo, extras | ⬜ Optional | 🔵 **P7.2 demo — NEXT** (§1a); other items optional |
-| P8 | Paper & release | ✅ | ⚪ Pending (after P7.2) |
+| P7 | Auditor, demo, extras | ⬜ Optional | ✅ **P7.2 demo built** (local; `streamlit run app/app.py`, §1a); deploy after the repo is public (P8); other items optional |
+| P8 | Paper & release | ✅ | 🔵 **NEXT** |
 
 Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 
@@ -41,15 +41,16 @@ R7 (done) → P7.2 (demo) → P8.** P7 is otherwise upside.
 
 ---
 
-## 1a. ▶ START HERE — handoff for the next session (P7.2 — Streamlit demo)
+## 1a. ▶ START HERE — handoff for the next session (P8 — paper & release)
 
-> Written 2026-10-11 at the end of R3; updated at the end of R4 (2026-10-19) and of R7
-> (2026-10-24). The R4 block below is kept as the record of how R4 was run. Replace this section at
-> the end of P7.2.
+> Written 2026-10-11 at the end of R3; updated at the end of R4 (2026-10-19), R7 and P7.2
+> (2026-10-24). The R4 and P7.2 blocks below are kept as records. The P8 plan is "P8 — what to do
+> after P7.2" below.
 
-**P0–P6, R1, R2, R3, R4 and R7 are complete.** **R5 (realistic attacks) and R6 (drift monitor) are
-future work, not run (Aryan 2026-10-19).** They go in the paper's future-work paragraph (P8), not in
-the results. **Next: P7.2 (Streamlit demo) → P8 (paper & release).** Other P7 items stay optional.
+**P0–P6, R1, R2, R3, R4, R7 and the P7.2 demo are complete.** **R5 (realistic attacks) and R6 (drift
+monitor) are future work, not run (Aryan 2026-10-19).** They go in the paper's future-work paragraph
+(P8), not in the results. **Next: P8 (paper & release)**, including deploying the demo once the repo is
+public. Other P7 items stay optional.
 
 ### The results, one line per phase (details and every number in §9)
 
@@ -101,7 +102,42 @@ the results. **Next: P7.2 (Streamlit demo) → P8 (paper & release).** Other P7 
   * (b) Time-MMD licence check before going public: git history holds Time-MMD Energy report
     texts (no licence stated).
 
-### P7.2 — Streamlit demo (next; PHASES.md §7.2)
+### P7.2 — Streamlit demo — ✅ built 2026-10-24 (record)
+
+**Decisions (Aryan, 2026-10-24), which settle the three open questions below:** (1) precomputed results only:
+no custom-text box, no live model; (2) 4–5 examples chosen by a stated rule; (3) run locally now, and deploy
+once the repo is public (P8).
+
+* **Run:** `.venv-app\Scripts\streamlit run app/app.py` (own venv, `app/requirements.txt` =
+  streamlit 1.66.1; the R7 `.venv` is untouched because streamlit would pull other pandas pins). Rebuild
+  the data: `.venv\Scripts\python -m app.build_data`. Details: `app/README.md`.
+* **Screens:** 1 the problem (headline numbers read from `summary_p5_attack`, `summary_r3_operating`,
+  `summary_r4_operating` and `summary_r4_fbr`); 2 the attack (chart, genuine vs fake with a word diff,
+  per-window DSS); 3 the defence (off / v1 / v2, genuine or fake, per-sentence trust, warning = applied
+  weight < 0.5, a per-defence table); 4 results (DSS per model from P5/R1/R2, the R4 trade-off table,
+  paper figures).
+* **Examples (median candidate of each fixed rule; rules in `build_data.SLOTS` and shown in the app):**
+  Energy flip 2016-01-25 (59 candidates); Energy A2 2024-01-08 (39); FNSPID A2 NFLX 2018-11-23 (54);
+  FNSPID honest failure GOOGL 2019-06-21 (29: a genuine "tech shares trading higher" headline against the
+  down trend; v2 blocks it, and v1 does too); SocialGood P5-fooled 2021-11-01 (13).
+  **Rule revised once, before the app existed:** the first A2 rule ("v1 passes the fake, v2 blocks
+  it") picked windows where v2 also blocked the *genuine* report, because the block came from a genuine
+  headline, not the lie. The rule now also requires v2 to pass the genuine report. The FBR slot now
+  requires an attacked fake (the first pick had an un-attacked A2 text, identical to the real one).
+* **Rules kept:** every number is a saved answer through the analysis code at the frozen settings, or a
+  `summary_*` value. No aggregate is computed on any test split. **v2 is not shown on SocialGood** because
+  it is never evaluated on the original test split. Fakes are labelled SYNTHETIC on screen and
+  `synthetic_fake: true` in the data; FNSPID is attributed (CC BY-NC) on screen, in `app/README.md` and
+  in `DATA_CARD.md` §1a.
+* **Time-MMD texts are not committed:** `app/data/demo_timemmd_texts.json` is gitignored (Time-MMD has no
+  licence, DATA_CARD §1). It is built locally by `app.build_data`; without it the app shows the numbers
+  and a notice. **Revisit at the P8 Time-MMD licence check** before deploying.
+* Checked: Streamlit `AppTest` over all 29 screen × example × text × defence combinations, 0 exceptions;
+  the server answers `/_stcore/health`. Not checked by eye in a browser by Claude: Aryan to look.
+* **Still open (P8):** deploy to Streamlit Community Cloud (needs the public repo and the Time-MMD
+  decision).
+
+*Original P7.2 brief (kept for the record):*
 
 What PHASES.md asks for:
 * a domain selector and real / fake / custom text input;
@@ -4253,6 +4289,15 @@ affected and is noted where reported.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-24 — P7.2: Streamlit demo built (local)
+- `app/app.py` (4 screens), `app/build_data.py` (precompute from saved results, 5 rule-chosen
+  examples), `app/data/demo.json` (44 KB), `app/figures/` (6 paper PNGs), `app/README.md`,
+  `app/requirements.txt`, and its own `.venv-app`. Details: §1a "P7.2".
+- What broke: the first A2 selection rule picked windows that v2 blocked wholesale (a genuine headline,
+  not the lie). The rule was tightened before the app was written. Time-MMD texts are kept out of git
+  (gitignored side file).
+- Next: **P8** (§1a "P8"); deploy the demo once the repo is public.
 
 ### 2026-10-24 — R7 complete: clean room REPRODUCED (47 / 47, 147 identical, 0 differ, 9 / 9 GPU inputs)
 - R1 + R4 precheck (WIP 3 exercised, null prompt deleted first): 19 / 19 ok. Final fresh run by Aryan

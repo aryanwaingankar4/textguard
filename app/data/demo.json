@@ -1,0 +1,1677 @@
+{
+ "note": "Precomputed by `python -m app.build_data` from saved results; no model was run. Every fake text is SYNTHETIC (written by the project's deterministic attack rules) — research use only.",
+ "headline": {
+  "m5_dss": 0.457383,
+  "m5_flip": 0.235772,
+  "late_max_abs_dss": 0.004615,
+  "r3_a2_none": 0.455557,
+  "r3_a2_tg1": 0.400036,
+  "r4_a2_none": 0.179936,
+  "r4_a2_tg1": 0.095699,
+  "r4_a2_tg2": 0.020519,
+  "r4_fbr_tg1": 0.069956,
+  "r4_fbr_tg2": 0.184094,
+  "r4_fbr_tg2_fnspid": 0.223658
+ },
+ "models": [
+  {
+   "model": "DLinear (no text)",
+   "short": "M1",
+   "reads": "does not see text",
+   "source": "P5",
+   "dss": 0.0,
+   "dss_lo": 0.0,
+   "dss_hi": 0.0,
+   "flip": 0.0,
+   "n": 251
+  },
+  {
+   "model": "PatchTST (no text)",
+   "short": "M2",
+   "reads": "does not see text",
+   "source": "P5",
+   "dss": 0.0,
+   "dss_lo": 0.0,
+   "dss_hi": 0.0,
+   "flip": 0.0,
+   "n": 251
+  },
+  {
+   "model": "DLinear + BERT",
+   "short": "M3",
+   "reads": "late fusion, pooled BERT embedding",
+   "source": "P5",
+   "dss": -0.004615,
+   "dss_lo": -0.01027,
+   "dss_hi": 0.001596,
+   "flip": 0.003984,
+   "n": 251
+  },
+  {
+   "model": "PatchTST + BERT",
+   "short": "M4",
+   "reads": "late fusion, pooled BERT embedding",
+   "source": "P5",
+   "dss": 0.003206,
+   "dss_lo": 0.000848,
+   "dss_hi": 0.00557,
+   "flip": 0.003984,
+   "n": 251
+  },
+  {
+   "model": "DLinear + Qwen embedding",
+   "short": "M3-Q",
+   "reads": "late fusion, pooled Qwen embedding",
+   "source": "R1",
+   "dss": 0.00785,
+   "dss_lo": 0.001602,
+   "dss_hi": 0.013914,
+   "flip": 0.003984,
+   "n": 251
+  },
+  {
+   "model": "PatchTST + Qwen embedding",
+   "short": "M4-Q",
+   "reads": "late fusion, pooled Qwen embedding",
+   "source": "R1",
+   "dss": 0.007501,
+   "dss_lo": 0.003998,
+   "dss_hi": 0.011092,
+   "flip": 0.011952,
+   "n": 251
+  },
+  {
+   "model": "DLinear + FinBERT",
+   "short": "M3-F",
+   "reads": "late fusion, direction-aware encoder",
+   "source": "R1",
+   "dss": 0.049262,
+   "dss_lo": 0.03957,
+   "dss_hi": 0.058995,
+   "flip": 0.075697,
+   "n": 251
+  },
+  {
+   "model": "PatchTST + FinBERT",
+   "short": "M4-F",
+   "reads": "late fusion, direction-aware encoder",
+   "source": "R1",
+   "dss": 0.034355,
+   "dss_lo": 0.028278,
+   "dss_hi": 0.040469,
+   "flip": 0.031872,
+   "n": 251
+  },
+  {
+   "model": "Qwen2.5-1.5B (Model 5)",
+   "short": "M5",
+   "reads": "early fusion: report in the prompt",
+   "source": "P5",
+   "dss": 0.457383,
+   "dss_lo": 0.348358,
+   "dss_hi": 0.571893,
+   "flip": 0.235772,
+   "n": 246
+  },
+  {
+   "model": "Qwen2.5-7B (4-bit)",
+   "short": "Q7",
+   "reads": "early fusion: report in the prompt",
+   "source": "R2",
+   "dss": 0.205506,
+   "dss_lo": 0.12732,
+   "dss_hi": 0.292569,
+   "flip": 0.245968,
+   "n": 248
+  },
+  {
+   "model": "Phi-3.5-mini",
+   "short": "P35",
+   "reads": "early fusion: report in the prompt",
+   "source": "R2",
+   "dss": 0.007149,
+   "dss_lo": 0.001437,
+   "dss_hi": 0.014662,
+   "flip": 0.024096,
+   "n": 249
+  }
+ ],
+ "tradeoff": [
+  {
+   "defence": "No defence",
+   "dss_flipped": 0.054299,
+   "dss_a2": 0.179936,
+   "fbr": 0.0
+  },
+  {
+   "defence": "clip (k 0.5)",
+   "dss_flipped": 0.041652,
+   "dss_a2": 0.09923,
+   "fbr": 0.10162
+  },
+  {
+   "defence": "TextGuard v1",
+   "dss_flipped": 0.029095,
+   "dss_a2": 0.095699,
+   "fbr": 0.069956
+  },
+  {
+   "defence": "TextGuard v2",
+   "dss_flipped": 0.016334,
+   "dss_a2": 0.020519,
+   "fbr": 0.184094
+  },
+  {
+   "defence": "never_trust (drop all text)",
+   "dss_flipped": 0.0,
+   "dss_a2": 0.0,
+   "fbr": 1.0
+  }
+ ],
+ "examples": [
+  {
+   "id": "energy_flip",
+   "title": "Energy — a clear flip",
+   "rule": "R4, Energy, `flipped`, Model 5. Candidates: attacked windows (scan exclusions removed) where the undefended forecast moves toward the lie (DSS > 0) and its up/down direction reverses (Flip = 1). Picked: the median-DSS candidate.",
+   "n_candidates": 59,
+   "source": "R4 (held-out test)",
+   "domain": "Energy",
+   "series": "Energy",
+   "sample_id": "2016-01-25",
+   "description": "US weekly retail gasoline price",
+   "unit": "US dollars per gallon",
+   "freq": "weekly",
+   "timemmd": true,
+   "dates": [
+    "2015-08-10",
+    "2015-08-17",
+    "2015-08-24",
+    "2015-08-31",
+    "2015-09-07",
+    "2015-09-14",
+    "2015-09-21",
+    "2015-09-28",
+    "2015-10-05",
+    "2015-10-12",
+    "2015-10-19",
+    "2015-10-26",
+    "2015-11-02",
+    "2015-11-09",
+    "2015-11-16",
+    "2015-11-23",
+    "2015-11-30",
+    "2015-12-07",
+    "2015-12-14",
+    "2015-12-21",
+    "2015-12-28",
+    "2016-01-04",
+    "2016-01-11",
+    "2016-01-18"
+   ],
+   "lookback": [
+    2.72,
+    2.803,
+    2.726,
+    2.602,
+    2.532,
+    2.471,
+    2.425,
+    2.418,
+    2.415,
+    2.432,
+    2.374,
+    2.326,
+    2.322,
+    2.335,
+    2.281,
+    2.198,
+    2.165,
+    2.159,
+    2.144,
+    2.133,
+    2.141,
+    2.135,
+    2.104,
+    2.022
+   ],
+   "target_date": "2016-01-25",
+   "y_true": 1.965,
+   "sigma": 0.741775,
+   "fake_cond": "flipped",
+   "synthetic_fake": true,
+   "claimed": 1,
+   "forecast": {
+    "none": 2.022,
+    "real": 2.022,
+    "fake": 2.086
+   },
+   "defended": {
+    "real": {
+     "off": {
+      "final": 2.022,
+      "weight": 1.0
+     },
+     "v1": {
+      "final": 2.022,
+      "weight": 1.0
+     },
+     "v2": {
+      "final": 2.022,
+      "weight": 1.0
+     }
+    },
+    "fake": {
+     "off": {
+      "final": 2.086,
+      "weight": 1.0
+     },
+     "v1": {
+      "final": 2.077339,
+      "weight": 0.864671
+     },
+     "v2": {
+      "final": 2.063735,
+      "weight": 0.652117
+     }
+    }
+   },
+   "v1": {
+    "real": {
+     "g": 1.0,
+     "checks": [
+      {
+       "kind": "change",
+       "direction": -1,
+       "confidence": 0.996937,
+       "evidence": -1,
+       "strength": 0.13539,
+       "g": 1.0,
+       "frame": "trend"
+      }
+     ]
+    },
+    "fake": {
+     "g": 0.864671,
+     "checks": [
+      {
+       "kind": "change",
+       "direction": 1,
+       "confidence": 0.999549,
+       "evidence": -1,
+       "strength": 0.13539,
+       "g": 0.864671,
+       "frame": "trend"
+      }
+     ]
+    }
+   },
+   "v2": {
+    "real": {
+     "g": 1.0,
+     "units": [
+      {
+       "checks": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.984186,
+         "evidence": -1,
+         "strength": 0.352429,
+         "g": 1.0,
+         "frame": "trend"
+        }
+       ],
+       "ignored": [],
+       "g": 1.0
+      }
+     ]
+    },
+    "fake": {
+     "g": 0.652117,
+     "units": [
+      {
+       "checks": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.987101,
+         "evidence": -1,
+         "strength": 0.352429,
+         "g": 0.652117,
+         "frame": "trend"
+        }
+       ],
+       "ignored": [],
+       "g": 0.652117
+      }
+     ]
+    }
+   },
+   "v2_available": true,
+   "text": null,
+   "settings": {
+    "v1": "window 6, τ 0 (P6 frozen)",
+    "v2": "window 12, c₀ 0.8, τ 0, cap 1σ (R4 frozen)"
+   }
+  },
+  {
+   "id": "energy_a2",
+   "title": "Energy — A2: v2 catches what v1 misses",
+   "rule": "Same rule as the FNSPID A2 example (v2 blocks the fake but not the genuine report; v1 lets the fake through), on Energy.",
+   "n_candidates": 39,
+   "source": "R4 (held-out test)",
+   "domain": "Energy",
+   "series": "Energy",
+   "sample_id": "2024-01-08",
+   "description": "US weekly retail gasoline price",
+   "unit": "US dollars per gallon",
+   "freq": "weekly",
+   "timemmd": true,
+   "dates": [
+    "2023-07-24",
+    "2023-07-31",
+    "2023-08-07",
+    "2023-08-14",
+    "2023-08-21",
+    "2023-08-28",
+    "2023-09-04",
+    "2023-09-11",
+    "2023-09-18",
+    "2023-09-25",
+    "2023-10-02",
+    "2023-10-09",
+    "2023-10-16",
+    "2023-10-23",
+    "2023-10-30",
+    "2023-11-06",
+    "2023-11-13",
+    "2023-11-20",
+    "2023-11-27",
+    "2023-12-04",
+    "2023-12-11",
+    "2023-12-18",
+    "2023-12-25",
+    "2024-01-01"
+   ],
+   "lookback": [
+    3.711,
+    3.869,
+    3.94,
+    3.962,
+    3.984,
+    3.931,
+    3.925,
+    3.941,
+    4.001,
+    3.963,
+    3.93,
+    3.814,
+    3.706,
+    3.66,
+    3.6,
+    3.52,
+    3.473,
+    3.414,
+    3.363,
+    3.355,
+    3.259,
+    3.176,
+    3.238,
+    3.213
+   ],
+   "target_date": "2024-01-08",
+   "y_true": 3.197,
+   "sigma": 0.741775,
+   "fake_cond": "a2_forward",
+   "synthetic_fake": true,
+   "claimed": 1,
+   "forecast": {
+    "none": 3.16,
+    "real": 3.146,
+    "fake": 3.213
+   },
+   "defended": {
+    "real": {
+     "off": {
+      "final": 3.146,
+      "weight": 1.0
+     },
+     "v1": {
+      "final": 3.146,
+      "weight": 1.0
+     },
+     "v2": {
+      "final": 3.146,
+      "weight": 1.0
+     }
+    },
+    "fake": {
+     "off": {
+      "final": 3.213,
+      "weight": 1.0
+     },
+     "v1": {
+      "final": 3.213,
+      "weight": 1.0
+     },
+     "v2": {
+      "final": 3.175145,
+      "weight": 0.285762
+     }
+    }
+   },
+   "v1": {
+    "real": {
+     "g": 1.0,
+     "checks": [
+      {
+       "kind": "change",
+       "direction": -1,
+       "confidence": 0.995988,
+       "evidence": -1,
+       "strength": 0.228025,
+       "g": 1.0,
+       "frame": "trend"
+      }
+     ]
+    },
+    "fake": {
+     "g": 1.0,
+     "checks": [
+      {
+       "kind": "change",
+       "direction": -1,
+       "confidence": 0.996169,
+       "evidence": -1,
+       "strength": 0.228025,
+       "g": 1.0,
+       "frame": "trend"
+      }
+     ]
+    }
+   },
+   "v2": {
+    "real": {
+     "g": 1.0,
+     "units": [
+      {
+       "checks": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.979339,
+         "evidence": -1,
+         "strength": 0.720673,
+         "g": 1.0,
+         "frame": "trend"
+        }
+       ],
+       "ignored": [],
+       "g": 1.0
+      }
+     ]
+    },
+    "fake": {
+     "g": 0.285762,
+     "units": [
+      {
+       "checks": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.979339,
+         "evidence": -1,
+         "strength": 0.720673,
+         "g": 1.0,
+         "frame": "trend"
+        }
+       ],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.991071,
+         "evidence": -1,
+         "strength": 0.720673,
+         "g": 0.285762,
+         "frame": "trend"
+        }
+       ],
+       "ignored": [],
+       "g": 0.285762
+      }
+     ]
+    }
+   },
+   "v2_available": true,
+   "text": null,
+   "settings": {
+    "v1": "window 6, τ 0 (P6 frozen)",
+    "v2": "window 12, c₀ 0.8, τ 0, cap 1σ (R4 frozen)"
+   }
+  },
+  {
+   "id": "fnspid_a2",
+   "title": "FNSPID — A2: v2 catches what v1 misses",
+   "rule": "R4, FNSPID, `a2_forward`, Model 5. Candidates: attacked windows with DSS > 0 where TextGuard v1 lets the fake through (applied weight ≥ 0.5) and v2 does not (< 0.5), while v2 lets the same window's **genuine** report through (≥ 0.5) — so the block comes from the added sentence, not from a genuine one. Picked: the median-DSS candidate.",
+   "n_candidates": 54,
+   "source": "R4 (held-out test)",
+   "domain": "FNSPID",
+   "series": "NFLX",
+   "sample_id": "2018-11-23",
+   "description": "NFLX weekly closing share price",
+   "unit": "US dollars",
+   "freq": "weekly",
+   "timemmd": false,
+   "dates": [
+    "2018-06-08",
+    "2018-06-15",
+    "2018-06-22",
+    "2018-06-29",
+    "2018-07-06",
+    "2018-07-13",
+    "2018-07-20",
+    "2018-07-27",
+    "2018-08-03",
+    "2018-08-10",
+    "2018-08-17",
+    "2018-08-24",
+    "2018-08-31",
+    "2018-09-07",
+    "2018-09-14",
+    "2018-09-21",
+    "2018-09-28",
+    "2018-10-05",
+    "2018-10-12",
+    "2018-10-19",
+    "2018-10-26",
+    "2018-11-02",
+    "2018-11-09",
+    "2018-11-16"
+   ],
+   "lookback": [
+    360.570007,
+    391.980011,
+    411.089996,
+    391.429993,
+    408.25,
+    395.799988,
+    361.049988,
+    355.209991,
+    343.089996,
+    345.869995,
+    316.779999,
+    358.820007,
+    367.679993,
+    348.679993,
+    364.559998,
+    361.190002,
+    374.130005,
+    351.350006,
+    339.559998,
+    332.670013,
+    299.829987,
+    309.100006,
+    303.470001,
+    286.209991
+   ],
+   "target_date": "2018-11-23",
+   "y_true": 258.820007,
+   "sigma": 69.192707,
+   "fake_cond": "a2_forward",
+   "synthetic_fake": true,
+   "claimed": 1,
+   "forecast": {
+    "none": 343.09,
+    "real": 316.78,
+    "fake": 343.09
+   },
+   "defended": {
+    "real": {
+     "off": {
+      "final": 316.78,
+      "weight": 1.0
+     },
+     "v1": {
+      "final": 316.78,
+      "weight": 1.0
+     },
+     "v2": {
+      "final": 316.78,
+      "weight": 1.0
+     }
+    },
+    "fake": {
+     "off": {
+      "final": 343.09,
+      "weight": 1.0
+     },
+     "v1": {
+      "final": 343.09,
+      "weight": 1.0
+     },
+     "v2": {
+      "final": 343.09,
+      "weight": 0.06289
+     }
+    }
+   },
+   "v1": {
+    "real": {
+     "g": 1.0,
+     "checks": [
+      {
+       "kind": "change",
+       "direction": -1,
+       "confidence": 0.972238,
+       "evidence": -1,
+       "strength": 0.712462,
+       "g": 1.0,
+       "frame": "trend"
+      }
+     ]
+    },
+    "fake": {
+     "g": 1.0,
+     "checks": [
+      {
+       "kind": "change",
+       "direction": -1,
+       "confidence": 0.98753,
+       "evidence": -1,
+       "strength": 0.712462,
+       "g": 1.0,
+       "frame": "trend"
+      }
+     ]
+    }
+   },
+   "v2": {
+    "real": {
+     "g": 1.0,
+     "units": [
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.771544
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.64369
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.73304
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.685444
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.468714
+        }
+       ],
+       "g": 1.0
+      }
+     ]
+    },
+    "fake": {
+     "g": 0.06289,
+     "units": [
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.771544
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.64369
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.73304
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.685444
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.468714
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.93711,
+         "evidence": -1,
+         "strength": 1.0,
+         "g": 0.06289,
+         "frame": "trend"
+        }
+       ],
+       "ignored": [],
+       "g": 0.06289
+      }
+     ]
+    }
+   },
+   "v2_available": true,
+   "text": {
+    "real": "Netflix shares trading down 4.3% after competitor Disney provided additional details for their stand alone streaming service, Disney +, on their earnings call last night.\nThe Street Weighs In On Disney's Q4 Earnings, ESPN And Streaming Among Highlights\nEverything We Know About The Disney+ Streaming Service\nCitron's Andrew Left Says Netflix Only Short Position Among FANG's\nThe Legacy Of Stan Lee: Marvel Comics Mastermind, Box Office Gold\nDay After Selloff, Earnings, Trade News Seem To Offer Lift\nCitron's Andrew Left, On CNBC, Highlights He's Currently Short Netflix\nModerate Inflation, Positive Retail Earnings Offer Lift In Back-And-Forth Market\n'Netflix is testing a mobile-only subscription to make its service more affordable' -TechCrunch",
+    "fake": "Netflix shares trading down 4.3% after competitor Disney provided additional details for their stand alone streaming service, Disney +, on their earnings call last night.\nThe Street Weighs In On Disney's Q4 Earnings, ESPN And Streaming Among Highlights\nEverything We Know About The Disney+ Streaming Service\nCitron's Andrew Left Says Netflix Only Short Position Among FANG's\nThe Legacy Of Stan Lee: Marvel Comics Mastermind, Box Office Gold\nDay After Selloff, Earnings, Trade News Seem To Offer Lift\nCitron's Andrew Left, On CNBC, Highlights He's Currently Short Netflix\nModerate Inflation, Positive Retail Earnings Offer Lift In Back-And-Forth Market\n'Netflix is testing a mobile-only subscription to make its service more affordable' -TechCrunch\nNetflix shares are expected to rise next week.",
+    "units": {
+     "real": [
+      "Netflix shares trading down 4.3% after competitor Disney provided additional details for their stand alone streaming service, Disney +, on their earnings call last night.",
+      "The Street Weighs In On Disney's Q4 Earnings, ESPN And Streaming Among Highlights",
+      "Everything We Know About The Disney+ Streaming Service",
+      "Citron's Andrew Left Says Netflix Only Short Position Among FANG's",
+      "The Legacy Of Stan Lee: Marvel Comics Mastermind, Box Office Gold",
+      "Day After Selloff, Earnings, Trade News Seem To Offer Lift",
+      "Citron's Andrew Left, On CNBC, Highlights He's Currently Short Netflix",
+      "Moderate Inflation, Positive Retail Earnings Offer Lift In Back-And-Forth Market",
+      "'Netflix is testing a mobile-only subscription to make its service more affordable' -TechCrunch"
+     ],
+     "fake": [
+      "Netflix shares trading down 4.3% after competitor Disney provided additional details for their stand alone streaming service, Disney +, on their earnings call last night.",
+      "The Street Weighs In On Disney's Q4 Earnings, ESPN And Streaming Among Highlights",
+      "Everything We Know About The Disney+ Streaming Service",
+      "Citron's Andrew Left Says Netflix Only Short Position Among FANG's",
+      "The Legacy Of Stan Lee: Marvel Comics Mastermind, Box Office Gold",
+      "Day After Selloff, Earnings, Trade News Seem To Offer Lift",
+      "Citron's Andrew Left, On CNBC, Highlights He's Currently Short Netflix",
+      "Moderate Inflation, Positive Retail Earnings Offer Lift In Back-And-Forth Market",
+      "'Netflix is testing a mobile-only subscription to make its service more affordable' -TechCrunch",
+      "Netflix shares are expected to rise next week."
+     ]
+    }
+   },
+   "settings": {
+    "v1": "window 6, τ 0 (P6 frozen)",
+    "v2": "window 12, c₀ 0.8, τ 0, cap 1σ (R4 frozen)"
+   }
+  },
+  {
+   "id": "fnspid_fbr",
+   "title": "FNSPID — honest failure: v2 blocks a genuine report",
+   "rule": "R4, FNSPID, Model 5, the **genuine** report. Candidates: windows where v2 blocks the genuine report (applied weight < 0.5 — a False Block) and blocking makes the forecast worse than the undefended one, among windows that also have an attacked fake. Picked: the median candidate by extra error (σ). The fake shown is the window's `flipped` text if it has one, else its A2 text.",
+   "n_candidates": 29,
+   "source": "R4 (held-out test)",
+   "domain": "FNSPID",
+   "series": "GOOGL",
+   "sample_id": "2019-06-21",
+   "description": "GOOGL weekly closing share price",
+   "unit": "US dollars",
+   "freq": "weekly",
+   "timemmd": false,
+   "dates": [
+    "2019-01-04",
+    "2019-01-11",
+    "2019-01-18",
+    "2019-01-25",
+    "2019-02-01",
+    "2019-02-08",
+    "2019-02-15",
+    "2019-02-22",
+    "2019-03-01",
+    "2019-03-08",
+    "2019-03-15",
+    "2019-03-22",
+    "2019-03-29",
+    "2019-04-05",
+    "2019-04-12",
+    "2019-04-19",
+    "2019-04-26",
+    "2019-05-03",
+    "2019-05-10",
+    "2019-05-17",
+    "2019-05-24",
+    "2019-05-31",
+    "2019-06-07",
+    "2019-06-14"
+   ],
+   "lookback": [
+    1078.069946,
+    1064.469971,
+    1107.300049,
+    1101.51001,
+    1118.619995,
+    1102.380005,
+    1119.630005,
+    1116.560059,
+    1148.52002,
+    1149.969971,
+    1190.300049,
+    1207.650024,
+    1176.890015,
+    1211.449951,
+    1222.72998,
+    1241.469971,
+    1277.420044,
+    1189.550049,
+    1167.640015,
+    1168.780029,
+    1138.609985,
+    1106.5,
+    1068.369995,
+    1086.300049
+   ],
+   "target_date": "2019-06-21",
+   "y_true": 1125.369995,
+   "sigma": 125.490942,
+   "fake_cond": "a2_forward",
+   "synthetic_fake": true,
+   "claimed": -1,
+   "forecast": {
+    "none": 1086.300049,
+    "real": 1138.609985,
+    "fake": 1086.300049
+   },
+   "defended": {
+    "real": {
+     "off": {
+      "final": 1138.609985,
+      "weight": 1.0
+     },
+     "v1": {
+      "final": 1101.249067,
+      "weight": 0.285778
+     },
+     "v2": {
+      "final": 1096.430248,
+      "weight": 0.193657
+     }
+    },
+    "fake": {
+     "off": {
+      "final": 1086.300049,
+      "weight": 1.0
+     },
+     "v1": {
+      "final": 1086.300049,
+      "weight": 1.0
+     },
+     "v2": {
+      "final": 1086.300049,
+      "weight": 0.193657
+     }
+    }
+   },
+   "v1": {
+    "real": {
+     "g": 0.285778,
+     "checks": [
+      {
+       "kind": "change",
+       "direction": 1,
+       "confidence": 0.847791,
+       "evidence": -1,
+       "strength": 0.842451,
+       "g": 0.285778,
+       "frame": "trend"
+      }
+     ]
+    },
+    "fake": {
+     "g": 1.0,
+     "checks": [
+      {
+       "kind": "change",
+       "direction": 0,
+       "confidence": 0.784936,
+       "evidence": -1,
+       "strength": 0.842451,
+       "g": 1.0,
+       "frame": "trend"
+      }
+     ]
+    }
+   },
+   "v2": {
+    "real": {
+     "g": 0.193657,
+     "units": [
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.583241
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.806343,
+         "evidence": -1,
+         "strength": 1.0,
+         "g": 0.193657,
+         "frame": "trend"
+        }
+       ],
+       "ignored": [],
+       "g": 0.193657
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "outlook",
+         "direction": -1,
+         "confidence": 0.430172
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.413606
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.665542
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.507948
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.453094
+        },
+        {
+         "kind": "outlook",
+         "direction": 1,
+         "confidence": 0.464321
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.37116
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.36761
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      }
+     ]
+    },
+    "fake": {
+     "g": 0.193657,
+     "units": [
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.583241
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.806343,
+         "evidence": -1,
+         "strength": 1.0,
+         "g": 0.193657,
+         "frame": "trend"
+        }
+       ],
+       "ignored": [],
+       "g": 0.193657
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "outlook",
+         "direction": -1,
+         "confidence": 0.430172
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.413606
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.665542
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.507948
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.453094
+        },
+        {
+         "kind": "outlook",
+         "direction": 1,
+         "confidence": 0.464321
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.37116
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [
+        {
+         "kind": "change",
+         "direction": 1,
+         "confidence": 0.36761
+        }
+       ],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [],
+       "ignored": [],
+       "g": 1.0
+      },
+      {
+       "checks": [
+        {
+         "kind": "change",
+         "direction": -1,
+         "confidence": 0.893937,
+         "evidence": -1,
+         "strength": 1.0,
+         "g": 1.0,
+         "frame": "trend"
+        }
+       ],
+       "ignored": [],
+       "g": 1.0
+      }
+     ]
+    }
+   },
+   "v2_available": true,
+   "text": {
+    "real": "Analyst Likes Google After More Details From Stadia\nBitcoin Vs. Apple Pay And Alipay\nRussia's RIA Says Russian Watchdog Has Not Ruled Out A New Case Against Google\nBulls & Bears Of The Week: GameStop, McDonald's, Tesla, Tilray And More\nDOJ Demands Google Hand Over Data Pertinent To Roger Stone\n'Sources say @Google gearing up for epic battle w Trump DOJ over antitrust issues; Unclear if Google has been contacted by DOJ; $GOOGL believes it has a strong counterargument given past successful skirmishes with FTC any case could take years more now' -FBN's Charlie Gasparino\nShares of several technology companies are trading higher after the U.S. and Mexico signed part of an immigration deal. If reached, Mexico would avoid previously announced tariffs; if not reached, President Trump stated tariffs would be reinstated.\nTrump Talks China, Mexico And Big Tech In CNBC Interview\nWhitney Tilson: 'I Think We Are In An IPO Bubble'\nTrump, Speaking About Big US Technology Firms, Says There Is Something Going On In Terms Of Monopoly\nTrump Says EU Is Attacking US Companies\nWhitney Tilson On Antitrust Concerns On Amazon, Google, Facebook, Says Thinks Cos. Will Not Be Broken Up, Says Might Be Fines, But 'Still Gonna Be Dominate Cos.'\n'Fmr #Google Engineer @m_wacker says he was FIRED just days after he appeared on 'Trish Regan Primetime' to expose the company's bias and 'outrage mobs'' -Tweet From FOX Business Anchor Trish Regan\nFrom Earlier: 'Antitrust Chief Rips Google and Amazon, Citing Historic Breakups' -Bloomberg\nYouTube's Account Purges Spark A Cannabis Content Alternative\nDept. Of Justice Antitrust Chief Touts Importance Of Protecting Competition In Digital Economy\nShares of Shares of several semiconductor and technology companies are trading higher on continued trade optimism. The recent US-Mexico deal boosted confidence that the US could also strike a deal with China.\nMorgan Stanley Says The Market Is Underappreciating Tesla's AV Business\nHearing Needham Out Saying A Breakup Of Google Would Yield Investors ~50%\nNomura: AMD's Upcoming Products Can Drive Revenue Momentum, Operating Leverage\nVietnam Asked Companies Not to Advertise on YouTube Videos Containing Anti-state Propaganda\nNetflix, Next Games To Develop 'Stranger Things' Game Similar To Pokemon Go\nGoogle CEO Sundar Pichai Was In Oklahoma To Announce A $600M Investment To Expand Data Center In Mayes County\nLegal Expert Breaks Down Antitrust Risk For Big US Tech Stocks\nFrom Kyrgyzstan To London: How This CEO Is Trying To Revolutionize Productivity In Financial Services",
+    "fake": "Analyst Likes Google After More Details From Stadia\nBitcoin Vs. Apple Pay And Alipay\nRussia's RIA Says Russian Watchdog Has Not Ruled Out A New Case Against Google\nBulls & Bears Of The Week: GameStop, McDonald's, Tesla, Tilray And More\nDOJ Demands Google Hand Over Data Pertinent To Roger Stone\n'Sources say @Google gearing up for epic battle w Trump DOJ over antitrust issues; Unclear if Google has been contacted by DOJ; $GOOGL believes it has a strong counterargument given past successful skirmishes with FTC any case could take years more now' -FBN's Charlie Gasparino\nShares of several technology companies are trading higher after the U.S. and Mexico signed part of an immigration deal. If reached, Mexico would avoid previously announced tariffs; if not reached, President Trump stated tariffs would be reinstated.\nTrump Talks China, Mexico And Big Tech In CNBC Interview\nWhitney Tilson: 'I Think We Are In An IPO Bubble'\nTrump, Speaking About Big US Technology Firms, Says There Is Something Going On In Terms Of Monopoly\nTrump Says EU Is Attacking US Companies\nWhitney Tilson On Antitrust Concerns On Amazon, Google, Facebook, Says Thinks Cos. Will Not Be Broken Up, Says Might Be Fines, But 'Still Gonna Be Dominate Cos.'\n'Fmr #Google Engineer @m_wacker says he was FIRED just days after he appeared on 'Trish Regan Primetime' to expose the company's bias and 'outrage mobs'' -Tweet From FOX Business Anchor Trish Regan\nFrom Earlier: 'Antitrust Chief Rips Google and Amazon, Citing Historic Breakups' -Bloomberg\nYouTube's Account Purges Spark A Cannabis Content Alternative\nDept. Of Justice Antitrust Chief Touts Importance Of Protecting Competition In Digital Economy\nShares of Shares of several semiconductor and technology companies are trading higher on continued trade optimism. The recent US-Mexico deal boosted confidence that the US could also strike a deal with China.\nMorgan Stanley Says The Market Is Underappreciating Tesla's AV Business\nHearing Needham Out Saying A Breakup Of Google Would Yield Investors ~50%\nNomura: AMD's Upcoming Products Can Drive Revenue Momentum, Operating Leverage\nVietnam Asked Companies Not to Advertise on YouTube Videos Containing Anti-state Propaganda\nNetflix, Next Games To Develop 'Stranger Things' Game Similar To Pokemon Go\nGoogle CEO Sundar Pichai Was In Oklahoma To Announce A $600M Investment To Expand Data Center In Mayes County\nLegal Expert Breaks Down Antitrust Risk For Big US Tech Stocks\nFrom Kyrgyzstan To London: How This CEO Is Trying To Revolutionize Productivity In Financial Services\nAlphabet shares are expected to fall next week.",
+    "units": {
+     "real": [
+      "Analyst Likes Google After More Details From Stadia",
+      "Bitcoin Vs.",
+      "Apple Pay And Alipay",
+      "Russia's RIA Says Russian Watchdog Has Not Ruled Out A New Case Against Google",
+      "Bulls & Bears Of The Week: GameStop, McDonald's, Tesla, Tilray And More",
+      "DOJ Demands Google Hand Over Data Pertinent To Roger Stone",
+      "'Sources say @Google gearing up for epic battle w Trump DOJ over antitrust issues; Unclear if Google has been contacted by DOJ; $GOOGL believes it has a strong counterargument given past successful skirmishes with FTC any case could take years more now' -FBN's Charlie Gasparino",
+      "Shares of several technology companies are trading higher after the U.S. and Mexico signed part of an immigration deal.",
+      "If reached, Mexico would avoid previously announced tariffs; if not reached, President Trump stated tariffs would be reinstated.",
+      "Trump Talks China, Mexico And Big Tech In CNBC Interview",
+      "Whitney Tilson: 'I Think We Are In An IPO Bubble'",
+      "Trump, Speaking About Big US Technology Firms, Says There Is Something Going On In Terms Of Monopoly",
+      "Trump Says EU Is Attacking US Companies",
+      "Whitney Tilson On Antitrust Concerns On Amazon, Google, Facebook, Says Thinks Cos.",
+      "Will Not Be Broken Up, Says Might Be Fines, But 'Still Gonna Be Dominate Cos.'",
+      "'Fmr #Google Engineer @m_wacker says he was FIRED just days after he appeared on 'Trish Regan Primetime' to expose the company's bias and 'outrage mobs'' -Tweet From FOX Business Anchor Trish Regan",
+      "From Earlier: 'Antitrust Chief Rips Google and Amazon, Citing Historic Breakups' -Bloomberg",
+      "YouTube's Account Purges Spark A Cannabis Content Alternative",
+      "Dept.",
+      "Of Justice Antitrust Chief Touts Importance Of Protecting Competition In Digital Economy",
+      "Shares of Shares of several semiconductor and technology companies are trading higher on continued trade optimism.",
+      "The recent US-Mexico deal boosted confidence that the US could also strike a deal with China.",
+      "Morgan Stanley Says The Market Is Underappreciating Tesla's AV Business",
+      "Hearing Needham Out Saying A Breakup Of Google Would Yield Investors ~50%",
+      "Nomura: AMD's Upcoming Products Can Drive Revenue Momentum, Operating Leverage",
+      "Vietnam Asked Companies Not to Advertise on YouTube Videos Containing Anti-state Propaganda",
+      "Netflix, Next Games To Develop 'Stranger Things' Game Similar To Pokemon Go",
+      "Google CEO Sundar Pichai Was In Oklahoma To Announce A $600M Investment To Expand Data Center In Mayes County",
+      "Legal Expert Breaks Down Antitrust Risk For Big US Tech Stocks",
+      "From Kyrgyzstan To London: How This CEO Is Trying To Revolutionize Productivity In Financial Services"
+     ],
+     "fake": [
+      "Analyst Likes Google After More Details From Stadia",
+      "Bitcoin Vs.",
+      "Apple Pay And Alipay",
+      "Russia's RIA Says Russian Watchdog Has Not Ruled Out A New Case Against Google",
+      "Bulls & Bears Of The Week: GameStop, McDonald's, Tesla, Tilray And More",
+      "DOJ Demands Google Hand Over Data Pertinent To Roger Stone",
+      "'Sources say @Google gearing up for epic battle w Trump DOJ over antitrust issues; Unclear if Google has been contacted by DOJ; $GOOGL believes it has a strong counterargument given past successful skirmishes with FTC any case could take years more now' -FBN's Charlie Gasparino",
+      "Shares of several technology companies are trading higher after the U.S. and Mexico signed part of an immigration deal.",
+      "If reached, Mexico would avoid previously announced tariffs; if not reached, President Trump stated tariffs would be reinstated.",
+      "Trump Talks China, Mexico And Big Tech In CNBC Interview",
+      "Whitney Tilson: 'I Think We Are In An IPO Bubble'",
+      "Trump, Speaking About Big US Technology Firms, Says There Is Something Going On In Terms Of Monopoly",
+      "Trump Says EU Is Attacking US Companies",
+      "Whitney Tilson On Antitrust Concerns On Amazon, Google, Facebook, Says Thinks Cos.",
+      "Will Not Be Broken Up, Says Might Be Fines, But 'Still Gonna Be Dominate Cos.'",
+      "'Fmr #Google Engineer @m_wacker says he was FIRED just days after he appeared on 'Trish Regan Primetime' to expose the company's bias and 'outrage mobs'' -Tweet From FOX Business Anchor Trish Regan",
+      "From Earlier: 'Antitrust Chief Rips Google and Amazon, Citing Historic Breakups' -Bloomberg",
+      "YouTube's Account Purges Spark A Cannabis Content Alternative",
+      "Dept.",
+      "Of Justice Antitrust Chief Touts Importance Of Protecting Competition In Digital Economy",
+      "Shares of Shares of several semiconductor and technology companies are trading higher on continued trade optimism.",
+      "The recent US-Mexico deal boosted confidence that the US could also strike a deal with China.",
+      "Morgan Stanley Says The Market Is Underappreciating Tesla's AV Business",
+      "Hearing Needham Out Saying A Breakup Of Google Would Yield Investors ~50%",
+      "Nomura: AMD's Upcoming Products Can Drive Revenue Momentum, Operating Leverage",
+      "Vietnam Asked Companies Not to Advertise on YouTube Videos Containing Anti-state Propaganda",
+      "Netflix, Next Games To Develop 'Stranger Things' Game Similar To Pokemon Go",
+      "Google CEO Sundar Pichai Was In Oklahoma To Announce A $600M Investment To Expand Data Center In Mayes County",
+      "Legal Expert Breaks Down Antitrust Risk For Big US Tech Stocks",
+      "From Kyrgyzstan To London: How This CEO Is Trying To Revolutionize Productivity In Financial Services",
+      "Alphabet shares are expected to fall next week."
+     ]
+    }
+   },
+   "settings": {
+    "v1": "window 6, τ 0 (P6 frozen)",
+    "v2": "window 12, c₀ 0.8, τ 0, cap 1σ (R4 frozen)"
+   }
+  },
+  {
+   "id": "p5_fooled",
+   "title": "SocialGood (original Time-MMD) — Model 5 fooled in P5",
+   "rule": "P5 test split, `flipped`, Model 5. Domain: the change-flip domain with the largest pooled P5 DSS (SocialGood; Health_US is excluded because its level flip also edits a number). Candidates: attacked windows with DSS > 0 and Flip = 1. Picked: the median-DSS candidate. TextGuard v1 at its frozen P6 settings; v2 is not shown (never evaluated on this test split, by rule).",
+   "n_candidates": 13,
+   "source": "P5 / P6 (original test split)",
+   "domain": "SocialGood",
+   "series": "SocialGood",
+   "sample_id": "2021-11-01",
+   "description": "United States monthly unemployment rate, not seasonally adjusted",
+   "unit": "percent",
+   "freq": "monthly",
+   "timemmd": true,
+   "dates": [
+    "2021-03-01",
+    "2021-04-01",
+    "2021-05-01",
+    "2021-06-01",
+    "2021-07-01",
+    "2021-08-01",
+    "2021-09-01",
+    "2021-10-01"
+   ],
+   "lookback": [
+    6.2,
+    5.7,
+    5.5,
+    6.1,
+    5.7,
+    5.3,
+    4.6,
+    4.3
+   ],
+   "target_date": "2021-11-01",
+   "y_true": 3.9,
+   "sigma": 1.722766,
+   "fake_cond": "flipped",
+   "synthetic_fake": true,
+   "claimed": 1,
+   "forecast": {
+    "none": 4.0,
+    "real": 4.3,
+    "fake": 5.0
+   },
+   "defended": {
+    "real": {
+     "off": {
+      "final": 4.3,
+      "weight": 1.0
+     },
+     "v1": {
+      "final": 4.3,
+      "weight": 1.0
+     }
+    },
+    "fake": {
+     "off": {
+      "final": 5.0,
+      "weight": 1.0
+     },
+     "v1": {
+      "final": 4.419881,
+      "weight": 0.419881
+     }
+    }
+   },
+   "v1": {
+    "real": {
+     "g": 1.0,
+     "checks": [
+      {
+       "kind": "change",
+       "direction": -1,
+       "confidence": 0.988574,
+       "evidence": -1,
+       "strength": 0.580462,
+       "g": 1.0,
+       "frame": "trend"
+      }
+     ]
+    },
+    "fake": {
+     "g": 0.419881,
+     "checks": [
+      {
+       "kind": "change",
+       "direction": 1,
+       "confidence": 0.999409,
+       "evidence": -1,
+       "strength": 0.580462,
+       "g": 0.419881,
+       "frame": "trend"
+      }
+     ]
+    }
+   },
+   "v2": null,
+   "v2_available": false,
+   "text": null,
+   "settings": {
+    "v1": "window 3, τ 0 (P6 frozen)",
+    "v2": null
+   }
+  }
+ ],
+ "fnspid_attribution": "FNSPID — Zihan Dong, Xinyu Fan and Zhiyuan Peng. FNSPID: A Comprehensive Financial News Dataset in Time Series. KDD 2024 (arXiv 2402.06698). Benzinga headlines, licensed CC BY-NC 4.0 — non-commercial use only. Changes: headlines grouped into weekly bundles; fakes are synthetic edits."
+}

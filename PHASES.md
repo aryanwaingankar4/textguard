@@ -41,7 +41,7 @@ P0 Setup ─► P1 Data ─► P2 Models ─► P3 Attacks ─► P4 Metrics
 | P8 | Paper and release | ✅ |
 
 **P0–P6 + P8 = complete paper.** R1–R4 and R7 run before P8 (decided 2026-10-09; R5 and R6 moved
-to future work, not run — Aryan 2026-10-19). **Order after R4: R7 (done 2026-10-24) → P7.2 (demo) → P8.** P7 is
+to future work, not run — Aryan 2026-10-19). **Order after R4: R7 (done 2026-10-24) → P7.2 (demo, built 2026-10-24) → P8.** P7 is
 upside; P7.4 (drift monitor) stays future work with R6.
 
 ---
@@ -386,13 +386,14 @@ Independent items. Do as many as you want, in this order. Commit & push after ea
       6. Drift monitor setup
 - [ ] Output as HTML/PDF + CSV (raw predictions) + JSON (for CI gating)
 
-### 7.2 Streamlit demo *(what your panel sees)* — 🔵 NEXT (after R7)
-- [ ] Domain selector; real / fake / custom text input
-- [ ] Side-by-side: undefended forecast vs TextGuard forecast
-- [ ] Gate value + warning display
-- [ ] Results tab with DSS / Flip Rate charts
-- [ ] Qwen results **precomputed** — the free tier has ~2.7 GB RAM and no GPU
-- [ ] Deploy to Streamlit Community Cloud
+### 7.2 Streamlit demo *(what your panel sees)* — ✅ BUILT 2026-10-24 (local; `app/README.md`)
+- [x] Domain selector; real / fake text. **Custom text dropped** (Aryan 2026-10-24: precomputed only)
+- [x] Side-by-side: undefended forecast vs TextGuard forecast (off / v1 / v2, per-sentence trust)
+- [x] Gate value + warning display
+- [x] Results tab with DSS / Flip Rate charts (DSS per model + the paper figures)
+- [x] Qwen results **precomputed** — the free tier has ~2.7 GB RAM and no GPU
+- [ ] Deploy to Streamlit Community Cloud — **in P8**, once the repo is public (needs the Time-MMD
+      licence decision: the demo's Time-MMD texts are not in git)
 - Free apps sleep after ~12 h idle and wake on click (~1 min). Open it before any demo
 
 ### 7.3 Model 6 — cross-attention *(completes the 3-fusion-type claim)*
