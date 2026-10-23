@@ -53,6 +53,8 @@ Thumbs.db
 !/results/r1_train_units/*.csv
 !/results/r1_units/*.csv
 !/results/r3_finbert_units/*.csv
+# R7 toolkit test on Kaggle: the notebook's audit_out/ (synthetic example; reproduce.py INPUTS)
+!/results/r7_toolkit_kaggle/*.csv
 # cached text embeddings (recomputable; never commit)
 /cache/
 results/r3_finbert_run.log

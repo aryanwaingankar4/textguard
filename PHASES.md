@@ -41,7 +41,7 @@ P0 Setup ─► P1 Data ─► P2 Models ─► P3 Attacks ─► P4 Metrics
 | P8 | Paper and release | ✅ |
 
 **P0–P6 + P8 = complete paper.** R1–R4 and R7 run before P8 (decided 2026-10-09; R5 and R6 moved
-to future work, not run — Aryan 2026-10-19). **Order after R4: R7 → P7.2 (demo) → P8.** P7 is
+to future work, not run — Aryan 2026-10-19). **Order after R4: R7 (done 2026-10-24) → P7.2 (demo) → P8.** P7 is
 upside; P7.4 (drift monitor) stays future work with R6.
 
 ---
@@ -360,9 +360,11 @@ Attackers who know the defence. TextGuard v1 is run exactly as frozen in P6.
 - [ ] Embedding centroid + per-batch distance, threshold from historical variation (val)
 - [ ] Detection delay and false-alarm rate on streams seeded with fake reports
 
-### R7 — reproducibility — 🔵 NEXT (then P7.2 demo, then P8)
-- [ ] One-command reproduce script; pinned environment
-- [ ] Data card, model card, ethics statement
+### R7 — reproducibility — ✅ DONE 2026-10-24 (PROJECT_STATUS §9 "R7")
+- [x] One-command reproduce script; pinned environment (`reproduce.py`, `requirements-lock.txt`)
+- [x] Data card, model card, ethics statement
+- [x] Clean-room test: fresh clone + fresh venv, 47 / 47 steps, every committed file byte-identical
+      (`docs/REPRODUCE.md` §5); toolkit tested on Kaggle with the live judge
 
 **✅ Exit (each R):** pre-registration commit precedes its results; results in PROJECT_STATUS §9
 and in `paper/`; nulls reported. **➡️ Commit & push after each.**
@@ -384,7 +386,7 @@ Independent items. Do as many as you want, in this order. Commit & push after ea
       6. Drift monitor setup
 - [ ] Output as HTML/PDF + CSV (raw predictions) + JSON (for CI gating)
 
-### 7.2 Streamlit demo *(what your panel sees)*
+### 7.2 Streamlit demo *(what your panel sees)* — 🔵 NEXT (after R7)
 - [ ] Domain selector; real / fake / custom text input
 - [ ] Side-by-side: undefended forecast vs TextGuard forecast
 - [ ] Gate value + warning display
@@ -437,6 +439,15 @@ Independent items. Do as many as you want, in this order. Commit & push after ea
 - [ ] README: install, 5-minute example, how to plug in your own model, results, license
 - [ ] MIT license for the code
 - [ ] Publish the counterfactual/fake-text benchmark, clearly labelled as research-only
+- [ ] **Linux CI reproduction check (R7 open point a):** a GitHub Actions job on `ubuntu-latest`
+      that downloads the data, runs `reproduce.py` and requires `REPRODUCED` (9 / 9 GPU inputs byte
+      for byte; tables may show `identical_up_to_line_endings`). It tests R7's CRLF fix to the
+      hash-checked exports, which is not yet tested off Windows (`docs/REPRODUCE.md` §5). Needs ~1 h
+      CPU; check the Actions time limits
+- [ ] **Time-MMD licence check before the repo goes public (R7 open point b):** git history
+      (`801c3f6`…`d93f98a`) holds Time-MMD Energy report texts, and Time-MMD states no licence
+      (`DATA_CARD.md` §1a). Decide: ask the authors, accept and document, or rewrite history
+      (which changes cited commit hashes)
 - [ ] Tag a release
 - [ ] Post to arXiv — **as soon as results are solid.** It timestamps the work
 - [ ] Submit to the target venue

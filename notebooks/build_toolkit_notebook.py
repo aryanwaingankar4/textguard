@@ -49,8 +49,9 @@ Measures how far misleading report text can push **your** forecaster (DSS, flip 
 TextGuard v1 / v2, clipping and never_trust cost on genuine reports (False Block Rate, MSE).
 Paper code and settings: [{REPO}]({REPO}).
 
-* **Runtime:** a GPU (Colab: Runtime → Change runtime type → T4 GPU; Kaggle: Accelerator GPU T4,
-  Internet on). The judge is Qwen2.5-1.5B-Instruct; on a CPU it is ~50× slower.
+* **Runtime:** a GPU recommended (Colab: Runtime → Change runtime type → T4 GPU; Kaggle: Accelerator GPU T4,
+  Internet on). The judge is Qwen2.5-1.5B-Instruct. A CPU works, slowly: this worked example took
+  ~47 min end to end on a Kaggle CPU session.
 * **Worked example:** runs as is (a dummy model on a small synthetic series). For your model, edit
   cells 3 and 4 only.
 * **Honest limits** (README "Use TextGuard on your own model"): the judge reads a direction into

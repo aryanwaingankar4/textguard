@@ -87,7 +87,8 @@ def sha256(path: Path = R3_INPUTS) -> str:
 def export(path: Path = R3_INPUTS) -> pd.DataFrame:
     df = build()
     path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(path, index=False)
+    # CRLF on every OS: the Kaggle runs recorded this file's sha256 as written on Windows (R7)
+    df.to_csv(path, index=False, lineterminator="\r\n")
     return df
 
 

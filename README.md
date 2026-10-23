@@ -114,7 +114,8 @@ y_hat = guarded.predict(numbers, text, history=past_values)   # frozen paper set
   fall next week.*", predicting the reverse of the recent trend) works on any text. Our rule-based
   **flip** was written for the Time-MMD / FNSPID report styles and often fails on other text, so it
   is not offered. **Supply your own fakes** in `fake_text` / `fake_direction`.
-* **GPU notebook:** `notebooks/textguard_your_model.ipynb` (Colab or Kaggle, free T4) runs the judge
+* **Notebook:** `notebooks/textguard_your_model.ipynb` (Colab or Kaggle; free T4 GPU recommended,
+  CPU works slowly) runs the judge
   with your model and CSV. Its worked example (the `DummyForecaster` on
   `examples/sample_series.csv`, a small **synthetic** series) runs as is. Without GitHub access
   (a private copy, or no Internet for `git clone`), run `python notebooks/build_toolkit_zip.py`
@@ -124,8 +125,11 @@ y_hat = guarded.predict(numbers, text, history=past_values)   # frozen paper set
 
 **Honest limits — read before trusting a number:**
 
-* **The judge needs a GPU.** It is Qwen2.5-1.5B scoring three allowed answers per question. A CPU
-  works for a few dozen texts only.
+* **A GPU is recommended for the judge, but a CPU works, slowly.** The judge is Qwen2.5-1.5B
+  scoring three allowed answers per question. In R7 the notebook's worked example (26 windows,
+  110 judge questions) ran on a Kaggle **CPU** session in ~47 min end to end, including the model
+  download, with no errors (`results/r7_toolkit_kaggle/`). Time grows with the number of distinct
+  texts and sentences, so use a GPU (free Colab / Kaggle T4) for real data.
 * **Judge weakness on neutral financial news:** on 50 hand-labelled stock headlines it gave a
   direction to 11 of 33 neutral ones (it never reversed one). This is why v2 blocked **22% of
   genuine headline bundles** in R4. Expect high False Block Rates on text made of many short,

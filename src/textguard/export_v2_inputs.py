@@ -100,7 +100,8 @@ def export(path: Path = V2_VAL_INPUTS) -> pd.DataFrame:
         raise ValueError(f"expected P5's 40 probe rows, found {len(probes)}")
     df = build(pd.concat([val_texts(), human_texts()], ignore_index=True), probes)
     path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(path, index=False)
+    # CRLF on every OS: the Kaggle run recorded this file's sha256 as written on Windows (R7)
+    df.to_csv(path, index=False, lineterminator="\r\n")
     return df
 
 

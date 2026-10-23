@@ -35,8 +35,10 @@ MSE 10%.
 * **v2 also needs `history`**: the series before the lookback window, for year-over-year claims (≥ P
   periods plus 3 past P-differences; P = 52 weekly, 12 monthly). Without it, year-over-year claims
   get no evidence and are not gated.
-* A judge: Qwen2.5-1.5B on a **GPU** (a free T4 handles a few questions per second; a CPU is ~50×
-  slower). Any object returning claims can replace it (`DirectionJudge` protocol).
+* A judge: Qwen2.5-1.5B, a **GPU recommended**. A CPU works, slowly: the worked example (110
+  questions) took ~47 min end to end on a Kaggle CPU session, including the model download (R7,
+  `results/r7_toolkit_kaggle/`). Any object returning claims can replace it (`DirectionJudge`
+  protocol).
 
 ## Intended use
 

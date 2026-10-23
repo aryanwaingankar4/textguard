@@ -146,7 +146,8 @@ def export_conditions(conditions=P5_CONDITIONS, domains=DOMAINS, path: Path = IN
     if df.duplicated(keys + ["condition"]).any():
         raise ValueError("duplicate (domain, split, sample_id, condition) rows")
     path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(path, index=False)
+    # CRLF on every OS: R2's Kaggle run recorded this file's sha256 as written on Windows (R7)
+    df.to_csv(path, index=False, lineterminator="\r\n")
     return df
 
 

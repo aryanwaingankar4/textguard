@@ -4,8 +4,8 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** R7 — reproducibility (P0–P6, R1–R4 complete; R5, R6 = future work, not run; then P7.2 demo, then P8)
-**Last updated:** 2026-10-23
+**Current phase:** P7.2 — Streamlit demo (P0–P6, R1–R4, R7 complete; R5, R6 = future work, not run; then P8)
+**Last updated:** 2026-10-24
 
 > 👤 **Solo project.** All work by Aryan.
 > 📌 **Phase-gated, no deadlines.** See `PHASES.md`.
@@ -29,157 +29,105 @@
 | **R4** | TextGuard v2 — val-developed, tested once on held-out domains | ✅ | ✅ Done — **v2 buys protection at a cost (FBR)**: A2 cut on M5 (+0.180 → +0.021σ, below v1), FBR 18.4% vs v1 7.0% (val ordering reversed); nothing transfers to Q7 (§9 R4) |
 | R5 | Realistic attacks — other-family LLM fakes + human plausibility study | — | ❌ Future work, not run (Aryan 2026-10-19) |
 | R6 | Drift monitor for fake-report campaigns (RQ4; replaces P7.4) | — | ❌ Future work, not run (Aryan 2026-10-19) |
-| R7 | Reproducibility — reproduce script, pinned env, data/model cards, ethics | ✅ | 🔵 **WIP** — clean room found 2 more bugs (FinBERT null prompt, WIP 3; `freeze` hash vs CRLF checkout, WIP 4), no result changed; all regenerated files so far byte-identical. Next: continue the R4 precheck, then a fresh full run; Kaggle toolkit test prepared (§1a) |
-| P7 | Auditor, demo, extras | ⬜ Optional | ⚪ Pending — **P7.2 demo after R7** |
-| P8 | Paper & release | ✅ | ⚪ Pending (after R7) |
+| R7 | Reproducibility — reproduce script, pinned env, data/model cards, ethics | ✅ | ✅ Done — **fresh clone reproduces everything byte for byte** (47 / 47 steps, 147 files identical, 0 differ, 9 / 9 GPU inputs); 4 clean-room bugs fixed, no number changed; toolkit tested on Kaggle with the live judge (§9 R7) |
+| P7 | Auditor, demo, extras | ⬜ Optional | 🔵 **P7.2 demo — NEXT** (§1a); other items optional |
+| P8 | Paper & release | ✅ | ⚪ Pending (after P7.2) |
 
 Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 
 **P0–P6 + P8 = complete paper.** Research extensions R1–R4 and R7 run before P8 (decided 2026-10-09,
 PHASES.md "Research extensions"); **R5 and R6 are future work, not run (Aryan 2026-10-19). Order:
-R7 → P7.2 (demo) → P8.** P7 is otherwise upside.
+R7 (done) → P7.2 (demo) → P8.** P7 is otherwise upside.
 
 ---
 
-## 1a. ▶ START HERE — handoff for the next session (R7 — reproducibility)
+## 1a. ▶ START HERE — handoff for the next session (P7.2 — Streamlit demo)
 
-> Written 2026-10-11 at the end of R3; updated 2026-10-19 at the end of R4. The R4 block below is
-> kept as the record of how R4 was run. Replace this section at the end of R7.
+> Written 2026-10-11 at the end of R3; updated at the end of R4 (2026-10-19) and of R7
+> (2026-10-24). The R4 block below is kept as the record of how R4 was run. Replace this section at
+> the end of P7.2.
 
-**P0–P6, R1, R2, R3 and R4 are complete.** **R5 (realistic attacks) and R6 (drift monitor) are
-future work — not run (Aryan 2026-10-19);** they go in the paper's future-work paragraph (P8), not
-in the results. **Next: R7 (reproducibility) → P7.2 (Streamlit demo) → P8 (paper & release).**
-Other P7 items stay optional.
+**P0–P6, R1, R2, R3, R4 and R7 are complete.** **R5 (realistic attacks) and R6 (drift monitor) are
+future work, not run (Aryan 2026-10-19).** They go in the paper's future-work paragraph (P8), not in
+the results. **Next: P7.2 (Streamlit demo) → P8 (paper & release).** Other P7 items stay optional.
 
 ### The results, one line per phase (details and every number in §9)
 
 * **P5 (attack):** the rule-based flip moves Model 5 (Qwen2.5-1.5B, early fusion) +0.46σ toward the
-  lie and flips its direction in 24% of attacked windows; Models 3–4 (late fusion, frozen BERT) are
+  lie and flips its direction in 24% of attacked windows. Models 3–4 (late fusion, frozen BERT) are
   moved by text but not by its direction (DSS < 0.02σ). §9 "P5".
 * **P6 (defence):** TextGuard v1 (soft gate, w 3/6) cuts M5 pooled DSS +0.451 → −0.042 (sig. vs
-  always_trust and clip) but FBR 14.4% > 10% budget, flip reduction n.s., clip better on accuracy /
-  FBR / exaggeration — a trade-off. §9 "P6 results".
-* **R1 (LLM vs fusion):** R1-a — moving the report from the prompt into a pooled embedding removes
+  always_trust and clip), but FBR is 14.4% > the 10% budget, the flip reduction is n.s., and clip is
+  better on accuracy / FBR / exaggeration: a trade-off. §9 "P6 results".
+* **R1 (LLM vs fusion):** R1-a. Moving the report from the prompt into a pooled embedding removes
   ~98% of the manipulation; a direction-aware encoder (FinBERT) makes late heads attackable
   (M3-F +0.049σ). §9 "R1". `paper/sections/r1_llm_vs_fusion.tex`.
-* **R2 (generality):** Qwen2.5-7B fooled (+0.206σ), Phi-3.5 bounded (ignores report content), M5
-  prompt-robust, skeptical prompt does not help. §9 "R2". `paper/sections/r2_generality.tex`.
-* **R3 (adaptive attacks) — COMPLETE:** **A2 — one appended forward-looking sentence — evades
-  TextGuard v1** on M5 (+0.456σ) and Qwen2.5-7B (+0.403σ), as strongly as P3's full flip; the judge
-  reads the genuine past claim (91%), the gate passes it, the LLM follows the forward claim. **No
-  defence stops A2** (clip reduces it, leaves +0.12σ). A1 (trend-consistent selective flip) on M5:
-  inconclusive under the pre-registered windows, fooled under both alternatives — small, not robust,
-  rests on < 20 texts; A1 evades TG on M3-F. A3 (×10 magnitude) pushes nothing. §10f Amendment 1
-  (text-validity exclusions, made before any metric); C8 found after metrics, **not adopted**
-  (sensitivity only). Exploratory: P5/P6 headlines hold without P3's 19% internally inconsistent
-  fakes. §9 "R3". `paper/sections/r3_adaptive.tex`.
-* **R4 (TextGuard v2, held-out Energy + FNSPID) — COMPLETE:** v2 generalises its A2 protection on M5
-  (pooled +0.180 → +0.021σ, an 88% cut, lower than v1's +0.096 by 0.075σ) **but not its FBR
-  improvement** — 18.4% vs v1 7.0% (FNSPID 22.4%), reversing val's 6.3% vs 11.3%; the judge gives a
-  direction to 11 / 33 neutral FNSPID headlines (never reverses one). Nothing transfers to Qwen2.5-7B.
-  Pre-registered reading **"v2 buys protection at a cost (FBR)"**; "closes R3's A2 gap" not met (v1 is
-  not evaded pooled). Validation overstated v2, as pre-stated. Genuine FNSPID headlines worsen M5
-  (MSE 1.06 vs 0.48σ²), so v2's accuracy gain partly reflects damping harmful text. §9 "R4".
-  `paper/sections/r4_textguard_v2.tex`.
+* **R2 (generality):** Qwen2.5-7B is fooled (+0.206σ), Phi-3.5 is bounded (it ignores report
+  content), M5 is prompt-robust, and a skeptical prompt does not help. §9 "R2".
+  `paper/sections/r2_generality.tex`.
+* **R3 (adaptive attacks):** **A2, one appended forward-looking sentence, evades TextGuard v1** on M5
+  (+0.456σ) and Qwen2.5-7B (+0.403σ). The judge reads the genuine past claim, the gate passes it, and
+  the LLM follows the forward claim. No defence stops A2 (clip leaves +0.12σ). A1 is small and not
+  robust on M5 and evades TG on M3-F; A3 pushes nothing. §10f Amendment 1; C8 is sensitivity only.
+  §9 "R3". `paper/sections/r3_adaptive.tex`.
+* **R4 (TextGuard v2, held-out Energy + FNSPID):** "v2 buys protection at a cost (FBR)". A2 on M5
+  goes +0.180 → +0.021σ (below v1), but FBR is 18.4% vs v1's 7.0% (FNSPID 22.4%), reversing the val
+  ordering. Nothing transfers to Qwen2.5-7B. §9 "R4". `paper/sections/r4_textguard_v2.tex`.
+* **R7 (reproducibility):** **a fresh clone + fresh venv reproduces every committed table and figure
+  byte for byte**: 47 / 47 steps, 147 files identical, 0 differ, 9 / 9 GPU inputs (2026-10-24,
+  `b275568`, 61.6 min, CPU). The clean room found 4 real bugs (Time-MMD CRLF, truncated FNSPID
+  download, FinBERT null prompt, judge-answer hash vs CRLF checkout), all fixed, none changing a
+  number. The toolkit runs end to end on Kaggle with the live Qwen judge (CPU, ~47 min). §9 "R7",
+  `docs/REPRODUCE.md` §5.
 
-### R7 — WHERE IT STOPPED (paused by Aryan 2026-10-21; WIP commit "R7: WIP …")
+### R7 — record (complete 2026-10-24)
 
-**R7 is NOT complete.** Built and committed as WIP (Aryan's 10-item R7 brief, 2026-10-19):
-`reproduce.py` + `reproduce.sh` (47 steps, data → P1 … R4, then a byte-for-byte comparison of every
-committed `results/` and `paper/figures/` file + the sha256 of every regenerated Kaggle input);
-`requirements-lock.txt` (exact freeze), `requirements.txt` (direct pins), `.python-version` 3.14.3;
-`src/data/download.py` + `src/data/manifest.json` (Time-MMD @00281e2, FNSPID @bf9189c, sha256 of raw
-bytes); `DATA_CARD.md`, `MODEL_CARD.md`, `ETHICS.md`, `LICENSE` (MIT), README rewrite,
-`docs/REPRODUCE.md`, `docs/GPU_RUNS.md` (generated from the run metas); public toolkit
-(`textguard/`, `src/textguard/toolkit.py`, `live_judge.py`, `examples/`,
-`notebooks/textguard_your_model.ipynb` + builder, `tests/test_toolkit.py`).
+* Everything built, the clean-room result, the 4 bugs and the Kaggle toolkit test: **§9 "R7"**.
+  User-facing version: `docs/REPRODUCE.md` §5.
+* **Decisions (Aryan, 2026-10-23):**
+  1. **Git history is not rewritten**, because a rewrite would change the commit hashes the
+     pre-registrations are dated by. FNSPID (CC BY-NC 4.0) permits non-commercial redistribution
+     with attribution. Attribution, what is redistributed, and the synthetic-label rule for the
+     historical R4 input file are in `DATA_CARD.md` §1a; README / ETHICS / LICENSE match.
+  2. `DATA_CARD.md` documents the CRLF finding (the prompts hold Windows line endings;
+     `download.py` reproduces the original clone byte for byte).
+* WIP commits: `24bd16d`, `c037a2b`, `466f53b` (FinBERT null prompt), `b275568` (`freeze` hash).
+* **Long CPU runs (the full `reproduce.py`, ~1 h) go in a plain PowerShell window, not inside Claude
+  Code.** Its low-memory guard stopped two clean-room attempts on this 16 GB laptop.
+* **On the P8 checklist (PHASES.md §8.3), not blocking P7.2; details in §9 "R7":**
+  * (a) Linux / macOS: the CRLF fix to the hash-checked exports is applied and verified on
+    Windows, but not yet tested off Windows. **A Linux GitHub Actions reproduction check is planned
+    for P8.**
+  * (b) Time-MMD licence check before going public: git history holds Time-MMD Energy report
+    texts (no licence stated).
 
-**Verified so far:**
-* **In place (dev repo):** all 47 steps ok; **every committed table byte-identical**; 9 / 9 Kaggle
-  inputs regenerate to their recorded sha256; only the 8 PDFs differed (embedded creation date) →
-  re-rendered with `SOURCE_DATE_EPOCH` and committed, now byte-reproducible (R4 rerun: identical).
-* Tests: 478 passed (full suite, before the last 2 fixes) + `test_toolkit.py` 10 / 10 after them.
-* Toolkit: end to end on the DummyForecaster + synthetic sample **with a stub judge only** — the real
-  Qwen judge has NOT been run through the toolkit yet.
+### P7.2 — Streamlit demo (next; PHASES.md §7.2)
 
-**Clean room — stopped at step 9 / 47** (`C:\Users\Aryan\tg-cleanroom`, outside the repo; fresh
-clone of HEAD + the uncommitted changes, committed only inside that throwaway clone; fresh venv
-`C:\Users\Aryan\tg-cleanroom-venv` from the lock = identical; fresh `HF_HOME`
-`C:\Users\Aryan\tg-cleanroom-hf`). Run 3: steps 1–9 ok (data 47 / 47, P1–P3, P5 exports, BERT
-embeddings 933 s), then **killed by Claude Code for low system memory** (16 GB machine; a parallel
-3 GB Qwen download was running). Two real bugs the clean room found, both fixed and in this commit:
-1. **Line endings are data**: every result came from a Windows `git clone` of Time-MMD
-   (autocrlf → CRLF, also inside report texts); an LF copy changes 166 Model 5 prompts and the loaders
-   refuse the committed answers. `download.py` now writes Time-MMD as CRLF (reproduces all 30 original
-   files byte for byte); manifest hashes raw bytes (the first version normalised CRLF and hid this).
-2. FNSPID's 332 MB stream was silently truncated by a dropped connection → resumable range download
-   with a size check + retries on the price reads (`fnspid.py`).
+What PHASES.md asks for:
+* a domain selector and real / fake / custom text input;
+* the undefended forecast beside the TextGuard forecast, with the gate value and warning shown;
+* a results tab with DSS / Flip Rate charts;
+* **Qwen results precomputed**, because the free tier has ~2.7 GB RAM and no GPU;
+* deployment to Streamlit Community Cloud. Free apps sleep after ~12 h idle, so open the app
+  before any demo.
 
-**2026-10-23 (second WIP commit, "R7: WIP 2 …"):**
-* **Decisions (Aryan):** (1) **git history is NOT rewritten**: a rewrite would change commit hashes
-  cited here. FNSPID is CC BY-NC 4.0, which permits non-commercial redistribution with attribution →
-  DATA_CARD §1a (attribution, what is redistributed: 50 headlines in the tree +
-  `r4_heldout_inputs.csv` in history `801c3f6`…`d93f98a`; its fakes labelled by rule: forecast rows
-  `attacked=True`, judge rows whose `sources` lack `real`), README / ETHICS / LICENSE match.
-  (2) DATA_CARD documents the CRLF finding (prompts hold Windows line endings; `download.py`
-  reproduces the original clone byte for byte). *Open for Aryan:* the history file also holds
-  Time-MMD Energy report texts (Time-MMD states no licence); documented, nothing changed.
-* **Clean room run 4** (fresh GitHub clone of `24bd16d`, fresh venv = lock 116 / 116, fresh
-  `HF_HOME`): steps **1–20 ok** (BERT 723 s + 350 s), then **stopped at step 21 (FinBERT) by Claude
-  Code's low-memory reaper** (not a code failure). Aryan reruns it in his own PowerShell (Option 1,
-  outside Claude Code), from a fresh clone of this WIP commit.
-* **Kaggle toolkit test prepared:** `notebooks/build_toolkit_zip.py` → `dist/textguard_toolkit.zip`
-  (23 files: the 17 `src/` modules `import textguard` loads, `textguard/`, the synthetic example,
-  notebook, LICENSE, README + sha256 manifest; no data; self-tested inside the unpacked zip; syntax
-  OK for Python 3.10–3.12). Notebook cell 1 finds the zip under `/kaggle/input` (unpacked or not,
-  both tested), refuses a hash mismatch; cell 6 saves `run_info.json`. `test_toolkit.py` 10 / 10.
-  Not yet run on Kaggle.
-* `docs/REPRODUCE.md`: lock is 116 packages (said 120).
-* **Clean room run 5 (Aryan's PowerShell, fresh clone of `c037a2b`, 32.5 min): steps 1–21 ok, all
-  42 regenerated files byte-identical, 0 differ; FAILED at step 22 `analyze_r1_mechanism`.** Third
-  real bug found by the clean room: `embed-finbert` skipped blank texts, but `mechanism` encodes
-  report-less windows as the **null prompt**, absent from a fresh FinBERT cache (the dev cache had it
-  from R1 training; the one file step 22 added was exactly that prompt). No number affected
-  (`mechanism` keeps attacked windows with a report). Fixed in "R7: WIP 3": `embed_finbert` also
-  embeds the null prompt in its own call (the 1,993 texts keep their batching → byte-identical);
-  regression test in `tests/test_r1.py` (13 / 13). Next: precheck `reproduce.py --phases R1 R2 R3
-  R4` in the existing clean room (its R1–R4 files are untouched), then a fresh full run.
-* **Precheck R1–R4 (clean room still at `c037a2b` — its `git pull` did not run there, so WIP 3 was
-  NOT exercised; step 4 passed on the null prompt left by run 5): 22 ok, 73 files identical,
-  0 differ; FAILED at step 23 `analyze_r4_val freeze`.** Fourth clean-room bug, line endings again:
-  `freeze` hashed the **raw bytes** of the git-tracked Kaggle answers file
-  (`r4v2_val_judge_kaggle_predictions.csv`), committed as LF; a fresh Windows clone checks it out as
-  CRLF → sha `bbd58c5b…` ≠ frozen `fe5d3306…`. Recomputing `freeze` in the clean room into a temp
-  file: **the only differing key is `judge_answers_sha256`**; every v2 setting and val metric is
-  identical, and the CRLF→LF hash is exactly `fe5d3306…`. **No result changes.** Fixed in
-  "R7: WIP 4": `analyze_r4_val.git_content_sha` (git-stored form, CRLF→LF) for the tracked answers;
-  the regenerated inputs stay raw (their bytes are what Kaggle recorded). Dev `freeze` rewrites
-  nothing; regression test in `tests/test_analyze_r4.py` (4 / 4). Other raw-byte hashes checked:
-  none reads a tracked file and compares it to a recorded value.
-* **Open (Linux / macOS only, not fixed):** pandas writes the regenerated GPU inputs with the OS
-  newline (CRLF on Windows, where the Kaggle runs' recorded input sha256s came from). On Linux /
-  macOS they would be LF, so `export_r3_inputs` / `export_r4_inputs` would refuse and the GPU-input
-  checks would fail. README / REPRODUCE say `reproduce.sh` works there; untested. Decide: fix
-  (`lineterminator="\r\n"` in the exports: same bytes on Windows) or state Windows-only.
+Constraints from the project rules:
+* The demo **shows existing results only**: answers from `results/qwen/` and tables from
+  `results/summary_*`. It never computes, tunes or reports a new number on the test split, and
+  TextGuard v1 / v2 run at their frozen settings.
+* Every fake shown is **labelled synthetic** (ETHICS.md). FNSPID headlines shown carry the CC BY-NC
+  attribution, non-commercial.
+* The repository is private until P8. Streamlit Cloud deploys from GitHub, so the deploy target
+  needs a decision.
 
-**Next, in order:**
-1. **Free memory** (close other apps; do not download Qwen at the same time), then rebuild and rerun the
-   clean room: delete `C:\Users\Aryan\tg-cleanroom`, re-create it the same way (clone HEAD — the WIP
-   commit now holds everything — into a fresh folder; reuse the venv or make a fresh one from
-   `requirements-lock.txt`), set `HF_HOME` to the clean-room HF folder, run `python reproduce.py`
-   (~45 min incl. the CPU embeddings). Expected: `REPRODUCED`; report `logs/reproduce/report.json`.
-   Any `differs` → explain each before going on.
-2. **Kaggle toolkit test** (Aryan): run `notebooks/textguard_your_model.ipynb` on a Kaggle T4 (GPU,
-   Internet on) — the worked example (DummyForecaster + `examples/sample_series.csv`) with the **real**
-   Qwen judge. Needs the repo reachable from Kaggle (public, or upload a zip). Record the audit summary.
-3. Then: fill `docs/REPRODUCE.md` §5 with the clean-room result; §9 "R7"; mark R7 done (phase board,
-   PHASES.md); session log; commit "R7: …" and push. Show Aryan the clean-room result **before** that
-   final commit (his instruction).
-4. **Decisions pending (Aryan):** `results/qwen/r4_heldout_inputs.csv` was removed from the tree
-   (15 MB FNSPID headlines + fakes; regenerated by `export_r4_inputs`, sha asserted) but is still in
-   history (`801c3f6`) — rewrite history before going public? The CPU per-unit raw predictions
-   (~18 MB, numbers only) are now committed so nothing needs retraining.
-* After R7: P7.2 (Streamlit demo, Qwen results precomputed), then P8.
+Decisions for Aryan before building (not made yet):
+1. **"Custom text":** with no GPU on the free tier, Model 5 / the judge cannot run live. Options:
+   restrict to precomputed texts, use a CPU model (e.g. the DummyForecaster or Models 3–4 with
+   BERT, ~440 MB) for custom text, or call a hosted judge.
+2. Which domains and windows to precompute (a curated set of examples vs everything already in
+   `results/qwen/`).
+3. Deploy target: a public demo repo holding only the app + precomputed files, or making this
+   repository public first (P8 release questions (a), (b) above).
 
 ### R4 — what was done (TextGuard v2) — record, complete
 
@@ -299,6 +247,10 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
 
 ### Regenerate everything (nothing needs a GPU — Qwen answers are backed up in git)
 
+**One command (R7):** `python -m src.data.download`, then `python reproduce.py`: all 47 steps
+below plus a byte comparison with the committed files (~1 h CPU; run it outside Claude Code).
+Details: `docs/REPRODUCE.md`.
+
 | What | Command | Time |
 |---|---|---|
 | Texts (7 conditions) | `python -m src.attacks.generate` | seconds |
@@ -323,12 +275,12 @@ reported (`summary_p6_frozen.json`); v2 is a **new method**, never tuned on this
 | R4 held-out Kaggle input → notebooks | `python -m src.models.export_r4_inputs`, `python notebooks/build_r4_heldout_notebooks.py` | ~2 min |
 | R4 run verification | `python -m src.models.r4_answers` (needs the exported input CSV, sha `cecbdc9b…`) | ~1 min |
 | R4 analysis + figures | `python -m src.analyze_r4`, `python -m src.figures_r4` | a few min CPU |
-| Tests | `python -m pytest -q` (469) | ~2–4 min |
+| Tests | `python -m pytest -q` (484 passed, 2026-10-24) | ~3 min |
 
 Model 5 / judge answers: `results/qwen/*_predictions.csv` + `*_run_meta.json` (in git); the
 Colab notebooks in `notebooks/` are only needed to re-generate them.
 
-### P8 — what to do after R7 (PHASES.md §8; kept from the P6 handoff)
+### P8 — what to do after P7.2 (PHASES.md §8; kept from the P6 handoff)
 
 1. **Related Work first** — from CLAUDE.md §4a / §16, one "how we differ" sentence per
    competing paper. **Re-run the arXiv search before finalising** (CLAUDE.md: the field
@@ -361,6 +313,11 @@ Colab notebooks in `notebooks/` are only needed to re-generate them.
 6. **Release** (PHASES §8.3): README (install, 5-minute example with `TextGuard` around any
    `predict(numbers, text)`, results, licence), MIT licence, fake-text benchmark labelled
    research-only (CLAUDE.md §14 ethics), tag, **arXiv as soon as the draft is solid**, venue.
+   **Before going public (R7):**
+   * a **Linux GitHub Actions reproduction check**, which tests the CRLF export fix off Windows;
+   * a **Time-MMD licence check** (Energy texts in git history).
+
+   Both are on PHASES.md §8.3.
 7. **Course deliverables** (§8.4): PPT with real numbers, report, viva prep (worked example).
 8. **R1–R7 results** go in from their own `paper/` sections (written as each finishes) and §9.
 
@@ -2882,6 +2839,93 @@ A1 FNSPID n 31 (per-stock cells tiny); judge-label check n 50 (17 directional); 
 FNSPID (one blocked headline blocks the bundle's text); Flip Rate carries R2's copy-the-last-value
 caveat; one Kaggle setup per run; Energy accuracy may be affected by the Note 1 label.
 
+### R7 results — reproducibility (2026-10-19 → 2026-10-24)
+
+R7 is engineering, not an experiment: no pre-registration, no new numbers, and **no reported number
+changed**. Brief: Aryan's 10-item R7 brief (2026-10-19); decisions of 2026-10-23 in §1a.
+
+**Built:**
+* `reproduce.py` / `reproduce.sh`: 47 steps, data → P1 … R4, then a byte comparison of every
+  committed `results/` and `paper/figures/` file and the sha256 of every regenerated GPU input.
+* A pinned environment: `requirements-lock.txt` (116 packages), `requirements.txt`,
+  `.python-version` 3.14.3, BERT / FinBERT / Qwen revisions.
+* `src/data/download.py` + `manifest.json`: Time-MMD @00281e2 and FNSPID @bf9189c, sha256 of the
+  raw bytes.
+* The CPU runners' `--collect-only` mode; their per-unit raw predictions are committed.
+* `DATA_CARD.md`, `MODEL_CARD.md`, `ETHICS.md`, `LICENSE` (MIT), the README, `docs/REPRODUCE.md`,
+  `docs/GPU_RUNS.md`.
+* The public toolkit (`textguard/`, `toolkit.py`, `live_judge.py`, the example, the notebook) and
+  `build_toolkit_zip.py` for private-repo Kaggle runs.
+
+**Clean-room result (`docs/REPRODUCE.md` §5):**
+* Setup: a fresh GitHub clone of **`b275568`**, a venv from the lock (116 / 116), an empty
+  `HF_HOME`. Windows 11, CPU. Run by Aryan in his own PowerShell on 2026-10-24.
+* **`REPRODUCED`: 47 / 47 steps in 61.6 min.**
+* **147 committed files byte-identical, 0 differ**, 0 identical only up to line endings,
+  0 deleted, 0 not regenerated; 658 inputs.
+* **All 9 GPU inputs regenerated byte for byte.**
+* The earlier R1 + R4 precheck passed 19 / 19 after the cached null prompt had been deleted, so it
+  exercised fix 3.
+
+**Bugs the clean room found:** the in-place runs had passed every time. **No number changed.**
+
+| # | Bug | Effect if unfixed | Fix (commit) |
+|---|---|---|---|
+| 1 | Time-MMD CRLF: every result came from a Windows clone (CRLF, also inside report texts); an LF copy changes 166 Model 5 prompts | loaders refuse the committed GPU answers | `download.py` writes the original clone byte for byte; the manifest hashes raw bytes (`24bd16d`) |
+| 2 | FNSPID 332 MB stream silently truncated by a dropped connection | wrong / missing FNSPID data | resumable range download + size check + retries (`24bd16d`) |
+| 3 | FinBERT null prompt not embedded by `embed-finbert`; `analyze_r1 mechanism` needs it for report-less windows (the dev cache had it from R1 training) | step 22 refuses to run | embedded in its own call; texts byte-identical; null vector enters no number (`466f53b`) |
+| 4 | `freeze` hashed the raw bytes of the LF-committed Kaggle judge answers; a fresh Windows clone checks them out as CRLF | step 41 refuses to run (only `judge_answers_sha256` differed; every v2 setting and val metric identical) | hash in git-stored form, CRLF→LF, equal to the frozen value (`b275568`) |
+
+**Tests:** 484 passed (full suite, 2026-10-24, after the R7 fixes incl. the CRLF exports).
+
+**Not code bugs:**
+* The PDFs embedded their creation date → `SOURCE_DATE_EPOCH` fixed, PDFs re-rendered (in place).
+* Two clean-room attempts were stopped by Claude Code's low-memory guard (16 GB laptop), during
+  steps 10 and 21. Long runs therefore go in a plain terminal.
+* `docs/REPRODUCE.md` said 120 packages; the lock has 116.
+
+**Toolkit test on Kaggle (`results/r7_toolkit_kaggle/`, run by Aryan 2026-10-23):**
+* Setup: `notebooks/textguard_your_model.ipynb` with the worked example unchanged (DummyForecaster
+  on the synthetic `examples/sample_series.csv`) and the **real Qwen2.5-1.5B judge @989aa79**,
+  live. The toolkit came from `dist/textguard_toolkit.zip` (manifest `24bd16d-dirty`); its 23
+  files are identical to HEAD.
+* **It ran on a CPU** (`run_info.json`: device cpu, torch 2.11.0+cpu, Python 3.13.15,
+  transformers 5.16.1; no GPU was attached). It took **~47 min end to end** (Aryan's timing,
+  including the ~3 GB model download), **with no errors**.
+* The judge answered 110 questions with 0 parse failures (up 50 / down 52 / none 8), one setup.
+* Results: 26 windows, σ 1.030.
+  * Genuine reports: FBR 0 for TG1 and TG2.
+  * `a2`: DSS +0.250 undefended → TG1 +0.240, TG2 +0.221, flip rate 0.39 for all three.
+  * The CSV's own fakes (`user`, n 18): +0.500 → TG1 +0.433, TG2 +0.358, flip rate 1.00 → 0.56
+    under TG2.
+* **This is a functional test, not evidence about TextGuard.** The dummy follows direction words
+  by construction, and the series is synthetic. The paper's numbers are in §9 P6 / R3 / R4.
+* The run also showed that the judge works on a CPU (Python 3.13, transformers 5.16), which the
+  README now states. A GPU is still recommended.
+
+**Linux / macOS (Aryan 2026-10-24): fix applied, not yet tested; planned via GitHub Actions in P8.**
+* The problem: pandas writes the OS newline, while the recorded sha256s come from Windows CRLF
+  files. On Linux / macOS the hash checks would have failed.
+* The fix: every file whose sha256 was recorded is now written with `lineterminator="\r\n"`. That
+  covers the four GPU-run inputs (`export_qwen_inputs --p5`, `export_r3_inputs`,
+  `export_v2_inputs`, `export_r4_inputs`) and R4's pre-registered attack texts (`heldout.py` →
+  `texts/r4/*.csv`, which `export_r4_inputs` checks against `TEXT_SHA`). This second writer was
+  found while fixing the first four; fixing only the exports would not have been enough.
+* **Verified in place on Windows:** the 9 files were deleted and regenerated by the 6 affected
+  steps (all exit 0). They are **byte-identical to before**, **all 9 recorded Kaggle sha256s
+  match**, and no tracked file changed.
+* `tests/test_crlf_exports.py` (3) simulates Linux by setting `os.linesep = "\n"`. It includes a
+  control showing that LF is written without the fix.
+* Exports with no recorded file hash (P2's `qwen_inputs.csv`, R1 embedding inputs, P6 judge
+  inputs) are unchanged: their loaders check per-prompt fingerprints, which do not depend on line
+  endings.
+* The Linux CI check is on the PHASES.md P8 checklist (§8.3).
+
+**Open for P8 (PHASES.md §8.3):** the historical R4 input file in git history
+(`801c3f6`…`d93f98a`) also holds **Time-MMD Energy report texts**, and Time-MMD states no licence.
+It is documented in `DATA_CARD.md` §1a and nothing has changed. A licence check is needed before
+the repository goes public.
+
 ### P7.6 — FNSPID (optional)
 | Model | DSS before | DSS after | Flip before | Flip after |
 |---|---|---|---|---|
@@ -4209,6 +4253,19 @@ affected and is noted where reported.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-24 — R7 complete: clean room REPRODUCED (47 / 47, 147 identical, 0 differ, 9 / 9 GPU inputs)
+- R1 + R4 precheck (WIP 3 exercised, null prompt deleted first): 19 / 19 ok. Final fresh run by Aryan
+  in his PowerShell (fresh clone of `b275568`, fresh HF cache, lock venv): **REPRODUCED**, 61.6 min.
+- Kaggle toolkit test (Aryan, 2026-10-23): live Qwen judge @989aa79 on the synthetic worked example,
+  CPU (no GPU attached), ~47 min, no errors, 110 answers / 0 parse failures; toolkit files = HEAD.
+  Outputs committed to `results/r7_toolkit_kaggle/` (synthetic, labelled; `reproduce.py` INPUTS).
+- Written up: `docs/REPRODUCE.md` §5, §9 "R7"; README / MODEL_CARD / notebook: CPU works slowly,
+  GPU recommended (measured, replaces the unmeasured "~50×"). §1a rewritten for P7.2.
+- Linux / macOS (Aryan): CRLF pinned in the 5 writers of hash-checked files (4 GPU inputs + R4 texts);
+  regenerated in place: 9 / 9 byte-identical, 9 / 9 Kaggle sha256 match; test_crlf_exports (3).
+  Not yet tested off Windows: Linux GitHub Actions check + Time-MMD licence check on the P8 list.
+- Next: §1a "P7.2 — Streamlit demo" (3 decisions for Aryan first).
 
 ### 2026-10-23 — R7 WIP 2: licence decisions documented; toolkit zip for Kaggle; clean room at 20 / 47
 - Aryan's decisions: no history rewrite (FNSPID CC BY-NC permits non-commercial redistribution with

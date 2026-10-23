@@ -65,6 +65,7 @@ INPUTS = {
     "results/summary_directional_socialgood_energy.csv": "P1 human labels (Aryan) — hand-made",
     "results/summary_directional_fnspid.csv": "R4 human labels (Aryan) + Claude labels — hand-made",
     "results/summary_r4_v2_frozen.json": "TextGuard v2 frozen settings (checked, not rewritten, by `analyze_r4_val freeze`)",
+    "results/r7_toolkit_kaggle/*": "R7 toolkit test on Kaggle (live Qwen judge, synthetic example) — notebook output",
     "results/.gitkeep": "placeholder",
 }
 
