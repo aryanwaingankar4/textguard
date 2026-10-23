@@ -357,6 +357,19 @@ def run(judge: str = "v1j", save: bool = True) -> dict[str, pd.DataFrame]:
 FROZEN = RESULTS / "summary_r4_v2_frozen.json"
 
 
+def git_content_sha(path) -> str:
+    """sha256 of a git-tracked text file as git stores it (CRLF -> LF).
+
+    Why: the judge answers came back from Kaggle with LF and were committed as LF, but a fresh
+    Windows clone (``core.autocrlf=true``) checks them out as CRLF, so a raw-byte hash depended
+    on the checkout and ``freeze`` refused to run (R7 clean room, 2026-10-23). On the LF file
+    the frozen value was computed from, this equals the raw sha256, so the frozen file is
+    unchanged. Regenerated, untracked files (the judge inputs) are still hashed raw: their
+    bytes are what the Kaggle run recorded."""
+    import hashlib
+    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
 def freeze() -> dict:
     """Write TextGuard v2's frozen settings (V3, val-chosen by the approved rule) — once.
 
@@ -381,7 +394,8 @@ def freeze() -> dict:
           "cap_k": float(c.cap_k), "window": windows, "period": V.PERIOD,
           "val": {k: float(c[k]) for k in ("fbr", "obj", "mse_real", "dss_flipped", "dss_a2_forward",
                                             "dss_exaggerated", "dss_a3_magnitude", "dss_a1_selective")},
-          "judge_answers_sha256": sha(V2_ANSWERS), "judge_inputs_sha256": sha(V2_VAL_INPUTS)}
+          "judge_answers_sha256": git_content_sha(V2_ANSWERS),  # tracked: checkout-independent
+          "judge_inputs_sha256": sha(V2_VAL_INPUTS)}             # regenerated: raw, as Kaggle got it
     text = json.dumps(fz, indent=2) + "\n"
     if FROZEN.exists() and FROZEN.read_text(encoding="utf-8") != text:
         raise SystemExit(f"{FROZEN.name} exists with different content — v2's settings are frozen")

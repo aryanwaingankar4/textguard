@@ -29,3 +29,17 @@ def test_family_has_79_tests_and_the_pre_registered_cells():
     assert fam.groupby("block").size().to_dict() == {
         "U": 10, "T10": 10, "T1Δ": 10, "T20": 10, "T2Δ": 10, "T21": 10, "T2C": 10, "F21": 3, "M21": 3, "M2N": 3}
     assert (fam[fam.too_few_windows].p_raw == 1).all()
+
+
+def test_frozen_answers_hash_does_not_depend_on_the_checkout(tmp_path):
+    """R7 clean room: a fresh Windows clone checks the LF Kaggle answers out as CRLF; the frozen
+    hash must be the same either way, and equal the committed value."""
+    import hashlib
+    import json
+    from src import analyze_r4_val as V
+    lf, crlf = tmp_path / "lf.csv", tmp_path / "crlf.csv"
+    lf.write_bytes(b"a,b\n1,2\n")
+    crlf.write_bytes(b"a,b\r\n1,2\r\n")
+    assert V.git_content_sha(lf) == V.git_content_sha(crlf) == hashlib.sha256(b"a,b\n1,2\n").hexdigest()
+    frozen = json.loads(V.FROZEN.read_text(encoding="utf-8"))
+    assert V.git_content_sha(V.V2_ANSWERS) == frozen["judge_answers_sha256"]

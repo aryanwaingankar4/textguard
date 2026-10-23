@@ -29,7 +29,7 @@
 | **R4** | TextGuard v2 — val-developed, tested once on held-out domains | ✅ | ✅ Done — **v2 buys protection at a cost (FBR)**: A2 cut on M5 (+0.180 → +0.021σ, below v1), FBR 18.4% vs v1 7.0% (val ordering reversed); nothing transfers to Q7 (§9 R4) |
 | R5 | Realistic attacks — other-family LLM fakes + human plausibility study | — | ❌ Future work, not run (Aryan 2026-10-19) |
 | R6 | Drift monitor for fake-report campaigns (RQ4; replaces P7.4) | — | ❌ Future work, not run (Aryan 2026-10-19) |
-| R7 | Reproducibility — reproduce script, pinned env, data/model cards, ethics | ✅ | 🔵 **WIP** — clean room run 5 (outside Claude Code) failed at step 22 / 47: FinBERT null-prompt bug, fixed in WIP 3; steps 1–21 byte-identical. Next: R1–R4 precheck, fresh full run; Kaggle toolkit test prepared (§1a) |
+| R7 | Reproducibility — reproduce script, pinned env, data/model cards, ethics | ✅ | 🔵 **WIP** — clean room found 2 more bugs (FinBERT null prompt, WIP 3; `freeze` hash vs CRLF checkout, WIP 4), no result changed; all regenerated files so far byte-identical. Next: continue the R4 precheck, then a fresh full run; Kaggle toolkit test prepared (§1a) |
 | P7 | Auditor, demo, extras | ⬜ Optional | ⚪ Pending — **P7.2 demo after R7** |
 | P8 | Paper & release | ✅ | ⚪ Pending (after R7) |
 
@@ -144,6 +144,23 @@ embeddings 933 s), then **killed by Claude Code for low system memory** (16 GB m
   embeds the null prompt in its own call (the 1,993 texts keep their batching → byte-identical);
   regression test in `tests/test_r1.py` (13 / 13). Next: precheck `reproduce.py --phases R1 R2 R3
   R4` in the existing clean room (its R1–R4 files are untouched), then a fresh full run.
+* **Precheck R1–R4 (clean room still at `c037a2b` — its `git pull` did not run there, so WIP 3 was
+  NOT exercised; step 4 passed on the null prompt left by run 5): 22 ok, 73 files identical,
+  0 differ; FAILED at step 23 `analyze_r4_val freeze`.** Fourth clean-room bug, line endings again:
+  `freeze` hashed the **raw bytes** of the git-tracked Kaggle answers file
+  (`r4v2_val_judge_kaggle_predictions.csv`), committed as LF; a fresh Windows clone checks it out as
+  CRLF → sha `bbd58c5b…` ≠ frozen `fe5d3306…`. Recomputing `freeze` in the clean room into a temp
+  file: **the only differing key is `judge_answers_sha256`**; every v2 setting and val metric is
+  identical, and the CRLF→LF hash is exactly `fe5d3306…`. **No result changes.** Fixed in
+  "R7: WIP 4": `analyze_r4_val.git_content_sha` (git-stored form, CRLF→LF) for the tracked answers;
+  the regenerated inputs stay raw (their bytes are what Kaggle recorded). Dev `freeze` rewrites
+  nothing; regression test in `tests/test_analyze_r4.py` (4 / 4). Other raw-byte hashes checked:
+  none reads a tracked file and compares it to a recorded value.
+* **Open (Linux / macOS only, not fixed):** pandas writes the regenerated GPU inputs with the OS
+  newline (CRLF on Windows, where the Kaggle runs' recorded input sha256s came from). On Linux /
+  macOS they would be LF, so `export_r3_inputs` / `export_r4_inputs` would refuse and the GPU-input
+  checks would fail. README / REPRODUCE say `reproduce.sh` works there; untested. Decide: fix
+  (`lineterminator="\r\n"` in the exports: same bytes on Windows) or state Windows-only.
 
 **Next, in order:**
 1. **Free memory** (close other apps; do not download Qwen at the same time), then rebuild and rerun the
@@ -4201,6 +4218,8 @@ affected and is noted where reported.
   outside Claude Code.
 - Clean room run 5 (outside Claude Code): 1–21 ok (42 files identical), failed at 22 — FinBERT null
   prompt not embedded by `embed-finbert`; fixed in WIP 3 (+ test).
+- Precheck R1–R4 (clean room not pulled: still `c037a2b`): failed at R4 `freeze` — raw-byte sha of the
+  LF-committed Kaggle answers changes in a CRLF checkout; only that hash differs. Fixed in WIP 4 (+ test).
 - Next: §1a "R7 — WHERE IT STOPPED" (precheck R1–R4 → fresh full run → Kaggle test → REPRODUCE §5, §9 R7, commit).
 
 ### 2026-10-21 — R7 WIP (paused by Aryan): reproduce + cards + toolkit built; clean room at 9 / 47
