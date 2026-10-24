@@ -97,7 +97,7 @@ and a deployable defense.
 | **Sridhar et al. (2026)** *Semantics or Structure? Auditing Text Sensitivity in Multimodal TSF* | Ran empty/constant/shuffled/cross-domain perturbations on Time-MMD across three architectures; found <0.5% MSE movement; released a diagnostic toolkit | Our screening phase (P5.2) reproduces this — **cite them, don't claim it**. Our contribution starts after: adversarial text + defense |
 | **Lee et al. (2026)** *Constrained Fusion / CFA* — code `seunghan96/cfa` | Plug-in fusion control without modifying the backbone | CFA is **trained** (low-rank adapters) and targets *irrelevant* text. TextGuard is **training-free**, inference-time, and targets *adversarial* text. Use as the primary defense baseline |
 | **Corroboration Illusion** (arXiv 2609.22246) | Adversary publishes news to move forecasts in a chosen direction | They attack **RAG event forecasters** (ForecastBench probabilities). We attack **numerical multimodal TSF** |
-| **Plug-In Adversarial Detection for Time-Series LLMs** (arXiv 2512.12154) | Plug-in adversarial detection in our space | Check whether their attack is numeric or textual when writing P8. If textual, reposition TextGuard as *gated fusion* vs their *detection* |
+| **Plug-In Adversarial Detection for Time-Series LLMs** (arXiv 2512.12154) | Plug-in adversarial detection in our space | **Checked 2026-10-24: their attack perturbs the numeric series** (detection by forecast divergence on shortened inputs, energy TS-LLMs; Ma et al.). No overlap with text attacks; cited in Related Work |
 | **Liu & Jiang (2024)** arXiv 2412.08099 | Adversarial attacks on LLM time-series forecasters | Attacks the **numerical** channel (2% of dataset mean), not text. Supports our motivation that adversarial > random noise |
 | **Zhu et al. (2025)** *PA-RNet* | Robustness to textual perturbation | Proves error reduction under **zero-mean** perturbations only. Meaning-inverted text is a different threat model — **this is our core gap** |
 | **Rizvani, Apruzzese & Laskov (2026)** *Adversarial News and Lost Profits* (arXiv 2601.13082, SaTML) | Attacks a price forecaster (LSTM + LLM-derived sentiment) through stock headlines; directional; 14 months of real stock data; up to −17.7 pp annual return; no defence | **Imperceptible** attacks (homoglyphs, hidden-text clauses), not visible meaning inversion of genuine reports; sentiment-score pipeline, not a forecaster that reads the report; returns, not DSS; no defence. **We do not claim the first headline attack on a price forecaster** — relevant to R4's FNSPID domain. Read in full in P8 (only the abstract read so far) |
@@ -420,8 +420,14 @@ Sekar et al. (2026) *ZEDD* · Greco et al. (2024) *DriftLens*
 *TradeTrap* (arXiv 2512.02261), *Poisoning Agentic Alpha* (arXiv 2608.24069), *SoK: Trading
 Agents or Market Crashers?* (arXiv 2609.19705)
 
-> Gap claims verified 2026-09-28. **Re-run the arXiv search in P8 before submitting** —
-> this field publishes weekly.
+**Added in the P8 re-search (2026-10-24), cited in the paper:** Xie et al. (NAACL 2022) *A Word is
+Worth A Thousand Dollars* (adversarial tweets vs stock-movement classifiers, arXiv 2205.01094) ·
+Andrews & Mengaldo (2026) *When Does Text Inform?* (arXiv 2609.11282; not adversarial) · Nguyen et
+al. (2026) *LLM as Forecasting Planner* (arXiv 2607.24892; not adversarial). Seen, not cited: VoT
+(arXiv 2603.15452; random masking / noise only).
+
+> Gap claims verified 2026-09-28 and re-checked 2026-10-24 (P8 draft; nothing contradicts §17).
+> **Re-run the arXiv search again right before submitting** — this field publishes weekly.
 
 ---
 
