@@ -4,7 +4,7 @@
 > Claude Code reads this to recover context after a session reset.
 > Keep it factual: what is actually done, what actually broke, what the numbers actually are.
 
-**Current phase:** P8 — Paper & release (P0–P6, R1–R4, R7, P7.2 demo complete; R5, R6 = future work, not run)
+**Current phase:** P8 — Paper & release, in progress: paper drafted (`paper/TextGuard_paper.docx`); repo PRIVATE until the Turnitin check (P0–P6, R1–R4, R7, P7.2 demo complete; R5, R6 = future work, not run)
 **Last updated:** 2026-10-24
 
 > 👤 **Solo project.** All work by Aryan.
@@ -31,7 +31,7 @@
 | R6 | Drift monitor for fake-report campaigns (RQ4; replaces P7.4) | — | ❌ Future work, not run (Aryan 2026-10-19) |
 | R7 | Reproducibility — reproduce script, pinned env, data/model cards, ethics | ✅ | ✅ Done — **fresh clone reproduces everything byte for byte** (47 / 47 steps, 147 files identical, 0 differ, 9 / 9 GPU inputs); 4 clean-room bugs fixed, no number changed; toolkit tested on Kaggle with the live judge (§9 R7) |
 | P7 | Auditor, demo, extras | ⬜ Optional | ✅ **P7.2 demo built** (local; `streamlit run app/app.py`, §1a); deploy after the repo is public (P8); other items optional |
-| P8 | Paper & release | ✅ | 🔵 **NEXT** |
+| P8 | Paper & release | ✅ | 🔵 **In progress** — full paper drafted as `paper/TextGuard_paper.docx` (IEEE, 2026-10-24), number check PASS, overlap 0.34%; PDF export pending (Word stuck, see §1a "P8"); **repo stays PRIVATE until the college Turnitin check** |
 
 Legend: ⚪ pending · 🔵 in progress · ✅ done · ⚠️ blocked · ❌ cut
 
@@ -80,6 +80,61 @@ public. Other P7 items stay optional.
   download, FinBERT null prompt, judge-answer hash vs CRLF checkout), all fixed, none changing a
   number. The toolkit runs end to end on Kaggle with the live Qwen judge (CPU, ~47 min). §9 "R7",
   `docs/REPRODUCE.md` §5.
+
+### P8 — paper (Word / IEEE), started 2026-10-24
+
+> ⚠️ **The repository stays PRIVATE until the college Turnitin check of the paper is done** (Aryan,
+> 2026-10-24). Only after that: make it public, deploy the demo, post to arXiv. The paper text is in
+> the repo (`paper/content_*.py`), so a public repo before Turnitin would match the paper 100%.
+
+* **Before writing — Energy A2 date check confirmed from the raw data:** the report filed
+  2023-12-25 says "$3.089 … on January 1, 2023, $0.027 below last week"; the next report says
+  "$3.073 on January 8, 2024, $0.016 below last week's price" → $3.089 is January 1, **2024**; the
+  target fell −0.025 that week (Jan 2023's first week rose +0.128). **A Time-MMD year typo, not a
+  misalignment** (as §6 / P7.2 recorded). Stated in the paper (§IV-B).
+* **Built (all in `paper/`):** `TextGuard_paper.docx` (IEEE conference layout: A4, two columns,
+  Times New Roman 10 pt, numbered headings, 15 tables, 9 figures, 32 references, Appendices A–F
+  after the References); `build_paper.py` + `content_front.py` / `content_results.py` /
+  `content_back.py` (the text; tables read their cells from `results/summary_*` at build time,
+  logged in `paper/build/provenance.json`); `ieee_docx.py` (layout); `make_fig1.py` → Fig. 1
+  (pipeline, attack path marked; now **reproduce.py step 48, "P8 figure_pipeline"**, STIX font so
+  the PNG is byte-identical on any OS); `check_numbers.py`; `check_overlap.py`; `export_pdf.ps1`.
+  Own venv: `.venv-paper` (python-docx 1.2.0, PyMuPDF, defusedxml) — the R7 `.venv` is untouched.
+  Build: `.venv-paper\Scripts\python paper\build_paper.py`.
+* **Number check (`check_numbers.py`): PASS.** 903 numbers in the text: 394 table cells re-read
+  from their CSV / JSON (426 / 426 logged cells reproduce), 494 found in a summary table at the
+  printed precision, 7 in §9, 8 in design / pre-registration sections (§6–§10: split sizes, etc.),
+  0 unmatched; 19 / 19 headline claims pinned to their exact CSV cell. Limitation stated in the
+  script: the sweep proves a number exists in a source at that precision, not that it is the right
+  cell — tables and headline claims are pinned cell by cell for that reason.
+* **Overlap check (`check_overlap.py`, 8-word sequences vs 977 git-tracked text files): body
+  0.34% (28 / 8,267), all text 2.04%** (the rest is Appendix A's verbatim prompts, matching the
+  prompt modules / notebooks, and quoted text). What remains in the body is wording kept on purpose:
+  the title, the novelty-claim phrase (contributions, CLAUDE.md §17), the approved R2 sentence "we
+  found no forecaster that both reads report direction and resists the attack", and the
+  pre-registered label "reduces; residual not shown to be below the SESOI". Report:
+  `paper/build/overlap_report.txt`.
+* **README, MODEL_CARD, DATA_CARD, ETHICS, docs/REPRODUCE.md, docs/GPU_RUNS.md rewritten** shorter
+  and plainer so they share no wording with the paper (facts, commands, hashes unchanged; README
+  keeps the heading "Use TextGuard on your own model" that the toolkit notebook cites).
+* **Literature re-search (2026-10-24):** nothing new contradicts the novelty claim.
+  *Plug-In Adversarial Detection* (Ma et al., arXiv 2512.12154) attacks the **numeric** series
+  (sampling-divergence detection) → no overlap; resolves the CLAUDE.md §4a open check. **New, cited
+  in Related Work:** Xie et al. NAACL 2022 (adversarial tweets vs stock-movement classifiers —
+  earlier text attack on stock prediction, not in CLAUDE.md before); Andrews & Mengaldo arXiv
+  2609.11282 (information metrics with correct / incorrect / irrelevant annotations; not
+  adversarial); Nguyen et al. arXiv 2607.24892 (training-free text conditioning; no adversary).
+  Seen, not cited: VoT (arXiv 2603.15452, random masking / noise robustness on Time-MMD).
+  **Market Signal Injection added to the references** (Lee & Park, arXiv 2609.18357).
+  `paper/references.bib` (LaTeX era) is superseded by the reference list in `build_paper.py`.
+* **PDF: not produced yet.** The first Word export worked (layout checked page by page); later
+  hidden Word instances hung — Word now has document-recovery entries from the instances that had
+  to be stopped, and a hidden instance cannot show that prompt. **To do (Aryan): open Word once,
+  close the recovery pane, then run `powershell -ExecutionPolicy Bypass -File paper\export_pdf.ps1`.**
+* **Still open for P8:** PDF + a look by eye; Devansh Kumar's role (CLAUDE.md §1); the Linux CI
+  reproduction check and the Time-MMD licence check (before going public); release tasks
+  (PHASES.md §8.3–8.4). The LaTeX drafts in `paper/sections/` are kept as history; the .docx is the
+  paper.
 
 ### R7 — record (complete 2026-10-24)
 
@@ -4324,6 +4379,18 @@ affected and is noted where reported.
 ## 11. Session log
 
 > Newest at top. Format: what was done / what broke / next step.
+
+### 2026-10-24 (evening) — P8: full paper as an IEEE Word document
+- Energy A2 date re-checked from the raw files first: year typo, not a misalignment (§1a "P8").
+- `paper/TextGuard_paper.docx` built by `paper/build_paper.py` (python-docx, `.venv-paper`): title to
+  Appendix F, Fig. 1 new (`make_fig1.py`, reproduce step 48), 15 tables pinned to the summaries.
+- `check_numbers.py` PASS (903 numbers, 0 unmatched; 426 / 426 cells; 19 / 19 headline claims);
+  `check_overlap.py` body 0.34%. README + cards + docs rewritten in plainer words.
+- Literature re-searched (§1a "P8"); Xie et al. 2022 and two 2026 papers added; 2512.12154 is numeric.
+- **Broke:** Word COM export hangs after the first run (recovery prompt in a hidden instance). PDF
+  pending — Aryan opens Word once, then `paper\export_pdf.ps1`.
+- **Rule recorded: repository private until the college Turnitin check** (then public + arXiv).
+- Next: PDF and by-eye review by Aryan; then the remaining P8 release items.
 
 ### 2026-10-24 (later) — P7.2: fixes after Aryan's review of the demo
 - Energy A2 "January 1, 2023" = a Time-MMD year typo (already in §6), **not a misalignment: R4 is

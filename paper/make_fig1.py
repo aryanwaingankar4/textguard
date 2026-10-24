@@ -2,7 +2,7 @@
 
 Drawn with matplotlib boxes and arrows (no data). Run with the project venv:
     .venv\\Scripts\\python paper\\make_fig1.py
-Writes paper/figures/fig1_pipeline.png (300 dpi). Why a script and not a drawing tool: the figure
+Writes paper/figures/fig1_pipeline.png (300 dpi); also step "P8 figure_pipeline" of reproduce.py. Why a script and not a drawing tool: the figure
 regenerates from the repo like every other figure, and the labels can be checked against the gate
 definition (CLAUDE.md §8) by reading this file.
 """
@@ -17,8 +17,9 @@ from matplotlib.patches import FancyArrowPatch, FancyBboxPatch  # noqa: E402
 
 OUT = Path(__file__).resolve().parent / "figures" / "fig1_pipeline.png"
 
-plt.rcParams.update({"font.family": "serif", "font.serif": ["Times New Roman", "DejaVu Serif"],
-                     "font.size": 7})
+# STIX ships with matplotlib (Times-like), so the PNG is byte-identical on every OS;
+# reproduce.py regenerates and compares it (step "P8 figure_pipeline").
+plt.rcParams.update({"font.family": "STIXGeneral", "mathtext.fontset": "stix", "font.size": 7})
 
 INK, GREY, BLUE, RED, GREEN = "#1f1f1f", "#f2f2f2", "#dce8f7", "#c0392b", "#e3f2e6"
 

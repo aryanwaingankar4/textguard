@@ -1,0 +1,83 @@
+Paper: 8832 distinct 8-word sequences (all text), 8272 (body, without prompt blocks and quotations); References excluded.
+Files scanned: 977 (git-tracked text files; paper build sources skipped).
+
+Overlap with the whole repository: all text 180 / 8832 = 2.04%; body 28 / 8272 = 0.34%
+
+file                                                            all   body  body %
+PROJECT_STATUS.md                                                51     20  0.24%
+CLAUDE.md                                                        13     13  0.16%
+paper/sections/r2_generality.tex                                  8      6  0.07%
+MODEL_CARD.md                                                     3      2  0.02%
+paper/sections/r4_textguard_v2.tex                                2      2  0.02%
+results/summary_r3_reading.json                                   2      2  0.02%
+results/summary_r3_robustness_readings.csv                        2      2  0.02%
+results/summary_r4_covid_readings.csv                             2      2  0.02%
+results/summary_r4_reading.json                                   2      2  0.02%
+results/summary_r4_readings.csv                                   2      2  0.02%
+results/summary_r4_scan_all_texts_readings.csv                    2      2  0.02%
+results/summary_r4_sigma_alt_readings.csv                         2      2  0.02%
+src/analyze_r3.py                                                 2      2  0.02%
+src/analyze_r4.py                                                 2      2  0.02%
+tests/test_analyze_r3.py                                          2      2  0.02%
+src/textguard/judge_prompt_v2.py                                 71      0  0.00%
+notebooks/r4_judge_v2_kaggle.ipynb                               53      0  0.00%
+notebooks/r4_v2_val_judge_kaggle.ipynb                           53      0  0.00%
+src/textguard/judge_prompt.py                                    43      0  0.00%
+notebooks/p6_direction_judge.ipynb                               31      0  0.00%
+notebooks/r3_judge_kaggle.ipynb                                  31      0  0.00%
+notebooks/r4_judge_v1_kaggle.ipynb                               31      0  0.00%
+src/models/r2_prompts.py                                         21      0  0.00%
+notebooks/r2_m5_prompts.ipynb                                    16      0  0.00%
+notebooks/r2_phi35.ipynb                                         16      0  0.00%
+notebooks/r2_qwen7b.ipynb                                        16      0  0.00%
+notebooks/r2_qwen7b_kaggle.ipynb                                 16      0  0.00%
+notebooks/r3_m5_kaggle.ipynb                                     16      0  0.00%
+notebooks/r3_qwen7b_kaggle.ipynb                                 16      0  0.00%
+notebooks/r4_m5_kaggle.ipynb                                     16      0  0.00%
+notebooks/r4_qwen7b_kaggle.ipynb                                 16      0  0.00%
+src/models/qwen_prompt.py                                        12      0  0.00%
+src/attacks/connectors_r4.py                                      6      0  0.00%
+src/attacks/heldout_rules.py                                      6      0  0.00%
+app/data/demo.json                                                5      0  0.00%
+notebooks/p2_qwen_forecaster.ipynb                                5      0  0.00%
+notebooks/p5_qwen_conditions.ipynb                                5      0  0.00%
+notebooks/r1_qwen_embeddings.ipynb                                5      0  0.00%
+paper/sections/r3_adaptive.tex                                    2      0  0.00%
+src/attacks/adaptive.py                                           2      0  0.00%
+tests/test_r2.py                                                  2      0  0.00%
+results/summary_directional_sample.csv                            1      0  0.00%
+
+Examples of shared body sequences (up to 3 per file):
+  PROJECT_STATUS.md: a training free inference time black box claim
+  PROJECT_STATUS.md: both reads report direction and resists the attack
+  PROJECT_STATUS.md: edits of genuine reports that feed multimodal time
+  CLAUDE.md: a training free inference time black box claim
+  CLAUDE.md: against misleading text attacks on multimodal time series
+  CLAUDE.md: and defending against misleading text attacks on multimodal
+  paper/sections/r2_generality.tex: both reads report direction and resists the attack
+  paper/sections/r2_generality.tex: forecaster that both reads report direction and resists
+  paper/sections/r2_generality.tex: found no forecaster that both reads report direction
+  MODEL_CARD.md: reduces residual not shown to be below the
+  MODEL_CARD.md: residual not shown to be below the sesoi
+  paper/sections/r4_textguard_v2.tex: reduces residual not shown to be below the
+  paper/sections/r4_textguard_v2.tex: residual not shown to be below the sesoi
+  results/summary_r3_reading.json: reduces residual not shown to be below the
+  results/summary_r3_reading.json: residual not shown to be below the sesoi
+  results/summary_r3_robustness_readings.csv: reduces residual not shown to be below the
+  results/summary_r3_robustness_readings.csv: residual not shown to be below the sesoi
+  results/summary_r4_covid_readings.csv: reduces residual not shown to be below the
+  results/summary_r4_covid_readings.csv: residual not shown to be below the sesoi
+  results/summary_r4_reading.json: reduces residual not shown to be below the
+  results/summary_r4_reading.json: residual not shown to be below the sesoi
+  results/summary_r4_readings.csv: reduces residual not shown to be below the
+  results/summary_r4_readings.csv: residual not shown to be below the sesoi
+  results/summary_r4_scan_all_texts_readings.csv: reduces residual not shown to be below the
+  results/summary_r4_scan_all_texts_readings.csv: residual not shown to be below the sesoi
+  results/summary_r4_sigma_alt_readings.csv: reduces residual not shown to be below the
+  results/summary_r4_sigma_alt_readings.csv: residual not shown to be below the sesoi
+  src/analyze_r3.py: reduces residual not shown to be below the
+  src/analyze_r3.py: residual not shown to be below the sesoi
+  src/analyze_r4.py: reduces residual not shown to be below the
+  src/analyze_r4.py: residual not shown to be below the sesoi
+  tests/test_analyze_r3.py: reduces residual not shown to be below the
+  tests/test_analyze_r3.py: residual not shown to be below the sesoi

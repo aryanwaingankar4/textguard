@@ -1,18 +1,16 @@
 # Reproducing the results
 
-Goal: clone the repository and regenerate every reported table and figure without asking anyone.
+Aim: from a fresh clone, rebuild every table and figure without help.
 
 ## 1. Environment
 
-* **Python 3.14.3** (`.python-version`). The results were produced on Windows 11 x64, CPU only.
-* `python -m pip install -r requirements-lock.txt` installs the exact environment (`pip freeze`
-  of the development venv, 116 packages; `pywin32` only on Windows). `requirements.txt` lists the
-  direct dependencies, pinned.
-* Pinned model weights, downloaded from the Hugging Face Hub on first use:
-  BERT `google-bert/bert-base-uncased` @ `86b5e09` and FinBERT `ProsusAI/finbert` @ `4556d13` (CPU
-  embeddings for the similarity tables). Qwen is **not** downloaded by `reproduce.py`; its answers
-  are committed.
-* GPU runs (Colab / Kaggle) used their own images, recorded per run in `docs/GPU_RUNS.md`.
+* Python 3.14.3 (`.python-version`). The results were made on Windows 11 x64 with a CPU only.
+* `python -m pip install -r requirements-lock.txt` gives the exact environment (116 packages;
+  `pywin32` on Windows only). `requirements.txt` holds the direct, pinned dependencies.
+* Models fetched from the Hugging Face Hub on first use: BERT `google-bert/bert-base-uncased` @
+  `86b5e09` and FinBERT `ProsusAI/finbert` @ `4556d13` (CPU embeddings for the similarity tables).
+  Qwen is not downloaded; its answers are in the repository.
+* The GPU runs (Colab / Kaggle) had their own setups, listed in `docs/GPU_RUNS.md`.
 
 ## 2. Data
 
@@ -20,58 +18,57 @@ Goal: clone the repository and regenerate every reported table and figure withou
 python -m src.data.download
 ```
 
-This fetches Time-MMD @ `00281e2` (GitHub zip, ~35 MB) and the FNSPID subset @ `bf9189c` (streams
-the 332 MB Benzinga block, keeps ~10 MB, re-derives and asserts the frozen stock selection). It
-then checks all 47 files against `src/data/manifest.json` (sha256 of the raw bytes). Time-MMD is
-written with CRLF line endings, including inside report texts, because that is the form every
-committed result was computed from (a Windows `git clone`; see the top of `DATA_CARD.md`). An LF copy
-changes 166 prompts and fails. Use the script, not `git clone`.
-`--skip-fnspid` fetches Time-MMD only (enough for P1–R3); `--with-mmtsflib` also fetches the
-MM-TSFlib network code (retraining only). Licences: `DATA_CARD.md`.
+Gets Time-MMD @ `00281e2` (~35 MB zip) and the FNSPID subset @ `bf9189c` (reads the 332 MB Benzinga
+block, keeps ~10 MB, and re-checks the stock selection), then checks all 47 files against
+`src/data/manifest.json`. Time-MMD is written with Windows line endings, also inside the reports,
+because every stored result came from a Windows clone (`DATA_CARD.md`); an LF copy changes 166
+prompts and fails, so don't use `git clone` for it. `--skip-fnspid` gets Time-MMD only (enough for
+P1–R3); `--with-mmtsflib` adds the MM-TSFlib network code (only for retraining).
 
 ## 3. Run
 
 ```bash
-python reproduce.py              # or ./reproduce.sh (makes .venv-repro, installs the lock, downloads, runs)
-python reproduce.py --list       # the 47 steps
+python reproduce.py              # or ./reproduce.sh: builds .venv-repro, installs, downloads, runs
+python reproduce.py --list       # show the steps (47 in the R7 clean room; P8 added Fig. 1)
 python reproduce.py --phases R4  # one phase (its inputs must exist)
 ```
 
-| Phase | What is regenerated |
+| Phase | Rebuilt |
 |---|---|
-| data | download + sha256 check |
-| P1 | timing check (0 violations, exit code) |
-| P2 | Models 1–4 combined predictions + `summary_p2_baselines`, `summary_p2_lr_tuning` (from the committed units), Model 5's prompts and `summary_p2_qwen` |
-| P3 | the 6 text conditions (`texts/`, labelled synthetic) + `summary_p3_attack_validation` |
-| P5 | Model 5 prompts of the P3 conditions, BERT embeddings, Models 3–4 combined predictions, every `summary_p5_*` table, P5 figures |
-| P6 | judge inputs, judge validation, val tuning (rewrites `summary_p6_frozen.json`, which must come out identical), the test analysis, P6 figures |
-| R1 | Qwen embeddings (imported from the committed `.npz`), FinBERT embeddings, the mechanism table, R1 heads' combined predictions, every `summary_r1_*` table |
-| R2 | every `summary_r2_*` table + figure (Model 5 prompt variants, Phi-3.5, Qwen2.5-7B answers committed) |
-| R3 | A1–A3 texts, validation, the Amendment 1 scan, the Kaggle input (sha256 checked), FinBERT predictions, every `summary_r3_*` table, figure, the exploratory P3-exclusion recheck |
-| R4 | held-out texts + scan, connector flags, v2's val export and val grid, `freeze` (refuses if v2's frozen settings would change), dev variants, the held-out Kaggle input (sha256 asserted), run verification, every `summary_r4_*` table, figures |
+| data | download and hash check |
+| P1 | timing check (must report 0 problems) |
+| P2 | Models 1–4 predictions from the stored units, `summary_p2_baselines`, `summary_p2_lr_tuning`, Model 5's prompts, `summary_p2_qwen` |
+| P3 | the 6 text conditions (`texts/`, marked synthetic), `summary_p3_attack_validation` |
+| P5 | Model 5 prompts, BERT embeddings, Models 3–4 predictions, all `summary_p5_*`, P5 figures |
+| P6 | judge inputs and checks, validation tuning (`summary_p6_frozen.json` must come out the same), test analysis, P6 figures |
+| R1 | Qwen embeddings (from the stored `.npz`), FinBERT embeddings, mechanism table, R1 predictions, all `summary_r1_*` |
+| R2 | all `summary_r2_*` and the figure (the GPU answers are stored) |
+| R3 | A1–A3 texts and checks, the Amendment 1 scan, the Kaggle input (hash checked), FinBERT predictions, all `summary_r3_*`, figure, the P3 exclusion recheck |
+| R4 | held-out texts and scan, connector flags, v2's validation export and grid, `freeze` (fails if v2's settings would change), dev variants, the held-out Kaggle input (hash checked), run checks, all `summary_r4_*`, figures |
 
-**Not re-executed:**
-* GPU jobs (Qwen2.5-1.5B forecaster and judge, Qwen2.5-7B, Phi-3.5, Qwen embeddings): their
-  outputs are in `results/qwen/` and every loader rebuilds the prompts from the data and checks each
-  answer's fingerprint. To rerun them: `docs/GPU_RUNS.md`.
-* CPU training (Models 1–4, R1 heads, R3 FinBERT inference): their per-unit raw predictions are
-  committed (`results/p2_baselines/`, `p5_units/`, `r1_train_units/`, `r1_units/`,
-  `r3_finbert_units/`) and the runners' `--collect-only` mode rebuilds the combined tables.
+Not rerun:
+* GPU jobs (Qwen2.5-1.5B forecaster and judge, Qwen2.5-7B, Phi-3.5, Qwen embeddings). Their
+  outputs are in `results/qwen/`; each loader rebuilds the prompts and checks every answer's
+  fingerprint. To redo them see `docs/GPU_RUNS.md`.
+* CPU training (Models 1–4, R1 heads, R3 FinBERT). Their per-unit predictions are stored
+  (`results/p2_baselines/`, `p5_units/`, `r1_train_units/`, `r1_units/`, `r3_finbert_units/`), and
+  `--collect-only` rebuilds the combined tables.
 
-**Inputs that no step rewrites, by design:** GPU answers and run metadata, the per-unit
-predictions, the hand-made labels (`summary_directional_*.csv`) and v2's frozen settings
-(`summary_r4_v2_frozen.json`, checked by `analyze_r4_val freeze`). `reproduce.py` lists them under
-`inputs` and flags any other committed file that no step rewrote.
+Never rewritten, on purpose: GPU answers and run metadata, per-unit predictions, the hand labels
+(`summary_directional_*.csv`) and v2's frozen settings (`summary_r4_v2_frozen.json`, checked by
+`analyze_r4_val freeze`). `reproduce.py` lists them as `inputs` and flags any other stored file that
+no step rewrote.
 
-**Comparison.** Before the first step, `reproduce.py` hashes every committed file under `results/`
-and `paper/figures/`. Afterwards it reports each as `identical`, `identical_up_to_line_endings`
-(pandas writes the platform newline, git checks text out per `core.autocrlf`; reported, never
-hidden), `differs`, `deleted`, `inputs` or `not_regenerated`. It also checks the sha256 of every
-regenerated GPU input against the value its Kaggle run recorded. Report:
-`logs/reproduce/report.json`; per-step logs beside it. PDFs are written with
-`SOURCE_DATE_EPOCH` fixed (2026-10-19), so they are byte-reproducible.
+**How the check works.** Before step 1, `reproduce.py` hashes every stored file in `results/` and
+`paper/figures/`. At the end each one is `identical`, `identical_up_to_line_endings` (shown, never
+hidden), `differs`, `deleted`, `inputs` or `not_regenerated`, and each regenerated GPU input is
+compared with the sha256 its Kaggle run recorded. Report: `logs/reproduce/report.json`, step logs
+beside it. PDFs use a fixed `SOURCE_DATE_EPOCH` (2026-10-19) so they rebuild byte for byte.
 
-## 4. Retraining (optional, not needed for any table)
+The paper document is rebuilt separately (`paper/build_paper.py`, in its own venv with
+python-docx); `paper/check_numbers.py` and `paper/check_overlap.py` check it.
+
+## 4. Retraining (optional; no table needs it)
 
 ```bash
 python -m src.data.download --with-mmtsflib
@@ -84,59 +81,46 @@ python -m src.run_r1 --fresh --no-mlflow                      # ~15 min
 python -m src.run_r3_finbert --no-mlflow                      # ~10 min
 ```
 
-Training is deterministic on one machine (P2: an independent re-run reproduced predictions to
-≤ 1.3e-7, CSV round-off). On other hardware or library builds, expect tiny float differences in
-the unit files and therefore possibly in the last printed digit of a table. That is why the
-committed units, not a retrain, are the reference.
+On one machine training is deterministic (a second P2 run matched to ≤ 1.3e-7, CSV rounding). Other
+hardware or library builds can shift the last digit of a float, which is why the stored units, not a
+retrain, are the reference.
 
-## 5. Clean-room test (R7)
-
-**Result: `REPRODUCED` on 2026-10-24.**
+## 5. Clean-room test (R7): `REPRODUCED`, 2026-10-24
 
 | | |
 |---|---|
-| Code | fresh `git clone` from GitHub of `b275568` |
-| Environment | venv made fresh from `requirements-lock.txt` (Python 3.14.3; `pip freeze` = the lock, 116 / 116 packages); empty `HF_HOME` (BERT and FinBERT downloaded at their pinned revisions) |
-| Machine | Windows 11 x64, 16 GB RAM, CPU only. Run from a plain PowerShell window, not inside Claude Code, whose memory guard stopped two earlier attempts |
+| Code | fresh `git clone` of `b275568` from GitHub |
+| Environment | new venv from `requirements-lock.txt` (Python 3.14.3; 116 / 116 packages match); empty `HF_HOME` |
+| Machine | Windows 11 x64, 16 GB RAM, CPU, plain PowerShell window (Claude Code's memory guard had stopped two earlier tries) |
 | Command | `python reproduce.py` |
-| Steps | **47 / 47 ok**, 61.6 min (data download 147 s, BERT 533 + 275 s, FinBERT 1,176 s) |
-| Committed files under `results/` and `paper/figures/` | **147 identical**, 0 identical up to line endings, **0 differ**, 0 deleted, 658 inputs, 0 not regenerated |
-| GPU-run inputs | **9 / 9 regenerated byte for byte** (the sha256 each Kaggle run recorded) |
+| Steps | **47 / 47 ok** in 61.6 min (download 147 s, BERT 533 + 275 s, FinBERT 1,176 s) |
+| Stored files | **147 identical**, 0 line-ending-only, **0 differ**, 0 deleted, 658 inputs, 0 not regenerated |
+| GPU inputs | **9 / 9 identical** to the recorded sha256 |
 
-Report: `logs/reproduce/report.json` (not committed; regenerate it with the command above).
+Report: `logs/reproduce/report.json` (not stored; rerun to get it).
 
-**What the clean room found.** Each bug had passed every in-place run, because the development
-checkout already held what a fresh clone lacks. All four are fixed, and **none changed a reported
-number**.
+Four bugs showed up only in the clean room (the working copy already had what a fresh clone lacks).
+All are fixed and **no reported number changed**.
 
-| # | Found at | Bug | Fix |
+| # | Where | Problem | Fix |
 |---|---|---|---|
-| 1 | step 1 → P2 (runs 1–2) | **Time-MMD line endings.** Every result came from a Windows clone (CRLF, also inside report texts). An LF copy changes 166 Model 5 prompts, and the loaders refuse the committed answers. The first manifest normalised line endings and hid this | `download.py` writes CRLF exactly as the original clone (all 30 files byte for byte); the manifest hashes raw bytes (`DATA_CARD.md`) |
-| 2 | step 1 | **FNSPID download truncated**: a dropped connection cut the 332 MB stream silently | resumable range download with a size check; retries on the price reads (`fnspid.py`) |
-| 3 | step 22 (run 5) | **FinBERT null prompt**: `embed-finbert` skipped blank texts, but `analyze_r1 mechanism` encodes report-less windows as the null prompt, which a fresh cache lacked | `embed_finbert` also embeds the null prompt, in its own call, so the text embeddings stay byte-identical. The null vector never enters a number |
-| 4 | R4 `freeze` (precheck) | **Judge-answer hash vs checkout.** `freeze` hashed the raw bytes of the Kaggle answers file, committed as LF; a fresh Windows clone checks it out as CRLF, so the hash changed. Recomputed in the clean room, that hash was the only differing field | `analyze_r4_val.git_content_sha` hashes tracked files as git stores them (CRLF→LF). This equals the old hash, so the frozen file is unchanged |
+| 1 | step 1 → P2 | Time-MMD line endings: results came from a CRLF clone; an LF copy changes 166 prompts and the stored answers are rejected. The first manifest normalised endings and hid this | `download.py` writes CRLF exactly like the original clone (all 30 files); the manifest hashes raw bytes |
+| 2 | step 1 | FNSPID download silently cut short by a dropped connection | resumable range download with a size check and retries (`fnspid.py`) |
+| 3 | step 22 | FinBERT's empty-report prompt was never embedded in a fresh cache, but `analyze_r1 mechanism` needs it | `embed_finbert` embeds it in a separate call; other embeddings unchanged; that vector enters no number |
+| 4 | R4 `freeze` | the judge-answer hash was taken on checked-out bytes (CRLF on Windows) instead of the stored LF form | `analyze_r4_val.git_content_sha` hashes the git-stored form; same value as before, frozen file unchanged |
 
-Earlier, in place: the 8 PDF figures embedded their creation date. They are now written with
-`SOURCE_DATE_EPOCH` fixed and are byte-reproducible.
+Also fixed earlier: the 8 PDF figures held their creation date; they now use the fixed
+`SOURCE_DATE_EPOCH`.
 
-**Scope: verified on Windows; Linux/macOS fix applied, not yet tested — planned via GitHub
-Actions in P8.**
-* **The fix.** pandas writes the platform newline: CRLF on Windows, LF on Linux / macOS. Every
-  file whose sha256 was recorded is therefore now written with `lineterminator="\r\n"`:
-  * the four GPU-run inputs (`qwen_inputs_p5.csv`, `r3_inputs.csv`, `r4v2_val_inputs.csv`,
-    `r4_heldout_inputs.csv`);
-  * R4's pre-registered attack texts (`texts/r4/*.csv`).
+**Other systems.** Checked on Windows. For Linux / macOS a fix is in place but not yet run: pandas
+writes the system newline, so every file with a recorded sha256 (the four GPU inputs
+`qwen_inputs_p5.csv`, `r3_inputs.csv`, `r4v2_val_inputs.csv`, `r4_heldout_inputs.csv`, and R4's
+attack texts `texts/r4/*.csv`) is written with `lineterminator="\r\n"`. On Windows the bytes didn't
+change and all 9 hashes still match; `tests/test_crlf_exports.py` fakes a Linux newline. Time-MMD
+download and `freeze` are already system-independent. On Linux, summary tables should compare as
+`identical`; anything differing only in line endings is listed separately. A GitHub Actions run on
+Linux is planned (P8).
 
-  On Windows the bytes are unchanged. After the fix, all nine files were regenerated in place and
-  are byte-identical to before, and all 9 recorded Kaggle sha256s match.
-  `tests/test_crlf_exports.py` simulates a Linux newline.
-* **Already OS-independent:** `src.data.download` writes Time-MMD as CRLF on every OS, and
-  `freeze` hashes the tracked judge answers in their git-stored form.
-* **Expected on Linux / macOS:** regenerated summary tables are written with LF, and git checks the
-  committed ones out as LF (their stored form), so they should compare as `identical`. Any file
-  that differs only in line endings is reported separately as `identical_up_to_line_endings`, never
-  hidden.
-
-**The toolkit** (`notebooks/textguard_your_model.ipynb`) was tested separately on Kaggle with the
-live Qwen judge on the synthetic worked example. It ran on a CPU in ~47 min with no errors
-(`results/r7_toolkit_kaggle/`, `PROJECT_STATUS.md` §9 "R7").
+**Toolkit.** `notebooks/textguard_your_model.ipynb` ran on Kaggle with the live Qwen judge on the
+synthetic example: CPU, about 47 min, no errors (`results/r7_toolkit_kaggle/`,
+`PROJECT_STATUS.md` §9 "R7").

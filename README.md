@@ -1,179 +1,158 @@
 # TextGuard
 
-**Detecting and Defending Against Misleading Text Attacks on Multimodal Time-Series Forecasting Models**
+Fake-report attacks on forecasting models that read text, and a defence against them.
 
 Aryan Manoj Waingankar · B.Tech AI & ML, Symbiosis Institute of Technology, Pune
 
 ---
 
-## What this is
+## In short
 
-Some forecasters read text next to the numbers: an LLM prompted with a series and the latest
-report, or a fusion model with a text encoder. For them the report is an **unverified input
-channel**. This project measures how far **visible, minimal, meaning-inverting edits of genuine
-reports** move such forecasters, and tests a defence:
+Some forecasting models get a written report along with the numbers (for example an LLM given a
+series and last week's news). Nobody checks that report. We edit real reports so they say the
+opposite ("rose" → "fell"), measure how much the forecast follows the lie, and test a defence.
 
-* **Attacks** made by deterministic rules from each dataset's own reports: a direction flip,
-  exaggeration, and three adaptive attacks against the defence (selective flip, an appended
-  forward-looking lie, a ×10 magnitude lie). They are minimal, auditable and labelled synthetic.
-* **DSS (Directional Shift Score)**: how far a forecast moves *toward the lie*, in units of the
-  series' σ. MSE cannot tell "wrong" from "wrong in the direction the attacker wanted".
-* **TextGuard**: a **training-free, inference-time, black-box claim-vs-evidence consistency
-  gate**. It calls the forecaster with and without the text, asks a small LLM judge what the text
-  claims, checks the claim against the series' own recent numbers, and lets through less of the
-  text's effect when they disagree. v1 (P6) judges the whole report; v2 (R4) judges every sentence,
-  checks year-over-year claims against the history, and caps the text's effect at 1σ.
-* **An audit toolkit** for your own model and data (below).
+* **Attacks** are made by fixed rules, not by an LLM: flip the direction, exaggerate the change,
+  and three attacks aimed at the defence (flip only where it looks consistent, add one sentence
+  about next week, multiply the change by ten). Every fake is marked synthetic.
+* **DSS** (Directional Shift Score) is the move of the forecast toward the lie, in units of the
+  series' σ. Error metrics like MSE can't tell you which way the forecast was pushed.
+* **TextGuard** asks your model for a forecast with and without the report, asks a small LLM what
+  the report claims, compares that claim with the recent numbers, and lets less of the report
+  through when they disagree. No training, nothing inside the model is touched. v1 reads the whole
+  report; v2 reads each sentence, checks year-over-year claims against older data and caps the
+  report's effect at 1σ.
+* **An audit toolkit** to run the same checks on your own model and data.
 
-This is an attack + defence study. It does not propose a new forecasting architecture, and it is
-not the first work on text attacks against price forecasters (see `CLAUDE.md` §4a for related work).
+This is an attack-and-defence study, not a new forecasting model. Related work: `CLAUDE.md` §4a.
 
-## Headline findings
+**Paper:** `paper/TextGuard_paper.docx` (IEEE format; PDF beside it). Every number in it comes from
+`results/summary_*.csv` or `PROJECT_STATUS.md` §9; `paper/check_numbers.py` checks this.
 
-All on Time-MMD (Economy, SocialGood, Traffic, Health_US; chronological splits) unless noted.
-Each extension was pre-registered before its results existed (`PROJECT_STATUS.md` §10), with
-smallest effects of interest (DSS 0.05σ). Every number is in `PROJECT_STATUS.md` §9.
+## Main results
 
-| | Finding |
+Time-MMD (Economy, SocialGood, Traffic, Health_US) unless noted. Every step had a written plan
+committed before its results (`PROJECT_STATUS.md` §10).
+
+| Step | Result |
 |---|---|
-| **Use = vulnerability** (P5) | The rule-based flip moves **Qwen2.5-1.5B** (early fusion, report in the prompt) **+0.46σ** toward the lie and reverses its forecast direction in 24% of attacked windows. Late-fusion BERT models are moved by text but not by its direction (DSS < 0.02σ). |
-| **Fusion is the confound** (R1) | Feeding the same LLM's report as a pooled embedding to a late-fusion head removes ~98% of the manipulation. A direction-aware encoder (FinBERT) makes late heads attackable again. |
-| **Generality** (R2) | Qwen2.5-7B (4-bit) is fooled too (+0.21σ). Phi-3.5-mini is not fooled because it ignores report content. A skeptical prompt does not help. |
-| **TextGuard v1** (P6) | Cuts Qwen2.5-1.5B's pooled DSS +0.45σ → −0.04σ, but blocks 14.4% of genuine reports (budget 10%), and clipping is better on accuracy and exaggeration. A trade-off. |
-| **Adaptive attack** (R3) | **One appended sentence predicting a reversal evades v1** (+0.46σ on Qwen2.5-1.5B, +0.40σ on Qwen2.5-7B), because v1's judge reads the genuine past claim. No defence stops it. |
-| **TextGuard v2, held out** (R4) | Tested once on two unseen domains (Energy; FNSPID stock headlines). v2 **cuts the appended-lie attack by 88%** on Qwen2.5-1.5B (+0.180σ → +0.021σ, lower than v1), but **blocks 18.4% of genuine reports** (v1 7.0%; FNSPID 22.4%), reversing its validation advantage: the judge reads directions into neutral headlines. **Nothing transfers to Qwen2.5-7B.** Validation overstated v2, as stated before the test. |
+| P5 attack | Qwen2.5-1.5B with the report in its prompt moves **+0.46σ** toward the lie; its predicted direction flips in 24% of attacked windows. BERT-based models barely move (< 0.02σ). |
+| R1 | Same LLM, but the report given as a pooled embedding: ~98% of the effect disappears. With FinBERT, the late-fusion heads can be pushed again. |
+| R2 | Qwen2.5-7B (4-bit) is pushed too (+0.21σ). Phi-3.5-mini isn't, because it ignores the report. Asking the model to be careful doesn't help. |
+| P6 TextGuard v1 | +0.45σ → −0.04σ, but it blocks 14.4% of real reports (limit was 10%). Clipping does better on accuracy and exaggeration. |
+| R3 | Adding one sentence that predicts the opposite gets past v1 (+0.46σ on the 1.5B model, +0.40σ on the 7B). |
+| R4 TextGuard v2 | Tested once on unseen data (gasoline prices; FNSPID stock headlines): that attack drops +0.180σ → +0.021σ, but v2 blocks 18.4% of real reports (v1: 7.0%). No gain on Qwen2.5-7B. |
 
-Paper sections: `paper/sections/`; figures: `paper/figures/`.
+Figures: `paper/figures/`.
 
 ---
 
 ## Install
 
-Python **3.14.3** (`.python-version`). Everything that reproduces the paper runs on a CPU.
+Python 3.14.3 (see `.python-version`). A CPU is enough to reproduce everything.
 
 ```bash
 git clone https://github.com/aryanwaingankar4/textguard.git
 cd textguard
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
-python -m pip install -r requirements-lock.txt   # exact environment (requirements.txt = direct deps)
+python -m pip install -r requirements-lock.txt
 ```
 
-## Reproduce every table and figure
+## Reproduce
 
 ```bash
-python -m src.data.download        # Time-MMD @00281e2 + FNSPID subset @bf9189c, sha256-checked (~340 MB read)
-python reproduce.py                # P1 → R4, then a byte-for-byte comparison with the committed files
+python -m src.data.download        # Time-MMD + FNSPID files, hash-checked
+python reproduce.py                # rebuilds all tables and figures, then compares with the repo
 ```
 
-`reproduce.py` regenerates every `results/summary_*` table, the R4 inputs and every figure from the
-committed outputs. No GPU is used, and nothing is retrained. At the end it compares each committed
-file under `results/` and `paper/figures/` byte for byte with the version checked out before the
-run. It also checks that each regenerated GPU input file has the sha256 its Kaggle run recorded.
-Details, runtime, retraining and the clean-room test: **`docs/REPRODUCE.md`**. How to rerun the
-Colab / Kaggle GPU jobs (pinned revisions, setup strings): **`docs/GPU_RUNS.md`**.
-
+No GPU and no retraining: the LLM answers are stored in `results/` and checked on load.
+`docs/REPRODUCE.md` has the details; `docs/GPU_RUNS.md` explains how to redo the GPU runs.
 Tests: `python -m pytest -q`.
 
 ---
 
 ## Use TextGuard on your own model
 
-Any object with a `horizon` attribute and `predict(numbers, text)` works, with no inheritance and
-no access to weights. `numbers` is the last *L* values in raw units; `text` is a string or `None`
-(numbers only); it returns an array of shape `(horizon,)`.
+Your model needs a `horizon` attribute and a `predict(numbers, text)` method. `numbers` is the last
+*L* values; `text` is a string or `None`; the result has shape `(horizon,)`.
 
-**Data format** (CSV, one row per period, oldest first):
+Input CSV, one row per period, oldest first:
 
-| column | |
+| column | meaning |
 |---|---|
 | `date`, `value` | the series |
-| `text` | the report(s) available **before** this row's value is known (blank = none) |
-| `split` | `train` / `val` / `test` (or pass `train_end=`). σ comes from `train` only |
-| `fake_text`, `fake_direction` | optional: your own attack texts and the direction (+1 / −1) each claims |
+| `text` | the report available before this value is known (blank if none) |
+| `split` | `train` / `val` / `test` (or pass `train_end=`); σ uses `train` only |
+| `fake_text`, `fake_direction` | optional: your own fakes and the direction (+1 / −1) each one claims |
 
-Rows before the first evaluated one serve as history. v2 uses it for year-over-year claims, so a
-longer past costs nothing.
+Earlier rows act as history; v2 uses them for year-over-year claims.
 
 ```python
 from textguard import TextGuardV1, TextGuardV2, audit, judges, load_series
 
 data = load_series("my_series.csv", lookback=24, freq="weekly")
 judge_v1, judge_v2 = judges("my-series", subject="the weekly price of gasoline",
-                            frame_v1="compared with the previous week")   # Qwen2.5-1.5B, GPU
+                            frame_v1="compared with the previous week")   # Qwen2.5-1.5B
 
 report = audit(MyModel(), data, judge_v1=judge_v1, judge_v2=judge_v2,
                subject="the weekly price of gasoline")
-report.save("audit_out")      # DSS, flip rate, False Block Rate, MSE, worst cases (CSV / JSON / markdown)
+report.save("audit_out")      # DSS, flip rate, false blocks, MSE, worst cases
 
 guarded = TextGuardV2(MyModel(), judge_v2, sigma=data.sigma, lookback=24, freq="weekly")
-y_hat = guarded.predict(numbers, text, history=past_values)   # frozen paper settings
+y_hat = guarded.predict(numbers, text, history=past_values)
 ```
 
-* **Attacks in the audit:** `a2` (keeps the genuine report and appends "*⟨Subject⟩ is expected to
-  fall next week.*", predicting the reverse of the recent trend) works on any text. Our rule-based
-  **flip** was written for the Time-MMD / FNSPID report styles and often fails on other text, so it
-  is not offered. **Supply your own fakes** in `fake_text` / `fake_direction`.
-* **Notebook:** `notebooks/textguard_your_model.ipynb` (Colab or Kaggle; free T4 GPU recommended,
-  CPU works slowly) runs the judge
-  with your model and CSV. Its worked example (the `DummyForecaster` on
-  `examples/sample_series.csv`, a small **synthetic** series) runs as is. Without GitHub access
-  (a private copy, or no Internet for `git clone`), run `python notebooks/build_toolkit_zip.py`
-  and attach `dist/textguard_toolkit.zip` (23 files, ~60 KB, sha256 manifest) as a Kaggle dataset
-  or upload it to Colab. Cell 1 finds it and checks every hash. Locally:
-  `python examples/audit_dummy.py` (no judge) or `--judge qwen` (CPU, slow).
+* The audit's built-in attack is `a2`: it keeps the real report and adds "*⟨Subject⟩ is expected to
+  fall next week.*" (the opposite of the recent trend). Our flip rules only fit the Time-MMD and
+  FNSPID report styles, so for other text bring your own fakes (`fake_text`, `fake_direction`).
+* Notebook: `notebooks/textguard_your_model.ipynb` (Colab or Kaggle). Its example uses the
+  `DummyForecaster` on `examples/sample_series.csv`, a small synthetic series. No GitHub access?
+  Run `python notebooks/build_toolkit_zip.py` and upload `dist/textguard_toolkit.zip`; the first
+  cell checks its hashes. Locally: `python examples/audit_dummy.py` (add `--judge qwen` to use the
+  real judge on a CPU).
 
-**Honest limits — read before trusting a number:**
+**Before you trust a number:**
 
-* **A GPU is recommended for the judge, but a CPU works, slowly.** The judge is Qwen2.5-1.5B
-  scoring three allowed answers per question. In R7 the notebook's worked example (26 windows,
-  110 judge questions) ran on a Kaggle **CPU** session in ~47 min end to end, including the model
-  download, with no errors (`results/r7_toolkit_kaggle/`). Time grows with the number of distinct
-  texts and sentences, so use a GPU (free Colab / Kaggle T4) for real data.
-* **Judge weakness on neutral financial news:** on 50 hand-labelled stock headlines it gave a
-  direction to 11 of 33 neutral ones (it never reversed one). This is why v2 blocked **22% of
-  genuine headline bundles** in R4. Expect high False Block Rates on text made of many short,
-  mostly neutral items.
-* **No transfer to Qwen2.5-7B:** on held-out data neither v1 nor v2 reduced the appended-lie attack
-  on the larger model. Audit *your* model and do not assume the paper's numbers.
-* **v1 is evaded by an appended forward-looking sentence.** Use v2 if that threat matters.
-* The gate checks claims against the series' own past, not against the world. A lie that agrees
-  with the recent trend passes, and genuine reports of a regime change (COVID) get blocked.
-* Settings were frozen on our validation data; validation overstated v2 on new domains.
+* The judge runs on a CPU but slowly (the notebook example took about 47 minutes on a Kaggle CPU,
+  including the download). Use a GPU for real data.
+* The judge sees a direction in some neutral headlines (11 of 33 in our check), which is why v2
+  blocked 22% of real stock-headline bundles. Text made of many short neutral items will see many
+  false blocks.
+* On Qwen2.5-7B neither version helped on new data. Audit your own model.
+* v1 can be beaten by one added sentence about the future; use v2 if that matters.
+* The check compares claims with the series' own past. A lie that matches the trend passes; true
+  news of a sudden change can be blocked.
+* Settings were tuned on our validation data, which made v2 look better than it was on new data.
 
-Full list: **`MODEL_CARD.md`**.
+More in `MODEL_CARD.md`.
 
 ---
 
-## Repository layout
+## Where things are
 
-| Path | Contents |
+| Path | What |
 |---|---|
-| `textguard/` | Public API (re-exports `src/`) |
-| `src/data/` | Loaders, splits, timing / directional checks, downloads (`download.py`, `fnspid.py`) |
-| `src/models/` | Forecaster interface, Models 1–5 wrappers, GPU-run exports and verifiers |
-| `src/attacks/` | Rule-based attacks, validation and consistency scans |
-| `src/textguard/` | TextGuard v1 / v2, judges (served and live), defences, toolkit |
-| `src/metrics.py`, `src/analyze_*.py`, `src/figures_*.py` | Metrics, pre-registered analyses, figures |
-| `notebooks/` | Colab / Kaggle GPU notebooks (+ their builders) |
-| `results/` | Committed raw outputs (GPU answers, CPU per-unit predictions) and summary tables |
-| `paper/` | LaTeX sections and figures |
-| `reproduce.py`, `docs/` | Reproduction entry point and documentation |
-| `PROJECT_STATUS.md`, `PHASES.md`, `CLAUDE.md` | Full log, plan, pre-registrations and project context |
+| `textguard/` | public API |
+| `src/data/` | loading, splits, data checks, downloads |
+| `src/models/` | model wrappers, GPU-run inputs and checks |
+| `src/attacks/` | attack rules and their checks |
+| `src/textguard/` | TextGuard v1 / v2, judges, baselines, toolkit |
+| `src/metrics.py`, `src/analyze_*.py`, `src/figures_*.py` | metrics, planned analyses, figures |
+| `notebooks/` | GPU notebooks and their builders |
+| `results/` | stored outputs and summary tables |
+| `paper/` | the paper (.docx / .pdf), its build and check scripts, figures, older LaTeX drafts |
+| `reproduce.py`, `docs/` | reproduction |
+| `PROJECT_STATUS.md`, `PHASES.md`, `CLAUDE.md` | project log, plan, plans fixed in advance |
 
 ## Data, ethics, licence
 
-* **Data:** the raw datasets are **downloaded from their owners, not redistributed**:
-  Time-MMD (Liu et al., NeurIPS 2024; no licence stated by its authors) and FNSPID. See
-  `DATA_CARD.md`.
-* **FNSPID attribution:** Zihan Dong, Xinyu Fan, Zhiyuan Peng, *FNSPID: A Comprehensive Financial
-  News Dataset in Time Series*, KDD 2024 (arXiv 2402.06698), licensed **CC BY-NC 4.0**. The
-  FNSPID-derived extracts in this repository and its git history are redistributed under that
-  licence and are for **non-commercial use only**. They are 50 labelled headlines, plus the R4
-  held-out input file of headline bundles, which is in history only. Details are in
-  `DATA_CARD.md` §1a.
-* **Synthetic texts:** every attack text (flipped, exaggerated, A1–A3, and the fakes in the R4
-  input file in git history) is a **synthetic research artefact**. Each one is rule-generated,
-  labelled, and for defence research only, and none is genuine news or a genuine report. Do not
-  publish or deploy it as genuine reporting. See `ETHICS.md`.
-* **Licence:** code MIT (`LICENSE`). Datasets and their extracts keep their own terms.
+* The datasets are downloaded from their owners, not copied here: Time-MMD (Liu et al., NeurIPS
+  2024; its authors state no licence) and FNSPID. See `DATA_CARD.md`.
+* FNSPID: Zihan Dong, Xinyu Fan, Zhiyuan Peng, *FNSPID: A Comprehensive Financial News Dataset in
+  Time Series*, KDD 2024 (arXiv 2402.06698), licence **CC BY-NC 4.0**. The FNSPID extracts here and
+  in git history (50 labelled headlines; the R4 input file of headline bundles, history only) are
+  shared under that licence, **non-commercial use only**. `DATA_CARD.md` §1a.
+* Every attack text is **synthetic**, made by rules for defence research. None is real news. Don't
+  publish or use one as if it were. See `ETHICS.md`.
+* Code: MIT (`LICENSE`). Data keeps its own terms.

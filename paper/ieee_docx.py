@@ -131,7 +131,12 @@ def _cell_margins(table, top=20, bottom=20, left=50, right=50):
         el.set(qn("w:w"), str(v))
         el.set(qn("w:type"), "dxa")
         mar.append(el)
-    tblpr.append(mar)
+    # schema order: tblCellMar comes before tblLook / tblCaption
+    look = tblpr.find(qn("w:tblLook"))
+    if look is not None:
+        look.addprevious(mar)
+    else:
+        tblpr.append(mar)
 
 
 def roman(n: int) -> str:
@@ -326,6 +331,9 @@ class IEEEDoc:
         self.doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
 
     def save(self, path):
+        zoom = self.doc.settings.element.find(qn("w:zoom"))
+        if zoom is not None and zoom.get(qn("w:percent")) is None:
+            zoom.set(qn("w:percent"), "100")         # required by the schema; Word may prompt without it
         props = self.doc.core_properties
         props.title = "TextGuard"
         props.author = "Aryan Manoj Waingankar, Devansh Kumar, Nivedita Mishra"

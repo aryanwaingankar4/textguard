@@ -134,6 +134,8 @@ STEPS = [
     Step("R4", "energy_label_check", _m("src.analyze_r4", "--energy-label-check"),
          "exploratory, outside §10g (Note 1)"),
     Step("R4", "figures_r4", _m("src.figures_r4")),
+    Step("P8", "figure_pipeline", [sys.executable, str(ROOT / "paper" / "make_fig1.py")],
+         "Fig. 1 of the paper (no data)"),
 ]
 PHASES = list(dict.fromkeys(s.phase for s in STEPS))
 
